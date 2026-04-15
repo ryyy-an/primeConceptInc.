@@ -302,60 +302,108 @@ function process_admin_pos_sale(PDO $pdo, array $data): array
             $stmt->execute([$orderId, $item['variant_id'], $item['qty'], $item['source'], $item['price']]);
 
             // Stock Deduction & Logging
+            $neededQty = (int)$item['qty'];
             if ($item['source'] === 'SR') {
-                // Showroom Stock Deduction (Capture ID for logging)
-                $pdo->prepare("UPDATE showroom_stocks SET stock_id = LAST_INSERT_ID(stock_id), qty_on_hand = qty_on_hand - ? WHERE variant_id = ?")
-                    ->execute([$item['qty'], $item['variant_id']]);
-                $swStockId = (int)$pdo->lastInsertId();
+                // LOCK and CHECK Showroom Stock
+                $stmtCheck = $pdo->prepare("SELECT qty_on_hand FROM showroom_stocks WHERE variant_id = ? FOR UPDATE");
+                $stmtCheck->execute([$item['variant_id']]);
+                $currentSR = (int)($stmtCheck->fetchColumn() ?: 0);
 
-                // Showroom Log using sw_stock_id
-                $pdo->prepare("INSERT INTO showroom_logs (sw_stock_id, action, qty) VALUES (?, ?, ?)")
-                    ->execute([$swStockId, "Sold (Order #$orderId)", -$item['qty']]);
+                if ($currentSR < $neededQty) {
+                    throw new Exception("Insufficient showroom stock. Available: $currentSR, Needed: $neededQty");
+                }
+
+                $pdo->prepare("UPDATE showroom_stocks SET qty_on_hand = qty_on_hand - ? WHERE variant_id = ?")
+                    ->execute([$neededQty, $item['variant_id']]);
+
+                // Showroom Log using variant_id (Correct column name)
+                $pdo->prepare("INSERT INTO showroom_logs (variant_id, action, qty) VALUES (?, ?, ?)")
+                    ->execute([$item['variant_id'], "Sold (Order #$orderId)", -$neededQty]);
             } else {
                 // Warehouse Stock Deduction (Targets all component rows for this specific variant)
                 // We use the recipe to ensure correct deduction multiplier
-                $stmtRecipe = $pdo->prepare("SELECT pc.id, pc.qty_needed FROM product_components pc JOIN product_variant pv ON pc.prod_id = pv.prod_id WHERE pv.id = ? AND pc.is_deleted = 0");
+                $stmtRecipe = $pdo->prepare("SELECT pc.id, pc.comp_id, pc.qty_needed FROM product_components pc JOIN product_variant pv ON pc.prod_id = pv.prod_id WHERE pv.id = ? AND pc.is_deleted = 0");
                 $stmtRecipe->execute([$item['variant_id']]);
                 $recipe = $stmtRecipe->fetchAll(PDO::FETCH_ASSOC);
 
-                foreach ($recipe as $r) {
-                    $deduction = (int)$item['qty'] * (int)$r['qty_needed'];
-                    $pdo->prepare("UPDATE warehouse_stocks SET id = LAST_INSERT_ID(id), qty_on_hand = qty_on_hand - ? WHERE variant_id = ? AND product_comp_id = ?")
-                        ->execute([$deduction, $item['variant_id'], $r['id']]);
-                    $whStockId = (int)$pdo->lastInsertId();
+                if (empty($recipe)) throw new Exception("Product recipe missing for variant ID: " . $item['variant_id']);
 
-                    // Log each component deduction specifically
-                    $pdo->prepare("INSERT INTO warehouse_logs (wh_stock_id, action, qty) VALUES (?, ?, ?)")
-                        ->execute([$whStockId, "Sold (Order #$orderId)", -$deduction]);
+                foreach ($recipe as $r) {
+                    $deduction = $neededQty * (int)$r['qty_needed'];
+
+                    // LOCK and CHECK Warehouse Stock
+                    $stmtCheckWH = $pdo->prepare("SELECT qty_on_hand FROM warehouse_stocks WHERE variant_id = ? AND product_comp_id = ? FOR UPDATE");
+                    $stmtCheckWH->execute([$item['variant_id'], $r['id']]);
+                    $currentWH = (int)($stmtCheckWH->fetchColumn() ?: 0);
+
+                    if ($currentWH < $deduction) {
+                        throw new Exception("Insufficient warehouse stock for one or more components (Order #$orderId).");
+                    }
+
+                    $pdo->prepare("UPDATE warehouse_stocks SET qty_on_hand = qty_on_hand - ? WHERE variant_id = ? AND product_comp_id = ?")
+                        ->execute([$deduction, $item['variant_id'], $r['id']]);
+
+                    // Log each component deduction specifically using comp_id (Correct column name)
+                    $pdo->prepare("INSERT INTO warehouse_logs (comp_id, action, qty) VALUES (?, ?, ?)")
+                        ->execute([$r['comp_id'], "Sold (Order #$orderId)", -$deduction]);
                 }
             }
         }
 
         // 4. Record Transaction
-        $sql = "INSERT INTO transactions (order_id, transaction_date, or_number, amount, interest, total_with_interest, installment_term, status) 
-                VALUES (?, CURDATE(), ?, ?, ?, ?, ?, ?)";
+        $paymentType = ($data['transactionType'] ?? 'full') === 'installment' ? 'Installment' : 'Full';
+        $transStatus = ($paymentType === 'Installment') ? 'Ongoing' : 'Success';
+
+        $sql = "INSERT INTO transactions (order_id, transaction_date, or_number, amount, interest, total_with_interest, installment_term, payment_type, status) 
+                VALUES (?, NOW(), ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             $orderId,
-            $data['paymentRef'] ?? '',
-            (float)($data['amountPaid'] ?? 0),
-            (int)($data['interestRate'] ?? 0),
+            $data['paymentRef'] ?: ('POS-REF-' . $orderId),
+            (float)($data['totalAmount'] ?? 0),
+            (float)($data['interestRate'] ?? 0),
             (float)($data['totalWithInterest'] ?? $data['totalAmount']),
             (int)($data['installmentTerm'] ?? 0),
-            'Success'
+            $paymentType,
+            $transStatus
         ]);
         $transId = (int)$pdo->lastInsertId();
 
-        // 5. Initial Payment Tracking
-        $sql = "INSERT INTO payment_tracker (trans_id, amount_paid, date_paid, payment_method, reference_no, remarks) 
-                VALUES (?, ?, CURDATE(), ?, ?, ?)";
-        $pdo->prepare($sql)->execute([
-            $transId,
-            (float)($data['amountPaid'] ?? 0),
-            $data['paymentMethod'],
-            $data['paymentRef'] ?? '',
-            "Initial POS Payment (Order #$orderId)"
-        ]);
+        // 5. Payment Tracker — only for Installment transactions
+        if ($paymentType === 'Installment') {
+            $amountPaid = (float)($data['amountPaid'] ?? 0);
+            $totalWithInterest = (float)($data['totalWithInterest'] ?? $data['totalAmount']);
+            $term = (int)($data['installmentTerm'] ?? 0);
+
+            // A. Initial Equity / Downpayment (Paid)
+            $sqlInitial = "INSERT INTO payment_tracker (trans_id, amount_paid, date_paid, due_date, payment_method, reference_no, status, remarks) 
+                            VALUES (?, ?, NOW(), CURDATE(), ?, ?, 'Paid', 'Downpayment / Equity')";
+            $pdo->prepare($sqlInitial)->execute([
+                $transId,
+                $amountPaid,
+                $data['paymentMethod'] ?? 'cash',
+                $data['paymentRef'] ?: ('POS-REF-' . $orderId)
+            ]);
+
+            // B. Scheduled Monthly Installments (Pending)
+            if ($term > 0) {
+                $remaining = $totalWithInterest - $amountPaid;
+                $monthly = ($remaining > 0) ? ($remaining / $term) : 0;
+
+                $sqlInstallment = "INSERT INTO payment_tracker (trans_id, amount_paid, date_paid, due_date, status, remarks) 
+                                   VALUES (?, ?, NULL, DATE_ADD(CURDATE(), INTERVAL ? MONTH), 'Pending', ?)";
+                $stmtInstallment = $pdo->prepare($sqlInstallment);
+
+                for ($i = 1; $i <= $term; $i++) {
+                    $stmtInstallment->execute([
+                        $transId,
+                        $monthly,
+                        $i,
+                        "Scheduled Installment #$i"
+                    ]);
+                }
+            }
+        }
 
         // 6. Clear Cart
         $pdo->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$userId]);
@@ -507,50 +555,130 @@ function get_dashboard_low_stock(PDO $pdo): array
 }
 
 /**
- * Fetches pending orders for Government clients
+ * Fetches all pending receivables (orders with a balance > 0)
+ * Can be filtered by client type (e.g., 'Government', 'Private')
  */
-function get_pending_government_orders(PDO $pdo): array
+function get_pending_receivables(PDO $pdo, string $type = 'All'): array
 {
     try {
+        $params = [];
         $sql = "SELECT 
                     o.id, 
-                    c.name as agency, 
-                    c.gov_branch as branch, 
+                    COALESCE(c.name, o.temp_customer_name) as client_name,
+                    c.gov_branch as branch,
+                    c.client_type,
                     o.created_at, 
                     o.total_ammount as total, 
                     o.balance, 
-                    o.status
+                    o.status,
+                    t.id as trans_id,
+                    t.or_number
                 FROM orders o
                 JOIN customers c ON o.customer_id = c.id
-                WHERE c.client_type = 'Government' AND o.balance > 0
-                ORDER BY o.created_at DESC
-                LIMIT 5";
-        $stmt = $pdo->query($sql);
+                LEFT JOIN transactions t ON o.id = t.order_id
+                WHERE o.balance > 0";
+        
+        if ($type !== 'All') {
+            $sql .= " AND c.client_type = ?";
+            $params[] = $type;
+        }
+
+        $sql .= " GROUP BY o.id ORDER BY o.created_at DESC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        error_log("Get Gov Orders Error: " . $e->getMessage());
+        error_log("Get Receivables Error: " . $e->getMessage());
         return [];
     }
 }
 
 /**
- * Calculates the sum of all outstanding balances for government customers
+ * Calculates summary stats for all active receivables
  */
-function get_total_government_outstanding(PDO $pdo): float
+function get_receivables_summary(PDO $pdo): array
 {
     try {
-        $sql = "SELECT SUM(o.balance) as total_outstanding
+        $sql = "SELECT 
+                    COUNT(DISTINCT o.id) as pending_accounts,
+                    SUM(o.balance) as total_outstanding
                 FROM orders o
-                JOIN customers c ON o.customer_id = c.id
-                WHERE c.client_type = 'Government' AND o.balance > 0";
+                WHERE o.balance > 0";
         $stmt = $pdo->query($sql);
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
-        return (float)($res['total_outstanding'] ?? 0);
+        return [
+            'count' => (int)($res['pending_accounts'] ?? 0),
+            'total' => (float)($res['total_outstanding'] ?? 0)
+        ];
     } catch (PDOException $e) {
-        error_log("Get Gov Outstanding Error: " . $e->getMessage());
-        return 0.0;
+        return ['count' => 0, 'total' => 0.0];
     }
 }
+
+/**
+ * Records a manual payment, marks the oldest pending installment as paid,
+ * and updates the order's remaining balance.
+ */
+function record_manual_collection(PDO $pdo, int $orderId, float $amount, string $reference): bool
+{
+    try {
+        $pdo->beginTransaction();
+
+        // 1. Get the transaction ID associated with this order
+        $sqlTxn = "SELECT id FROM transactions WHERE order_id = ? LIMIT 1";
+        $stmtTxn = $pdo->prepare($sqlTxn);
+        $stmtTxn->execute([$orderId]);
+        $transId = $stmtTxn->fetchColumn();
+
+        if ($transId) {
+            // 2. Find the earliest 'Pending' installment in tracker
+            $sqlTracker = "SELECT id FROM payment_tracker 
+                           WHERE trans_id = ? AND status = 'Pending' 
+                           ORDER BY due_date ASC, id ASC LIMIT 1";
+            $stmtTracker = $pdo->prepare($sqlTracker);
+            $stmtTracker->execute([$transId]);
+            $trackerId = $stmtTracker->fetchColumn();
+
+            if ($trackerId) {
+                // 3. Mark tracker as Paid
+                $sqlUpdTracker = "UPDATE payment_tracker 
+                                  SET status = 'Paid', amount_paid = ?, date_paid = NOW(), remarks = ? 
+                                  WHERE id = ?";
+                $stmtUpdTracker = $pdo->prepare($sqlUpdTracker);
+                $stmtUpdTracker->execute([$amount, $reference, $trackerId]);
+            }
+        }
+
+        // 4. Update Global Order Balance
+        $sqlOrder = "UPDATE orders SET balance = GREATEST(0, balance - ?) WHERE id = ?";
+        $stmtOrder = $pdo->prepare($sqlOrder);
+        $stmtOrder->execute([$amount, $orderId]);
+
+        // 5. If balance is now 0, mark order as Completed and txn as Success
+        $sqlFinal = "SELECT balance FROM orders WHERE id = ?";
+        $stmtFinal = $pdo->prepare($sqlFinal);
+        $stmtFinal->execute([$orderId]);
+        if ((float)$stmtFinal->fetchColumn() <= 0) {
+            $pdo->prepare("UPDATE orders SET status = 'Completed' WHERE id = ?")->execute([$orderId]);
+            if ($transId) {
+                $pdo->prepare("UPDATE transactions SET status = 'Success' WHERE id = ?")->execute([$transId]);
+            }
+        }
+
+        $pdo->commit();
+        return true;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("Record Collection Error: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Legacy compatibility functions
+ */
+function get_pending_government_orders(PDO $pdo): array { return get_pending_receivables($pdo, 'Government'); }
+function get_total_government_outstanding(PDO $pdo): float { return get_receivables_summary($pdo)['total']; }
 
 /**
  * Updates an order status and records any admin remarks/discounts.
@@ -618,6 +746,10 @@ function get_admin_order_stats(PDO $pdo): array
         // Showroom (Simple sum)
         $srTotal = $pdo->query("SELECT SUM(ss.qty_on_hand) FROM showroom_stocks ss JOIN product_variant pv ON ss.variant_id = pv.id JOIN products p ON pv.prod_id = p.id WHERE p.is_deleted = 0 AND pv.is_deleted = 0")->fetchColumn();
 
+        // 5. Specific Pending Breakdown (from check_counts logic)
+        $whPending = $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o JOIN order_items oi ON o.id = oi.order_id WHERE o.status = 'Approved' AND (oi.get_from = 'WH' OR oi.get_from = 'Warehouse') AND o.wh_status != 'Released'")->fetchColumn();
+        $srPending = $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o JOIN order_items oi ON o.id = oi.order_id WHERE o.status = 'For Review' AND (oi.get_from = 'SR' OR oi.get_from = 'Showroom')")->fetchColumn();
+
         return [
             'total_products' => (int)$totalProducts,
             'total_transactions' => (int)$totalTransactions,
@@ -625,7 +757,9 @@ function get_admin_order_stats(PDO $pdo): array
             'approved_requests' => (int)($statuses['Approved'] ?? 0),
             'rejected_requests' => (int)($statuses['Rejected'] ?? 0),
             'wh_total' => (int)$whTotal,
-            'sr_total' => (int)$srTotal
+            'sr_total' => (int)$srTotal,
+            'wh_pending_count' => (int)$whPending,
+            'sr_pending_count' => (int)$srPending
         ];
     } catch (PDOException $e) {
         error_log("Get Admin Stats Error: " . $e->getMessage());
@@ -633,17 +767,22 @@ function get_admin_order_stats(PDO $pdo): array
     }
 }
 
-function get_sales_report_data(PDO $pdo, ?string $start = null, ?string $end = null): array
+function get_sales_report_data(PDO $pdo, ?string $start = null, ?string $end = null, ?string $status = null, ?string $plan = null): array
 {
     try {
         $params = [];
         $sql = "SELECT 
                     t.id as trans_id,
+                    o.id as order_id,
                     t.transaction_date,
                     t.amount as amount_paid,
                     t.status as trans_status,
+                    t.payment_type as plan,
+                    t.or_number,
+                    o.status as order_status,
                     o.payment_mode,
-                    COALESCE(c.name, o.temp_customer_name) as customer_name
+                    COALESCE(c.name, o.temp_customer_name) as customer_name,
+                    COALESCE(c.client_type, 'Private') as client_type
                 FROM transactions t
                 JOIN orders o ON t.order_id = o.id
                 LEFT JOIN customers c ON o.customer_id = c.id
@@ -656,6 +795,14 @@ function get_sales_report_data(PDO $pdo, ?string $start = null, ?string $end = n
         if ($end) {
             $sql .= " AND t.transaction_date <= ?";
             $params[] = $end . " 23:59:59";
+        }
+        if ($status && $status !== 'All') {
+            $sql .= " AND t.status = ?";
+            $params[] = $status;
+        }
+        if ($plan && $plan !== 'All') {
+            $sql .= " AND t.payment_type = ?";
+            $params[] = $plan;
         }
 
         $sql .= " ORDER BY t.transaction_date DESC";
@@ -992,7 +1139,7 @@ function get_order_items_report(PDO $pdo, int $orderId): array
 }
 
 /**
- * Fetches a comprehensive summary of an order by its ID
+ * Fetches a comprehensive summary of an order and its associated transaction by its ID
  */
 function get_order_summary_by_id(PDO $pdo, int $orderId): ?array
 {
@@ -1001,23 +1148,51 @@ function get_order_summary_by_id(PDO $pdo, int $orderId): ?array
                     o.id, 
                     COALESCE(c.name, o.temp_customer_name) as customer_name,
                     COALESCE(c.client_type, 'Private / Individual') as client_type,
+                    COALESCE(c.contact_no, 'N/A') as contact_no,
                     u.full_name as requested_by,
                     u.role as creator_role,
                     o.payment_mode,
                     o.total_ammount as total,
                     o.balance,
                     o.status as order_status,
-                    o.created_at
+                    o.created_at,
+                    t.id as trans_id,
+                    t.or_number,
+                    t.payment_type,
+                    t.interest as interest_rate,
+                    t.total_with_interest,
+                    t.transaction_date
                 FROM orders o
                 LEFT JOIN customers c ON o.customer_id = c.id
                 LEFT JOIN users u ON o.created_by = u.id
-                WHERE o.id = ?";
+                LEFT JOIN transactions t ON o.id = t.order_id
+                WHERE o.id = ?
+                LIMIT 1";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$orderId]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     } catch (PDOException $e) {
         error_log("Get Order Summary Error: " . $e->getMessage());
         return null;
+    }
+}
+
+/**
+ * Fetches the payment schedule/tracker records for a specific transaction
+ */
+function get_payment_schedule_by_trans_id(PDO $pdo, int $transId): array
+{
+    try {
+        $sql = "SELECT id, amount_paid, date_paid, due_date, status, remarks 
+                FROM payment_tracker 
+                WHERE trans_id = ? 
+                ORDER BY due_date ASC, id ASC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$transId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Get Payment Schedule Error: " . $e->getMessage());
+        return [];
     }
 }
 
@@ -1060,3 +1235,76 @@ function get_global_order_history(PDO $pdo, int $limit = 10, string $search = ''
         return [];
     }
 }
+
+/**
+ * Fetches advanced system diagnostics (counts of all key tables)
+ * Consolidates functionality from check.php and check_counts.php
+ */
+function get_system_diagnostic_data(PDO $pdo): array
+{
+    try {
+        $stmt = $pdo->query("SHOW TABLES");
+        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $counts = [];
+        foreach ($tables as $t) {
+            $count = $pdo->query("SELECT COUNT(*) FROM `$t`")->fetchColumn();
+            $counts[$t] = $count;
+        }
+
+        // Get DB details
+        $dbName = $pdo->query("SELECT DATABASE()")->fetchColumn();
+        $dbVersion = $pdo->query("SELECT VERSION()")->fetchColumn();
+
+        return [
+            'tables' => $tables,
+            'counts' => $counts,
+            'db_name' => $dbName,
+            'db_version' => $dbVersion,
+            'status' => 'Operational'
+        ];
+    } catch (PDOException $e) {
+        error_log("Diagnostics Error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Fetches schema details for a specific table
+ * Consolidates functionality from check_db.php and schema_dump.php
+ */
+function get_table_schema(PDO $pdo, string $tableName): array
+{
+    try {
+        $stmt = $pdo->query("DESCRIBE `$tableName` ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Executes a full database migration from the resources SQL file.
+ * Consolidates functionality from migrate.php
+ * WARNING: This is destructive.
+ */
+function run_database_migration(PDO $pdo): array
+{
+    try {
+        $sqlPath = __DIR__ . '/../../resources/pis-sys-db.sql';
+        if (!file_exists($sqlPath)) {
+            throw new Exception("Migration file not found at " . basename($sqlPath));
+        }
+
+        $sql = file_get_contents($sqlPath);
+        
+        // Use exec for multi-statement execution if supported, or handle separately
+        // Note: $pdo->exec() works for multiple statements in some drivers
+        $pdo->exec($sql);
+        
+        return ['success' => true, 'message' => 'Migration successful. Database has been reset.'];
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+

@@ -94,18 +94,51 @@ function process_showroom_finalize_order(PDO $pdo, array $data): array
         $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($items as $item) {
+            $neededQty = (int)$item['qty'];
             if ($item['get_from'] === 'SR') {
+                // A. Showroom Stock Locking & Validation
+                $stmtCheck = $pdo->prepare("SELECT qty_on_hand FROM showroom_stocks WHERE variant_id = ? FOR UPDATE");
+                $stmtCheck->execute([$item['variant_id']]);
+                $current = (int)($stmtCheck->fetchColumn() ?: 0);
+
+                if ($current < $neededQty) {
+                    throw new Exception("Insufficient stock in Showroom for Order #$orderId. Available: $current, Needed: $neededQty");
+                }
+
                 $pdo->prepare("UPDATE showroom_stocks SET qty_on_hand = qty_on_hand - ? WHERE variant_id = ?")
-                    ->execute([$item['qty'], $item['variant_id']]);
+                    ->execute([$neededQty, $item['variant_id']]);
                 
                 $pdo->prepare("INSERT INTO showroom_logs (variant_id, action, qty) VALUES (?, ?, ?)")
-                    ->execute([$item['variant_id'], "Showroom Sale (Finalized Request #$orderId)", $item['qty']]);
+                    ->execute([$item['variant_id'], "Showroom Sale (Finalized Request #$orderId)", -$neededQty]);
             } else {
-                $pdo->prepare("UPDATE warehouse_stocks SET qty_on_hand = qty_on_hand - ? WHERE variant_id = ?")
-                    ->execute([$item['qty'], $item['variant_id']]);
-                
-                $pdo->prepare("INSERT INTO warehouse_logs (comp_id, action, qty) VALUES (NULL, ?, ?)")
-                    ->execute(["Warehouse Sale (Finalized Request #$orderId)", $item['qty']]);
+                // B. Warehouse Stock Locking & Validation (Recipe Based)
+                $stmtRecipe = $pdo->prepare("SELECT pc.id, pc.comp_id, pc.qty_needed 
+                                           FROM product_components pc 
+                                           JOIN product_variant pv ON pc.prod_id = pv.prod_id 
+                                           WHERE pv.id = ? AND pc.is_deleted = 0");
+                $stmtRecipe->execute([$item['variant_id']]);
+                $recipe = $stmtRecipe->fetchAll(PDO::FETCH_ASSOC);
+
+                if (empty($recipe)) throw new Exception("Product recipe missing for variant ID: " . $item['variant_id']);
+
+                foreach ($recipe as $r) {
+                    $deduction = $neededQty * (int)$r['qty_needed'];
+
+                    // Lock and Check Warehouse Component Row
+                    $stmtCheckWH = $pdo->prepare("SELECT qty_on_hand FROM warehouse_stocks WHERE variant_id = ? AND product_comp_id = ? FOR UPDATE");
+                    $stmtCheckWH->execute([$item['variant_id'], $r['id']]);
+                    $currentWH = (int)($stmtCheckWH->fetchColumn() ?: 0);
+
+                    if ($currentWH < $deduction) {
+                        throw new Exception("Insufficient warehouse component stock for one or more items in Order #$orderId.");
+                    }
+
+                    $pdo->prepare("UPDATE warehouse_stocks SET qty_on_hand = qty_on_hand - ? WHERE variant_id = ? AND product_comp_id = ?")
+                        ->execute([$deduction, $item['variant_id'], $r['id']]);
+                    
+                    $pdo->prepare("INSERT INTO warehouse_logs (comp_id, action, qty) VALUES (?, ?, ?)")
+                        ->execute([$r['comp_id'], "Sold (Finalized Showroom Request #$orderId)", -$deduction]);
+                }
             }
         }
 
@@ -168,5 +201,36 @@ function cancel_product_request(PDO $pdo, string $prNo): bool
     } catch (PDOException $e) {
         error_log("Cancel Request Error: " . $e->getMessage());
         return false;
+    }
+}
+
+/**
+ * Fetches transaction history for a specific Showroom user.
+ */
+function fetch_sr_transaction_history(PDO $pdo, int $userId): array
+{
+    try {
+        $sql = "SELECT 
+                    t.id AS trans_id,
+                    c.name AS customer_name,
+                    c.client_type,
+                    c.gov_branch,
+                    o.payment_mode AS method,
+                    t.transaction_date AS date,
+                    t.status,
+                    t.amount
+                FROM transactions t
+                JOIN orders o ON t.order_id = o.id
+                JOIN customers c ON o.customer_id = c.id
+                WHERE o.created_by = :user_id
+                ORDER BY t.transaction_date DESC, t.id DESC";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        error_log("Fetch SR Transaction History Error: " . $e->getMessage());
+        return [];
     }
 }

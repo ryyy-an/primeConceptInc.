@@ -42,6 +42,7 @@ if (isset($_SESSION["user_id"])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
+    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/inventory.js?v=1.1" defer></script>
     <script src="../../public/assets/js/global.js?v=1.1" defer></script>

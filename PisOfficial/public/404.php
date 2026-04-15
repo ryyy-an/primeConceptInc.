@@ -14,6 +14,7 @@ if (file_exists($imgPath)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 Not Found - Prime-In-Sync</title>
+    <link rel="icon" type="image/x-icon" href="assets/img/primeLogo.ico">
     <!-- Basic Internal Styles to ensure it NEVER breaks -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');

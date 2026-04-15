@@ -49,6 +49,7 @@ $pendingRequests = $pdo->query("SELECT COUNT(*) FROM orders WHERE status = 'Pend
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
+    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/order.js"></script>

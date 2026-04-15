@@ -98,10 +98,12 @@ if ($action === 'get_history_log') {
 
 // Sales Report Data Fetching
 if ($action === 'get_report_sales') {
-    $start = $_GET['start'] ?? null;
-    $end = $_GET['end'] ?? null;
+    $start  = $_GET['start'] ?? null;
+    $end    = $_GET['end'] ?? null;
+    $status = $_GET['status'] ?? 'All';
+    $plan   = $_GET['plan'] ?? 'All';
 
-    $data = get_sales_report_data($pdo, $start, $end);
+    $data = get_sales_report_data($pdo, $start, $end, $status, $plan);
     sendJsonResponse([
         'success' => true,
         'data' => $data
@@ -125,12 +127,59 @@ if ($action === 'get_order_details') {
 
     $summary = get_order_summary_by_id($pdo, $orderId);
     $items = get_order_items_report($pdo, $orderId);
+    $schedule = [];
+
+    if ($summary && isset($summary['trans_id'])) {
+        $schedule = get_payment_schedule_by_trans_id($pdo, (int)$summary['trans_id']);
+    }
 
     sendJsonResponse([
         'success' => true,
         'summary' => $summary,
-        'items' => $items
+        'items' => $items,
+        'schedule' => $schedule
     ]);
+}
+
+if ($action === 'get_receivables') {
+    $type = $_GET['type'] ?? 'All';
+    $data = get_pending_receivables($pdo, $type);
+    $stats = get_receivables_summary($pdo);
+    sendJsonResponse([
+        'success' => true,
+        'data' => $data,
+        'stats' => $stats
+    ]);
+}
+
+if ($action === 'record_collection') {
+    $orderId   = (int)($_POST['order_id'] ?? 0);
+    $amount    = (float)($_POST['amount'] ?? 0);
+    $reference = $_POST['reference'] ?? '';
+
+    if ($orderId <= 0 || $amount <= 0) {
+        sendJsonResponse(['success' => false, 'error' => 'Invalid amount or order ID']);
+    }
+
+    $success = record_manual_collection($pdo, $orderId, $amount, $reference);
+    sendJsonResponse([
+        'success' => $success,
+        'message' => $success ? 'Payment recorded successfully' : 'Failed to record payment'
+    ]);
+}
+
+// Fetch system diagnostics
+if ($action === 'get_diagnostics') {
+    $data = get_system_diagnostic_data($pdo);
+    sendJsonResponse(['success' => true, 'data' => $data]);
+}
+
+// Fetch specific table schema
+if ($action === 'get_table_schema') {
+    $table = $_GET['table'] ?? '';
+    if (empty($table)) sendJsonResponse(['success' => false, 'message' => 'Table name required']);
+    $schema = get_table_schema($pdo, $table);
+    sendJsonResponse(['success' => true, 'schema' => $schema]);
 }
 
 
@@ -190,6 +239,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !empty($action)) {
             $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
             $stmt->execute([password_hash($rawPass, PASSWORD_DEFAULT), $targetId]);
             redirectWith("success=password_reset");
+        }
+
+        // RUN DATABASE MIGRATION (RESET)
+        if ($action === 'run_migration') {
+            $result = run_database_migration($pdo);
+            if ($result['success']) {
+                redirectWith("success=migration_complete");
+            } else {
+                redirectWith("error=migration_failed");
+            }
         }
     } catch (PDOException $e) {
         error_log("Admin Form Action Error: " . $e->getMessage());

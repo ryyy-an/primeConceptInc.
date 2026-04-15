@@ -106,6 +106,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
 
 <body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-25">
     <?php include '../include/loading-splash.php'; ?>
+    <?php include '../include/toast.php'; ?>
     <header
         class="sticky top-0 z-40 flex h-25 items-center justify-between border-b border-gray-200 px-6 bg-white container">
         <div class="flex container">

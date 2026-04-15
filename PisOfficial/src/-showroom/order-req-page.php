@@ -50,6 +50,7 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync | Order Requests</title>
+    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
@@ -536,8 +537,8 @@ if (isset($_SESSION['user_id'])) {
                                             <label class="text-xs font-semibold text-gray-700 ml-1">Discount
                                                 (%)</label>
                                             <div class="relative">
-                                                <input type="number" id="adminDiscount" placeholder="0"
-                                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-8 font-bold">
+                                                <input type="number" id="adminDiscount" placeholder="0" readonly
+                                                    class="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-8 font-bold cursor-not-allowed">
                                                 <span class="absolute right-4 top-3 text-gray-400 font-bold">%</span>
                                             </div>
                                         </div>
@@ -583,6 +584,7 @@ if (isset($_SESSION['user_id'])) {
                                     <input type="hidden" id="interestRate" value="0">
                                     <input type="hidden" id="installmentTerm" value="1">
 
+                                    <div class="grid grid-cols-2 gap-x-8 gap-y-6 items-start">
                                         <div class="col-span-2 md:col-span-1 space-y-1.5">
                                             <label class="text-xs font-semibold text-gray-700 ml-1">Payment
                                                 Method</label>
@@ -623,7 +625,7 @@ if (isset($_SESSION['user_id'])) {
                                             <br>
                                             <br>
                                             <div id="modal-grand-total-section"
-                                                class="p-8 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+                                                class="p-8 bg-gray-50 border-t border-gray-100 flex justify-between items-center rounded-2xl">
                                                 <div>
                                                     <p
                                                         class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 leading-none">
@@ -633,12 +635,10 @@ if (isset($_SESSION['user_id'])) {
                                                         ₱0.00</h1>
                                                 </div>
                                             </div>
-
-
                                         </div>
-
-                                        <input type="hidden" id="calcBalance" value="0">
                                     </div>
+
+                                    <input type="hidden" id="calcBalance" value="0">
                                 </section>
 
                             </div>
@@ -656,7 +656,7 @@ if (isset($_SESSION['user_id'])) {
                         <div id="hidden-order-id" class="hidden"></div>
 
                         <button id="showroomCompleteSaleBtn" onclick="handleShowroomCompleteSale()"
-                            class="flex-1 justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-4 px-6 font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-blue-100 active:scale-95 flex items-center gap-2">
+                            class="flex-1 justify-center bg-red-600 hover:bg-red-700 text-white rounded-xl py-4 px-6 font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-blue-100 active:scale-95 flex items-center gap-2">
                             <span>Complete Sale</span>
                         </button>
                     </div>
@@ -664,363 +664,79 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
 
-            <script>
-                // --- VIEW MODAL LOGIC ---
-                function openRequestInfoModal(req) {
-                    document.body.style.overflow = 'hidden';
-                    const modal = document.getElementById('requestInfoModal');
-                    const box = document.getElementById('requestInfoBox');
 
-                    // Set basic info
-                    document.getElementById('modal-id').textContent = req.pr_no;
-                    document.getElementById('modal-by').textContent = req.full_name || 'N/A';
-                    document.getElementById('modal-customer').textContent = req.customer_name || req.temp_customer_name || 'N/A';
-                    document.getElementById('modal-date').textContent = new Date(req.date).toLocaleDateString();
+            <div id="cancelConfirmModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 transition-all duration-300">
+                <div class="absolute inset-0 bg-slate-900/60" onclick="closeCancelConfirmModal()"></div>
+                <div class="modal-box relative bg-white rounded-3xl shadow-2xl overflow-hidden text-center p-8 transform scale-95 opacity-0 transition-all duration-300 max-w-sm" id="cancelConfirmBox">
+                    <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 mb-2 text-red-600 uppercase tracking-tighter">Cancel Request?</h3>
+                    <p class="text-gray-500 mb-8 text-sm leading-relaxed">
+                        Are you sure you want to cancel Request <span class="font-black text-gray-900" id="cancel-pr-no-display">#--</span>?
+                        <br><br>
+                        <span class="text-red-500 font-black uppercase tracking-widest text-[10px] block mb-1">Warning: Irreversible Action</span>
+                        This will notify the administration and stop further processing for this specific order.
+                    </p>
+                    <input type="hidden" id="cancel-pr-no-input">
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeCancelConfirmModal()"
+                            class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-black text-[11px] uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-all">No, Keep It</button>
+                        <button type="button" id="confirmCancelBtn" onclick="confirmCancelExecution()"
+                            class="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-700 transition-all shadow-xl shadow-red-200 active:scale-95">Yes, Cancel Order</button>
+                    </div>
+                </div>
+            </div>
 
-                    // Status Badge
-                    const status = (req.status || 'pending').toLowerCase();
-                    let statusClass = 'bg-yellow-50 text-yellow-600 border-yellow-100 ring-yellow-50';
 
-                    if (status === 'approved') {
-                        statusClass = 'bg-green-50 text-green-600 border-green-100 ring-green-50';
-                    } else if (status === 'rejected') {
-                        statusClass = 'bg-red-50 text-red-600 border-red-100 ring-red-50';
-                    } else if (status === 'cancelled') {
-                        statusClass = 'bg-orange-50 text-orange-600 border-orange-100 ring-orange-50';
-                    } else if (status === 'success') {
-                        statusClass = 'bg-blue-50 text-blue-600 border-blue-100 ring-blue-50';
-                    } else {
-                        statusClass = 'bg-gray-50 text-gray-400 border-gray-100 ring-gray-100';
-                    }
+            <!-- Validation Error Modal -->
+            <div id="validationErrorModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 transition-all duration-300">
+                <div class="absolute inset-0 bg-slate-900/40" onclick="closeValidationErrorModal()"></div>
+                <div class="modal-box relative bg-white rounded-3xl shadow-2xl overflow-hidden text-center p-8 transform scale-95 opacity-0 transition-all duration-300 max-w-sm" id="validationErrorBox">
+                    <div class="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-amber-50/50">
+                        <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-black text-gray-900 mb-2 uppercase tracking-tight" id="validation-title">Invalid Input</h3>
+                    <p class="text-gray-500 mb-8 text-sm leading-relaxed" id="validation-message">
+                        Please check your information and try again.
+                    </p>
+                    <button type="button" onclick="closeValidationErrorModal()"
+                        class="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-gray-200 active:scale-95 transition-all">Understood</button>
+                </div>
+            </div>
 
-                    const badge = document.getElementById('modal-status-badge');
-                    badge.className = `text-[9px] font-black px-2 py-0.5 rounded-md uppercase border tracking-wider ${statusClass}`;
-                    badge.textContent = req.status;
+            <!-- Finalize Confirmation Modal -->
+            <div id="finalizeConfirmModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 transition-all duration-300">
+                <div class="absolute inset-0 bg-slate-900/60" onclick="closeFinalizeConfirmModal()"></div>
+                <div class="modal-box relative bg-white rounded-3xl shadow-2xl overflow-hidden text-center p-8 transform scale-95 opacity-0 transition-all duration-300 max-w-sm" id="finalizeConfirmBox">
+                    <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tighter">Finalize Sale?</h3>
+                    <p class="text-gray-500 mb-8 text-sm leading-relaxed">
+                        This will record the transaction, update the inventory, and generate a receipt. Sigurado ka na ba?
+                    </p>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeFinalizeConfirmModal()"
+                            class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-black text-[11px] uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-all">Review Again</button>
+                        <button type="button" id="confirmFinalizeBtn" onclick="executeFinalizeTransaction()"
+                            class="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95">Yes, Process Sale</button>
+                    </div>
+                </div>
+            </div>
 
-                    // UI Reorganization based on status
-                    const isForReview = status === 'for review';
-                    const isCancelled = status === 'cancelled';
-                    const isRejected = status === 'rejected';
-                    const isSuccess = status === 'success';
-                    const isApproved = status === 'approved';
-
-                    // Group all non-checkout/read-only statuses
-                    const isReadOnlyView = isForReview || isCancelled || isRejected || isSuccess;
-
-                    const rightHeader = document.getElementById('modal-right-header-text');
-                    const rightSubHeader = document.getElementById('modal-right-sub-header');
-                    const clientSection = document.getElementById('modal-client-section');
-                    const shippingSection = document.getElementById('modal-shipping-section');
-                    const paymentSection = document.getElementById('modal-payment-section');
-                    const totalSection = document.getElementById('modal-grand-total-section');
-                    const completeBtn = document.getElementById('showroomCompleteSaleBtn');
-
-                    if (isReadOnlyView) {
-                        // Change Right Column to "Order Summary" mode
-                        rightHeader.textContent = "Order Summary";
-                        if (rightSubHeader) rightSubHeader.classList.add('hidden');
-                        if (clientSection) clientSection.classList.add('hidden');
-                        if (shippingSection) shippingSection.classList.add('hidden');
-                        if (paymentSection) paymentSection.classList.add('hidden');
-                        if (totalSection) totalSection.classList.add('hidden');
-
-                        if (isForReview) {
-                            // Show "Cancel Request" instead of "Complete Sale"
-                            completeBtn.classList.remove('hidden');
-                            completeBtn.disabled = false;
-                            completeBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'shadow-blue-100', 'opacity-50', 'cursor-not-allowed');
-                            completeBtn.classList.add('bg-red-600', 'hover:bg-red-700', 'shadow-red-100');
-                            completeBtn.innerHTML = `<span>Cancel Request</span>`;
-                            completeBtn.onclick = () => cancelRequest(req.pr_no);
-                        } else {
-                            // Cancelled: Hide the button entirely
-                            completeBtn.classList.add('hidden');
-                        }
-                    } else {
-                        // Restore "Finalize Transaction" mode
-                        rightHeader.textContent = "Finalize Transaction";
-                        if (rightSubHeader) rightSubHeader.classList.remove('hidden');
-                        if (clientSection) clientSection.classList.remove('hidden');
-                        if (shippingSection) shippingSection.classList.remove('hidden');
-                        if (paymentSection) paymentSection.classList.remove('hidden');
-                        if (totalSection) totalSection.classList.remove('hidden');
-
-                        // Reset button to "Complete Sale" defaults
-                        completeBtn.classList.remove('hidden');
-                        completeBtn.classList.remove('bg-red-600', 'hover:bg-red-700', 'shadow-red-100');
-                        completeBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'shadow-blue-100');
-                        completeBtn.onclick = handleShowroomCompleteSale;
-
-                        if (!isApproved) {
-                            completeBtn.disabled = true;
-                            completeBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                            completeBtn.innerHTML = `<span>Awaiting Admin Approval</span>`;
-                        } else {
-                            completeBtn.disabled = false;
-                            completeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                            completeBtn.innerHTML = `<span>Complete Sale</span>`;
-                        }
-                    }
-
-                    // Cancel Button visibility (Left Column - may keep it or hide if redundant)
-                    // The user wanted the footer button to be the Cancel button for 'For Review'.
-                    const cancelContainer = document.getElementById('modal-cancel-container');
-                    if (status === 'pending') { // Only keep it here for Pending if not For Review
-                        cancelContainer.innerHTML = `
-                            <button onclick="cancelRequest(${req.pr_no})" 
-                                class="w-full py-4 bg-white border-2 border-red-50 text-red-600 font-bold rounded-2xl hover:bg-red-50 transition-all active:scale-95 uppercase text-[11px] tracking-widest shadow-sm">
-                                Cancel Request
-                            </button>
-                        `;
-                    } else {
-                        cancelContainer.innerHTML = '';
-                    }
-
-                    // Discount & Remarks
-                    document.getElementById('modal-discount-amount').textContent = `₱ ${parseFloat(req.discount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-                    document.getElementById('modal-remarks-text').textContent = req.comment || 'No remarks provided yet.';
-
-                    // Trigger summary detail population
-                    populateRequestSummary(req);
-
-                    // Show Modal
-                    modal.classList.remove('hidden');
-                    modal.classList.add('flex');
-                    setTimeout(() => {
-                        box.classList.remove('scale-95', 'opacity-0');
-                    }, 10);
-                }
-
-                function closeRequestInfoModal() {
-                    document.body.style.overflow = '';
-                    const modal = document.getElementById('requestInfoModal');
-                    const box = document.getElementById('requestInfoBox');
-                    box.classList.add('scale-95', 'opacity-0');
-                    setTimeout(() => {
-                        modal.classList.add('hidden');
-                        modal.classList.remove('flex');
-                    }, 300);
-                }
-
-                function cancelRequest(prNo) {
-                    window.showCustomConfirm?.(`Cancel Request #${prNo}?`, () => {
-                        fetch('../include/inc.showroom/sr.ctrl.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded'
-                                },
-                                body: `action=cancel_request&pr_no=${prNo}`
-                            })
-                            .then(r => r.json())
-                            .then(res => {
-                                if (res.success) {
-                                    showToast('Request cancelled successfully!', 'success');
-                                    location.reload();
-                                } else {
-                                    showToast(res.error || 'Failed to cancel request.', 'error');
-                                }
-                            });
-                    });
-                }
-
-                // --- PROCEED MODAL LOGIC ---
-                /**
-                 * Populates the right-hand "Finalize Transaction" UI with data from the specific request
-                 */
-                async function populateRequestSummary(req) {
-                    const tableBody = document.getElementById("summaryTableBody");
-                    const grandTotalEl = document.getElementById("summaryGrandTotal");
-                    const itemCountEl = document.getElementById("summaryItemCount");
-                    const amountPaidInput = document.getElementById("amountPaid");
-                    const hiddenOrderId = document.getElementById("hidden-order-id");
-
-                    if (!tableBody || !grandTotalEl || !itemCountEl) return;
-
-                    // Reset view
-                    tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-gray-400 opacity-50 italic">Loading order details...</td></tr>`;
-
-                    try {
-                        // Fetch items for this specific order
-                        const response = await fetch(`../include/inc.showroom/sr.ctrl.php?action=get_items&pr_no=${req.pr_no}`);
-                        const data = await response.json();
-
-                        if (data.success && data.items) {
-                            tableBody.innerHTML = "";
-                            let total = 0;
-                            let count = 0;
-
-                            if (data.items.length === 0) {
-                                tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-gray-400 opacity-50 italic uppercase">No items found for this request.</td></tr>`;
-                            } else {
-                                data.items.forEach((item) => {
-                                    const qty = parseInt(item.quantity);
-                                    const price = parseFloat(item.price);
-                                    const subtotal = price * qty;
-                                    total += subtotal;
-                                    count += qty;
-
-                                    const srcBadge = item.location === "SR" ? "bg-red-600" : "bg-gray-800";
-
-                                    const html = `
-                                <tr class="hover:bg-gray-50/50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <span class="${srcBadge} text-white text-[9px] px-2 py-1 rounded-md font-black shadow-sm uppercase italic">${item.location}</span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <h1 class="text-sm font-black text-gray-900 leading-tight">${item.prod_name}</h1>
-                                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">${item.variant} &bull; ${item.location === "SR" ? "Showroom" : "Warehouse"}</p>
-                                    </td>
-                                    <td class="px-6 py-4 text-center">
-                                        <span class="text-sm font-black text-gray-600">${qty}x</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <span class="text-sm font-black text-gray-900">₱${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                    </td>
-                                </tr>
-                            `;
-                                    tableBody.insertAdjacentHTML("beforeend", html);
-                                });
-                            }
-
-                            // Update Global for order.js calculations
-                            window.currentCheckoutTotal = total;
-
-                            if (hiddenOrderId) hiddenOrderId.innerText = req.id;
-                            itemCountEl.innerText = `${count} Items`;
-                            grandTotalEl.innerText = `₱${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-
-                            // Fill Client Info dynamically
-                            const info = data.details;
-                            if (document.getElementById("clientName")) document.getElementById("clientName").value = info.customer_name || "";
-                            if (document.getElementById("clientContact")) document.getElementById("clientContact").value = info.contact_no || "";
-                            if (document.getElementById("adminDiscount")) document.getElementById("adminDiscount").value = info.admin_discount || 0;
-                            if (document.getElementById("shippingMode")) document.getElementById("shippingMode").value = info.shipping_type || "pickup";
-                            if (document.getElementById("deliveryAddress")) document.getElementById("deliveryAddress").value = info.delivery_address || "";
-
-                            // Adjust UI based on initial data
-                            if (typeof toggleAddress === "function") toggleAddress(info.shipping_type || "pickup");
-
-                             // Auto-fill payment amount for full payment
-                             if (amountPaidInput) {
-                                 amountPaidInput.value = total.toFixed(2);
-                             }
-
-                             // Initial calculation (minimal for full payment)
-                             const totalWithInterestHidden = document.getElementById("totalWithInterest");
-                             if (totalWithInterestHidden) totalWithInterestHidden.value = total.toFixed(2);
-                        } else {
-                            tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-red-500">Failed to load request items.</td></tr>`;
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-red-500">Error fetching data.</td></tr>`;
-                    }
-                }
-
-                /**
-                 * Combined Finalization logic for Showroom Request
-                 */
-                async function handleShowroomCompleteSale() {
-                    const btn = document.getElementById("showroomCompleteSaleBtn");
-                    const orderId = document.getElementById("hidden-order-id")?.innerText;
-
-                    if (!btn || btn.disabled || !orderId) return;
-
-                    const payload = {
-                        action: "finalize_order",
-                        order_id: orderId,
-                        customer_name: document.getElementById("clientName")?.value.trim(),
-                        clientType: 'Private / Individual',
-                        govBranch: null,
-                        contact_no: document.getElementById("clientContact")?.value.trim(),
-                        adminDiscount: document.getElementById("adminDiscount")?.value || 0,
-                        order_type: document.getElementById("shippingMode")?.value,
-                        address: document.getElementById("deliveryAddress")?.value.trim(),
-                        transactionType: 'full',
-                        interestRate: 0,
-                        installmentTerm: 1,
-                        paymentMethod: document.getElementById("paymentMethod")?.value,
-                        paymentRef: document.getElementById("paymentRef")?.value.trim(),
-                        amountPaid: document.getElementById("amountPaid")?.value || 0,
-                        paymentRemarks: document.getElementById("paymentRemarks")?.value.trim(),
-                        totalWithInterest: document.getElementById("amountPaid")?.value || 0,
-                        balance: 0,
-                    };
-
-                    if (!payload.customer_name) {
-                        Swal.fire('Required', 'Customer name is required.', 'warning');
-                        return;
-                    }
-
-                    Swal.fire({
-                        title: 'Finalize Order?',
-                        text: "This will record the transaction and update inventory.",
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#2563eb',
-                        confirmButtonText: 'Yes, Process Sale'
-                    }).then(async (result) => {
-                        if (result.isConfirmed) {
-                            btn.disabled = true;
-                            btn.innerHTML = `<span class="animate-pulse">Processing...</span>`;
-
-                            const formData = new FormData();
-                            for (const key in payload) formData.append(key, payload[key]);
-
-                            try {
-                                const res = await fetch("../include/inc.showroom/sr.ctrl.php", {
-                                    method: "POST",
-                                    body: formData
-                                });
-                                const result = await res.json();
-                                if (result.success) {
-                                    Swal.fire('Success', 'Transaction completed!', 'success').then(() => window.location.reload());
-                                } else {
-                                    Swal.fire('Failed', result.message || "Could not finalize.", 'error');
-                                    btn.disabled = false;
-                                    btn.innerText = "Complete Sale";
-                                }
-                            } catch (err) {
-                                console.error(err);
-                                btn.disabled = false;
-                                btn.innerText = "Complete Sale";
-                            }
-                        }
-                    });
-                }
-
-                // --- DEPRECATED PROCEED MODAL LOGIC ---
-                function openProceedModal(prNo, customerName) {
-                    document.body.style.overflow = 'hidden';
-                    document.getElementById('display-pr-no').textContent = prNo;
-                    document.getElementById('proceed-order-id').value = prNo;
-                    document.getElementById('proceed-customer-name').value = customerName;
-
-                    const modal = document.getElementById('proceedModal');
-                    const box = document.getElementById('proceedModalBox');
-                    modal.classList.remove('hidden');
-                    modal.classList.add('flex');
-                    setTimeout(() => {
-                        box.classList.remove('scale-95', 'opacity-0');
-                    }, 10);
-                }
-
-                function closeProceedModal() {
-                    document.body.style.overflow = '';
-                    const modal = document.getElementById('proceedModal');
-                    const box = document.getElementById('proceedModalBox');
-                    box.classList.add('scale-95', 'opacity-0');
-                    setTimeout(() => {
-                        modal.classList.add('hidden');
-                        modal.classList.remove('flex');
-                    }, 200);
-                }
-
-                // --- GLOBAL INITIALIZATION ---
-                document.addEventListener('DOMContentLoaded', () => {
-                    if (typeof updateCartBadgeCount === 'function') updateCartBadgeCount();
-                });
-            </script>
+            <!-- External JS for Showroom Order Requests -->
+            <script src="../../public/assets/js/sr-order-req.js?v=<?= time() ?>" defer></script>
 
             <style>
                 .custom-scrollbar::-webkit-scrollbar {

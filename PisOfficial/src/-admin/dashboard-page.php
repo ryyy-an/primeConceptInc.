@@ -51,6 +51,7 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync | Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
@@ -315,76 +316,97 @@ if (isset($_SESSION['user_id'])) {
                 </div>
 
                 <div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 overflow-hidden mt-8">
-                    <div class="p-8 border-b border-gray-50 flex justify-between items-center bg-white">
+                    <div class="p-8 border-b border-gray-50 flex flex-col lg:flex-row justify-between items-center bg-white gap-6">
                         <div class="flex items-center gap-5">
-                            <div class="size-14 bg-orange-50 rounded-2xl flex items-center justify-center border border-orange-100 shadow-sm">
-                                <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            <div class="size-14 bg-orange-600 rounded-2xl flex items-center justify-center border border-orange-700 shadow-lg shadow-orange-100">
+                                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="text-xl font-bold text-gray-800 tracking-tight leading-none mb-1">Government Pending Payments</h3>
-                                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-none"><?= count($govOrders) ?> pending accounts</p>
+                                <h3 class="text-xl font-bold text-gray-800 tracking-tight leading-none mb-1">Accounts Receivable</h3>
+                                <p id="receivableCount" class="text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-none">0 pending accounts</p>
                             </div>
                         </div>
+
+                        <!-- Collection Type Filter -->
+                        <div class="flex items-center bg-gray-50 p-1 rounded-xl border border-gray-100">
+                            <button onclick="filterReceivables('All')" class="receivable-tab px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-white text-gray-900 shadow-sm border border-gray-100">All</button>
+                            <button onclick="filterReceivables('Government')" class="receivable-tab px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all text-gray-400 hover:text-gray-600">Government</button>
+                            <button onclick="filterReceivables('Private')" class="receivable-tab px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all text-gray-400 hover:text-gray-600">Private</button>
+                        </div>
+
                         <div class="text-right">
                             <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Outstanding</p>
-                            <p class="text-2xl font-black text-orange-600 tracking-tighter leading-none">₱<?= number_format((float)$totalGovOutstanding) ?></p>
+                            <p id="receivableTotal" class="text-2xl font-black text-red-600 tracking-tighter leading-none">₱0</p>
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto min-h-[300px]">
                         <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-bold tracking-widest border-b border-gray-100">
+                            <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest border-b border-gray-100">
                                 <tr>
                                     <th class="px-8 py-4">ID</th>
-                                    <th class="px-8 py-4">Agency</th>
-                                    <th class="px-8 py-4 text-center">Branch</th>
-                                    <th class="px-8 py-4 text-center">Order Date</th>
-                                    <th class="px-8 py-4 text-right">Amount</th>
+                                    <th class="px-8 py-4">Client / Agency</th>
+                                    <th class="px-8 py-4 text-center">Type</th>
+                                    <th class="px-8 py-4 text-center text-xs">Due</th>
                                     <th class="px-8 py-4 text-right">Balance</th>
                                     <th class="px-8 py-4 text-center">Status</th>
+                                    <th class="px-8 py-4 text-center">Action</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-50 text-sm">
-                                <?php if (!empty($govOrders)): ?>
-                                    <?php foreach ($govOrders as $order):
-                                        $date = date('Y-m-d', strtotime($order['created_at']));
-                                        $status = strtolower($order['status']);
-                                        $statusClass = $status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
-                                    ?>
-                                        <tr class="hover:bg-gray-50/50 transition-colors group">
-                                            <td class="px-8 py-5 font-bold text-gray-900">#<?= $order['id'] ?></td>
-                                            <td class="px-8 py-5">
-                                                <div class="font-bold text-gray-700 leading-snug"><?= htmlspecialchars($order['agency']) ?></div>
-                                            </td>
-                                            <td class="px-8 py-5 text-center text-gray-400 text-[11px] font-bold uppercase tracking-widest"><?= htmlspecialchars($order['branch'] ?? 'N/A') ?></td>
-                                            <td class="px-8 py-5 text-center text-gray-500 font-mono text-xs"><?= $date ?></td>
-                                            <td class="px-8 py-5 text-right font-bold text-gray-900 tracking-tight">₱<?= number_format((float)$order['total']) ?></td>
-                                            <td class="px-8 py-5 text-right font-bold text-orange-600 tracking-tight">₱<?= number_format((float)$order['balance']) ?></td>
-                                            <td class="px-8 py-5 text-center">
-                                                <span class="px-3 py-1 rounded-full text-[10px] font-bold <?= $statusClass ?> uppercase tracking-tighter border border-white/50">
-                                                    <?= htmlspecialchars($order['status']) ?>
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr>
-                                        <td colspan="7" class="px-8 py-20 text-center">
-                                            <div class="flex flex-col items-center gap-3">
-                                                <div class="size-16 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100">
-                                                    <svg class="w-8 h-8 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                </div>
-                                                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">No pending government payments</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
+                            <tbody id="receivablesContent" class="divide-y divide-gray-50 text-sm">
+                                <!-- Data injected via JS -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Record Collection Modal -->
+                <div id="collectionModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 transition-all duration-300">
+                    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+                        <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-orange-50/30">
+                            <div class="flex items-center gap-3">
+                                <div class="size-10 bg-orange-600 rounded-xl flex items-center justify-center text-white">
+                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-black text-gray-900 uppercase">Record Collection</h3>
+                                    <p id="collInfo" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Order #00000</p>
+                                </div>
+                            </div>
+                            <button onclick="toggleCollectionModal(false)" class="text-gray-400 hover:text-red-500 transition-colors">
+                                <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" /></svg>
+                            </button>
+                        </div>
+                        <div class="p-6 space-y-5">
+                            <input type="hidden" id="collOrderId">
+                            <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Outstanding Balance</p>
+                                <p id="collBalance" class="text-xl font-black text-gray-900">₱0.00</p>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Amount Received</label>
+                                    <div class="relative">
+                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black">₱</span>
+                                        <input type="number" id="collAmount" class="w-full bg-white border border-gray-200 rounded-2xl pl-8 pr-4 py-3 text-sm font-black text-gray-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-50 transition-all shadow-sm" placeholder="0.00">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">OR / Reference Number</label>
+                                    <input type="text" id="collRef" class="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm font-black text-gray-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-50 transition-all shadow-sm uppercase tracking-widest" placeholder="OR-XXXX">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6 bg-gray-50 border-t border-gray-100">
+                            <button onclick="submitCollection()" class="w-full bg-orange-600 text-white rounded-2xl py-4 text-xs font-black uppercase tracking-widest hover:bg-orange-700 hover:shadow-lg hover:shadow-orange-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" /></svg>
+                                Record Payment
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -641,10 +663,133 @@ if (isset($_SESSION['user_id'])) {
                 renderLowStockTable();
             };
 
+            // --- ACCOUNTS RECEIVABLE LOGIC ---
+            let currentReceivableFilter = 'All';
+
+            window.fetchReceivables = function() {
+                const content = document.getElementById('receivablesContent');
+                const countDisplay = document.getElementById('receivableCount');
+                const totalDisplay = document.getElementById('receivableTotal');
+
+                content.innerHTML = `<tr><td colspan="7" class="py-20 text-center"><div class="animate-spin size-6 border-4 border-gray-100 border-t-orange-600 rounded-full mx-auto mb-2"></div></td></tr>`;
+
+                fetch(`../include/inc.admin/admin.ctrl.php?action=get_receivables&type=${currentReceivableFilter}`)
+                    .then(res => res.json())
+                    .then(response => {
+                        if (response.success) {
+                            countDisplay.innerText = `${response.stats.count} pending accounts`;
+                            totalDisplay.innerText = `₱${response.stats.total.toLocaleString()}`;
+
+                            if (response.data.length === 0) {
+                                content.innerHTML = `<tr><td colspan="7" class="py-20 text-center"><p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">No pending collections found</p></td></tr>`;
+                                return;
+                            }
+
+                            content.innerHTML = response.data.map(row => `
+                                <tr class="hover:bg-orange-50/20 transition group">
+                                    <td class="px-8 py-5 font-bold text-gray-900 leading-none">
+                                        <p class="text-[10px] text-gray-400 font-mono mb-1 tracking-tighter">#ORD-${row.id.toString().padStart(5, '0')}</p>
+                                        <p class="text-[9px] font-black text-orange-600 uppercase border-l-2 border-orange-500 pl-2 leading-none">${row.or_number || 'NO-REF'}</p>
+                                    </td>
+                                    <td class="px-8 py-5">
+                                        <div class="font-black text-gray-800 uppercase tracking-tighter leading-tight">${row.client_name}</div>
+                                        <p class="text-[10px] text-gray-400 font-medium">${row.branch || 'Independent Branch'}</p>
+                                    </td>
+                                    <td class="px-8 py-5 text-center">
+                                        <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${row.client_type === 'Government' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}">
+                                            ${row.client_type}
+                                        </span>
+                                    </td>
+                                    <td class="px-8 py-5 text-center text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                                        ${new Date(row.created_at).toLocaleDateString()}
+                                    </td>
+                                    <td class="px-8 py-5 text-right font-black text-gray-900 leading-none">
+                                        <p class="text-sm font-black">₱${parseFloat(row.balance).toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                                        <p class="text-[9px] text-gray-300 font-medium mt-1">OF ₱${parseFloat(row.total).toLocaleString()}</p>
+                                    </td>
+                                    <td class="px-8 py-5 text-center">
+                                        <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${row.status === 'Ongoing' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-gray-50 text-gray-400 border-gray-100'}">
+                                            ${row.status}
+                                        </span>
+                                    </td>
+                                    <td class="px-8 py-5 text-center">
+                                        <button onclick='openCollectionModal(${JSON.stringify({id: row.id, name: row.client_name, balance: row.balance, or: row.or_number}).replace(/'/g, "&apos;")})' 
+                                            class="size-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-orange-600 hover:text-white hover:border-orange-700 transition-all shadow-sm">
+                                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" /></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }
+                    });
+            };
+
+            window.filterReceivables = function(type) {
+                currentReceivableFilter = type;
+                document.querySelectorAll('.receivable-tab').forEach(btn => {
+                    const isActive = btn.innerText.trim().toLowerCase() === type.toLowerCase();
+                    btn.classList.toggle('bg-white', isActive);
+                    btn.classList.toggle('text-gray-900', isActive);
+                    btn.classList.toggle('shadow-sm', isActive);
+                    btn.classList.toggle('border', isActive);
+                    btn.classList.toggle('border-gray-100', isActive);
+                    btn.classList.toggle('text-gray-400', !isActive);
+                });
+                fetchReceivables();
+            };
+
+            window.toggleCollectionModal = function(show) {
+                document.getElementById('collectionModal').classList.toggle('hidden', !show);
+                if (!show) {
+                    document.getElementById('collAmount').value = '';
+                    document.getElementById('collRef').value = '';
+                }
+            };
+
+            window.openCollectionModal = function(data) {
+                document.getElementById('collOrderId').value = data.id;
+                document.getElementById('collInfo').innerText = `Order #ORD-${data.id.toString().padStart(5, '0')} (${data.or || 'NO OR'})`;
+                document.getElementById('collBalance').innerText = `₱${parseFloat(data.balance).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                toggleCollectionModal(true);
+            };
+
+            window.submitCollection = function() {
+                const orderId = document.getElementById('collOrderId').value;
+                const amount = document.getElementById('collAmount').value;
+                const ref = document.getElementById('collRef').value;
+
+                if (!amount || parseFloat(amount) <= 0) {
+                    alert('Please enter a valid amount');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('order_id', orderId);
+                formData.append('amount', amount);
+                formData.append('reference', ref);
+
+                fetch(`../include/inc.admin/admin.ctrl.php?action=record_collection`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(response => {
+                    if (response.success) {
+                        toggleCollectionModal(false);
+                        fetchReceivables();
+                        // Also refresh recent orders if they are on same page
+                        renderRecentOrdersTable();
+                    } else {
+                        alert(response.error || 'Failed to record payment');
+                    }
+                });
+            };
+
             // Initial Render
             document.addEventListener('DOMContentLoaded', function() {
                 renderLowStockTable();
                 renderRecentOrdersTable();
+                fetchReceivables();
                 
                 // Existing charts...
                 const salesCtx = document.getElementById('salesTrendChart').getContext('2d');

@@ -18,8 +18,13 @@ if (isset($_SESSION['user_id'])) {
 
     // Fetch total cart items for notification badge
     require_once '../include/global.model.php';
+    require_once '../include/inc.showroom/sr.model.php';
+    
     $cartItemsCount = count(get_cart_items($pdo, $userId));
     $totalCartItems = $cartItemsCount;
+
+    // Fetch transactions
+    $transactions = fetch_sr_transaction_history($pdo, $userId);
 
     // Fetch counts for the stats cards
     $totalProducts = (int)$pdo->query("SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0")->fetchColumn();
@@ -44,6 +49,7 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync | Transaction History</title>
+    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
@@ -182,9 +188,7 @@ if (isset($_SESSION['user_id'])) {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
-                        <?php 
-                        // Note: This would normally be fetched from a model. Using static empty state for now to match design instructions.
-                        if (true): ?>
+                        <?php if (empty($transactions)): ?>
                             <tr>
                                 <td colspan="7" class="px-6 py-15 text-center">
                                     <div class="flex flex-col items-center gap-3">
@@ -197,22 +201,64 @@ if (isset($_SESSION['user_id'])) {
                                     </div>
                                 </td>
                             </tr>
+                        <?php else: ?>
+                            <?php foreach ($transactions as $trans): ?>
+                                <tr class="hover:bg-gray-50/50 transition duration-200">
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-black text-gray-900">#<?= htmlspecialchars((string)$trans['trans_id']) ?></span>
+                                            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-tight">System Record</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-bold text-gray-900"><?= htmlspecialchars($trans['customer_name']) ?></span>
+                                            <span class="text-[10px] font-black text-red-500 uppercase"><?= htmlspecialchars($trans['client_type']) ?></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <span class="text-xs font-bold text-gray-600"><?= htmlspecialchars($trans['gov_branch'] ?? 'N/A') ?></span>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="size-6 bg-gray-100 rounded flex items-center justify-center">
+                                                <svg class="size-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                </svg>
+                                            </div>
+                                            <span class="text-xs font-black text-gray-900 uppercase"><?= htmlspecialchars($trans['method']) ?></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4 text-center">
+                                        <span class="text-xs font-bold text-gray-600"><?= date('M d, Y', strtotime($trans['date'])) ?></span>
+                                    </td>
+                                    <td class="px-4 py-4 text-center">
+                                        <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter border <?= $trans['status'] === 'Success' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100' ?>">
+                                            <?= htmlspecialchars($trans['status']) ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-4 text-right">
+                                        <span class="text-sm font-black text-gray-900 underline decoration-red-200 underline-offset-4">₱<?= number_format((float)$trans['amount'], 2) ?></span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
                 </table>
-            </div>      <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                    <div class="text-xs font-black text-gray-400 uppercase tracking-widest">
-                        Showing 0 to 0 of 0 Results
+            </div>
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div class="text-xs font-black text-gray-400 uppercase tracking-widest">
+                    Showing <?= count($transactions) ?> of <?= count($transactions) ?> Results
+                </div>
+                <div class="flex gap-3">
+                    <div class="px-5 py-2 border border-gray-300 rounded-lg text-xs font-black text-gray-400 uppercase tracking-tight opacity-50 cursor-not-allowed">
+                        Previous
                     </div>
-                    <div class="flex gap-3">
-                        <div class="px-5 py-2 border border-gray-300 rounded-lg text-xs font-black text-gray-400 uppercase tracking-tight opacity-50">
-                            Previous
-                        </div>
-                        <div class="px-5 py-2 bg-red-600 border border-red-600 rounded-lg text-xs font-black text-white uppercase tracking-tight shadow-md opacity-50">
-                            Next Page
-                        </div>
+                    <div class="px-5 py-2 bg-red-600 border border-red-600 rounded-lg text-xs font-black text-white uppercase tracking-tight shadow-md opacity-50 cursor-not-allowed">
+                        Next Page
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     </div>

@@ -63,6 +63,7 @@ function getInitials($name)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
+    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
@@ -208,6 +209,20 @@ function getInitials($name)
                         <span class="text-[10px] text-gray-400 font-medium">Coming Soon</span>
                     </div>
                 </a>
+
+                <!-- System Info & Diagnostics -->
+                <a href="javascript:void(0)" onclick="showSettingSection('systemInfo')" id="systemInfoLink"
+                    class="flex items-center gap-3 px-6 py-4 rounded-2xl text-gray-400 hover:bg-gray-50 transition duration-300 group">
+                    <div class="size-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300">
+                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-6-9a3 3 0 116 0 3 3 0 01-6 0zm11 2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 012-2 2 2 0 012-2h10z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="text-sm font-black uppercase tracking-widest block">System Info</span>
+                        <span class="text-[10px] text-gray-400 font-medium">Diagnostics & Health</span>
+                    </div>
+                </a>
             </nav>
         </aside>
 
@@ -256,6 +271,8 @@ function getInitials($name)
                                         showToast("User has been successfully removed from the system.", "success");
                                     <?php elseif ($_GET['success'] === 'user_added'): ?>
                                         showToast("New staff member has been successfully registered!", "success");
+                                    <?php elseif ($_GET['success'] === 'migration_complete'): ?>
+                                        showToast("Database migration and reset completed successfully!", "success");
                                     <?php endif; ?>
                                 <?php endif; ?>
 
@@ -264,6 +281,8 @@ function getInitials($name)
                                         showToast("You cannot delete your own account while logged in.", "error");
                                     <?php elseif ($_GET['error'] === 'numeric_name'): ?>
                                         showToast("Full name cannot contain numeric characters.", "error");
+                                    <?php elseif ($_GET['error'] === 'migration_failed'): ?>
+                                        showToast("Database migration failed. Please check log files.", "error");
                                     <?php else: ?>
                                         showToast("An error occurred processing your request.", "error");
                                     <?php endif; ?>
@@ -378,8 +397,57 @@ function getInitials($name)
                 </div>
             </section>
 
-            <!-- System Configuration (Populated with business parameters) -->
+            <!-- System Configuration -->
             <section id="placeholderSection" class="hidden flex-1 bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+                <!-- ... existing placeholder content ... -->
+            </section>
+
+            <!-- System Info & Diagnostics Section -->
+            <section id="systemInfoSection" class="hidden flex-1 flex flex-col gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- DB Card -->
+                    <div class="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm flex flex-col justify-between h-[200px] border-l-8 border-l-red-600">
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Connected Database</p>
+                            <h3 id="diag_db_name" class="text-2xl font-black text-gray-900 tracking-tight">---</h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="size-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span id="diag_status" class="text-xs font-bold text-green-600 uppercase tracking-tighter">Operational</span>
+                        </div>
+                    </div>
+
+                    <!-- Version Card -->
+                    <div class="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm h-[200px] flex flex-col justify-center">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">DB Version</p>
+                        <h3 id="diag_db_version" class="text-2xl font-black text-gray-900 tracking-tight">---</h3>
+                    </div>
+
+                    <!-- Maintenance Card -->
+                    <div class="bg-red-50 border border-red-100 rounded-3xl p-8 shadow-sm h-[200px] flex flex-col justify-between">
+                        <div>
+                            <p class="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">System Reset</p>
+                            <h3 class="text-sm font-bold text-red-900 leading-tight">Perform full database migration and factory reset.</h3>
+                        </div>
+                        <button onclick="confirmMigration()" 
+                                class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-lg shadow-red-200">
+                            Run Migration
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-8 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-black text-gray-900 tracking-tight uppercase">Database Schema Overview</h3>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live table metrics and row counts</p>
+                        </div>
+                    </div>
+                    <div id="diag_table_list" class="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Dynamic items from loadDiagnostics() -->
+                    </div>
+                </div>
+            </section>
                 <div class="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
                     <div class="flex items-center gap-4">
                         <div class="size-12 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-100">
