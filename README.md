@@ -1,1 +1,1 @@
-# primeConceptInc.
+# primeConceptInc
