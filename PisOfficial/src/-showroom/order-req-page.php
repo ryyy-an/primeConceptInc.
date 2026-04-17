@@ -43,15 +43,21 @@ if (isset($_SESSION['user_id'])) {
     $requests = fetch_requests($pdo, $userId, $filters, $limit, $offset);
 
 
-    // Fetch counts for the stats cards
-    $totalProducts = $pdo->query("SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0")->fetchColumn();
-    $totalTransactions = $pdo->prepare("SELECT COUNT(*) FROM transactions t JOIN orders o ON t.order_id = o.id WHERE o.created_by = ?");
-    $totalTransactions->execute([$userId]);
-    $totalTransactionsCount = $totalTransactions->fetchColumn();
+    // --- OPTIMIZED STATS FETCHING (Consolidated) ---
+    // Fetch all needed counts in fewer round-trips to the DB
+    $statsQuery = $pdo->prepare("
+        SELECT 
+            (SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0) as total_products,
+            (SELECT COUNT(*) FROM transactions t JOIN orders o ON t.order_id = o.id WHERE o.created_by = :uid1) as total_transactions,
+            (SELECT COUNT(*) FROM orders WHERE created_by = :uid2 AND status IN ('For Review', 'Approved')) as pending_requests
+    ");
+    $statsQuery->execute([':uid1' => $userId, ':uid2' => $userId]);
+    $stats = $statsQuery->fetch(PDO::FETCH_ASSOC);
 
-    $pendingRequests = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_by = ? AND status IN ('For Review', 'Approved')");
-    $pendingRequests->execute([$userId]);
-    $pendingRequestsCount = $pendingRequests->fetchColumn();
+    $totalProducts = $stats['total_products'] ?? 0;
+    $totalTransactionsCount = $stats['total_transactions'] ?? 0;
+    $pendingRequestsCount = $stats['pending_requests'] ?? 0;
+    // --- END OPTIMIZATION ---
 } else {
     header("Location: ../../public/index.php");
     exit;
@@ -784,8 +790,7 @@ if (isset($_SESSION['user_id'])) {
                 </div>
             </div>
 
-            <!-- External JS for Showroom Order Requests -->
-            <script src="../../public/assets/js/sr-order-req.js?v=<?= time() ?>" defer></script>
+            <script src="../../public/assets/js/sr-order-req.js?v=1.3.0" defer></script>
 
             <style>
                 .custom-scrollbar::-webkit-scrollbar {

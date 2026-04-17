@@ -34,10 +34,19 @@ if (isset($_GET['tab'])) {
 }
 
 
-// Fetch counts for the stats cards
-$totalProducts = $pdo->query("SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0")->fetchColumn();
-$totalTransactions = $pdo->query("SELECT COUNT(*) FROM transactions")->fetchColumn();
-$pendingRequests = $pdo->query("SELECT COUNT(*) FROM orders WHERE status = 'Pending'")->fetchColumn();
+// --- OPTIMIZED STATS FETCHING ---
+$statsQuery = $pdo->query("
+    SELECT 
+        (SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0) as total_products,
+        (SELECT COUNT(*) FROM transactions) as total_transactions,
+        (SELECT COUNT(*) FROM orders WHERE status = 'Pending') as pending_requests
+");
+$stats = $statsQuery->fetch(PDO::FETCH_ASSOC);
+
+$totalProducts = $stats['total_products'] ?? 0;
+$totalTransactions = $stats['total_transactions'] ?? 0;
+$pendingRequests = $stats['pending_requests'] ?? 0;
+// --- END OPTIMIZATION ---
 ?>
 
 <!DOCTYPE html>
@@ -49,8 +58,8 @@ $pendingRequests = $pdo->query("SELECT COUNT(*) FROM orders WHERE status = 'Pend
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js?v=1.2" defer></script>
-    <script src="../../public/assets/js/order.js"></script>
+    <script src="../../public/assets/js/global.js?v=1.3.0" defer></script>
+    <script src="../../public/assets/js/order.js?v=1.3.0" defer></script>
     <?php include '../include/toast.php'; ?>
 
 

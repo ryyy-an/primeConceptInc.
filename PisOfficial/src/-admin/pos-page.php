@@ -41,8 +41,8 @@ if (isset($_SESSION['user_id'])) {
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js?v=<?= time() ?>" defer></script>
-    <script src="../../public/assets/js/order.js?v=<?= time() ?>" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.3.0" defer></script>
+    <script src="../../public/assets/js/order.js?v=1.3.0" defer></script>
 
 
     <style>

@@ -65,7 +65,7 @@ function getInitials($name)
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
-    <script src="../../public/assets/js/settings.js?v=<?= time() ?>" defer></script>
+    <script src="../../public/assets/js/settings.js?v=1.3.0" defer></script>
 
 
     <style>
