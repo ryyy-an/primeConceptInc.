@@ -1,6 +1,7 @@
 <?php
 
-session_start();
+require_once '../include/config.php';
+
 // run check using if else
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $username = $_POST["username"];
@@ -24,11 +25,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $errors['invalid_creds'] = "Invalid  Credentials, Please Try Again";
         }
 
-       if (!is_username_wrong($result) && is_password_wrong($password, $result['password_hash'], $pdo, $username)) {
-    $errors['invalid_creds'] = "Invalid Credentials, Please Try Again";
-}
-
-        require_once '../include/config.php';
+        if (!is_username_wrong($result) && is_password_wrong($password, $result['password_hash'], $pdo, $username)) {
+            $errors['invalid_creds'] = "Invalid Credentials, Please Try Again";
+        }
 
         if (!empty($errors)) {
             $_SESSION['login_errors'] = $errors;

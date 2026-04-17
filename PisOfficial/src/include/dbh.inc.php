@@ -1,10 +1,11 @@
 <?php
 
-$dbHost = getenv('MYSQLHOST') ?: "localhost";
-$dbName = getenv('MYSQLDATABASE') ?: "pis-sys-db";
-$dbUser = getenv('MYSQLUSER') ?: "root";
-$dbPass = getenv('MYSQLPASSWORD') ?: "";
-$dbPort = getenv('MYSQLPORT') ?: "3306";
+// Priority: Railway Env Vars -> System getenv -> Localhost fallback
+$dbHost = $_ENV['MYSQLHOST']     ?? getenv('MYSQLHOST')     ?? "localhost";
+$dbName = $_ENV['MYSQLDATABASE'] ?? getenv('MYSQLDATABASE') ?? "pis-sys-db";
+$dbUser = $_ENV['MYSQLUSER']     ?? getenv('MYSQLUSER')     ?? "root";
+$dbPass = $_ENV['MYSQLPASSWORD'] ?? getenv('MYSQLPASSWORD') ?? "";
+$dbPort = $_ENV['MYSQLPORT']     ?? getenv('MYSQLPORT')     ?? "3306";
 
 // DSN (Data Source Name)
 $dsn = "mysql:host=" . $dbHost . ";port=" . $dbPort . ";dbname=" . $dbName;
