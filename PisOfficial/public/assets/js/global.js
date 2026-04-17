@@ -248,7 +248,7 @@ function applyPosFilters() {
     }
   });
 
-  const noResults = document.getElementById("noResults");
+  const noResults = document.getElementById("noResults") || document.getElementById("posNoResults");
   if (noResults) {
     if (anyVisible) {
       noResults.classList.add("hidden");
@@ -274,10 +274,6 @@ window.addEventListener("click", function (event) {
  * LOGOUT MODAL (devRyan)
  */
 window.toggleLogoutModal = function (show) {
-  console.log("Toggle Logout Modal Called. Show:", show);
-  // Temporary Alert for Diagnostics
-  if (show) alert("Opening Logout Modal...");
-  
   if (show) {
     window.openModal("logout-modal");
   } else {
@@ -508,20 +504,17 @@ async function handleAddToCart() {
     if (data.success) {
       closeModal("addToCartModal");
 
-      // Show Toast
-      if (typeof window.showToast === "function") {
-        const productName = modalState.product
-          ? modalState.product.name
-          : "Product";
-        window.showToast(
-          `${productName} successfully added to the cart`,
-          "success",
-        );
-      } else if (typeof showCustomSuccess === "function") {
-        showCustomSuccess("Product added to cart successfully!");
-      } else {
-        showCustomSuccess("Product added to cart successfully!");
-      }
+      // Delay toast slightly to ensure modal is clearing
+      setTimeout(() => {
+        if (typeof window.showToast === "function") {
+          const productName = modalState.product ? modalState.product.name : "Product";
+          window.showToast(`${productName} successfully added to the cart`, "success");
+        } else if (typeof showCustomSuccess === "function") {
+          showCustomSuccess("Product added to cart successfully!");
+        } else {
+          showCustomSuccess("Product added to cart successfully!");
+        }
+      }, 300);
 
       if (typeof populateOrderSummary === "function") populateOrderSummary();
       if (typeof updateCartBadgeCount === "function") updateCartBadgeCount();

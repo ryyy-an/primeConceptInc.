@@ -476,6 +476,7 @@ if (isset($_SESSION['user_id'])) {
 
     </div>
 
+    <?php include '../include/logout-modal.php'; ?>
 </body>
 
 </html>

@@ -8,12 +8,10 @@
  */
 window.showSettingSection = function (section) {
   const userSec = document.getElementById("userManagementSection");
-  const placeholderSec = document.getElementById("placeholderSection");
-  const systemInfoSec = document.getElementById("systemInfoSection");
+  const reportsBackupSec = document.getElementById("reportsBackupSection");
 
   const userLink = document.getElementById("userManagementLink");
-  const placeholderLink = document.getElementById("placeholderLink");
-  const systemInfoLink = document.getElementById("systemInfoLink");
+  const reportsBackupLink = document.getElementById("reportsBackupLink");
 
   const activeClasses = [
     "bg-red-600",
@@ -29,10 +27,10 @@ window.showSettingSection = function (section) {
   ];
 
   // Hide all
-  [userSec, placeholderSec, systemInfoSec].forEach(
+  [userSec, reportsBackupSec].forEach(
     (s) => s && s.classList.add("hidden"),
   );
-  [userLink, placeholderLink, systemInfoLink].forEach((l) => {
+  [userLink, reportsBackupLink].forEach((l) => {
     if (l) {
       l.classList.remove(...activeClasses);
       l.classList.add(...inactiveClasses);
@@ -43,15 +41,10 @@ window.showSettingSection = function (section) {
     userSec.classList.remove("hidden");
     userLink.classList.remove(...inactiveClasses);
     userLink.classList.add(...activeClasses);
-  } else if (section === "placeholder") {
-    placeholderSec.classList.remove("hidden");
-    placeholderLink.classList.remove(...inactiveClasses);
-    placeholderLink.classList.add(...activeClasses);
-  } else if (section === "systemInfo") {
-    systemInfoSec.classList.remove("hidden");
-    systemInfoLink.classList.remove(...inactiveClasses);
-    systemInfoLink.classList.add(...activeClasses);
-    loadDiagnostics();
+  } else if (section === "reportsBackup") {
+    reportsBackupSec.classList.remove("hidden");
+    reportsBackupLink.classList.remove(...inactiveClasses);
+    reportsBackupLink.classList.add(...activeClasses);
   }
 };
 

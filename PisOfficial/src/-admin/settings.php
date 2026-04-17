@@ -160,31 +160,17 @@ function getInitials($name)
                 </a>
 
                 <!-- Placeholder for future module -->
-                <a href="javascript:void(0)" onclick="showSettingSection('placeholder')" id="placeholderLink"
+                <!-- Reports & Backups -->
+                <a href="javascript:void(0)" onclick="showSettingSection('reportsBackup')" id="reportsBackupLink"
                     class="flex items-center gap-3 px-6 py-4 rounded-2xl text-gray-400 hover:bg-gray-50 transition duration-300 group">
                     <div class="size-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300">
                         <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                         </svg>
                     </div>
                     <div>
                         <span class="text-sm font-black uppercase tracking-widest block">System Config</span>
-                        <span class="text-[10px] text-gray-400 font-medium">Coming Soon</span>
-                    </div>
-                </a>
-
-                <!-- System Info & Diagnostics -->
-                <a href="javascript:void(0)" onclick="showSettingSection('systemInfo')" id="systemInfoLink"
-                    class="flex items-center gap-3 px-6 py-4 rounded-2xl text-gray-400 hover:bg-gray-50 transition duration-300 group">
-                    <div class="size-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300">
-                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-6-9a3 3 0 116 0 3 3 0 01-6 0zm11 2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 012-2 2 2 0 012-2h10z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <span class="text-sm font-black uppercase tracking-widest block">System Info</span>
-                        <span class="text-[10px] text-gray-400 font-medium">Diagnostics & Health</span>
+                        <span class="text-[10px] text-gray-400 font-medium">Reports & Backups</span>
                     </div>
                 </a>
             </nav>
@@ -361,157 +347,80 @@ function getInitials($name)
                 </div>
             </section>
 
-            <!-- System Configuration -->
-            <section id="placeholderSection" class="hidden flex-1 bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-                <!-- ... existing placeholder content ... -->
-            </section>
+            <!-- Reports & Backups Section -->
+            <section id="reportsBackupSection" class="hidden flex-1 flex-col min-h-[500px] gap-6">
 
-            <!-- System Info & Diagnostics Section -->
-            <section id="systemInfoSection" class="hidden flex-1 flex flex-col gap-6">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- DB Card -->
-                    <div class="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm flex flex-col justify-between h-[200px] border-l-8 border-l-red-600">
+                <div class="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden flex flex-col h-full">
+                    <div class="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-100">
+                                <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-black text-gray-900 tracking-tight leading-none mb-1 uppercase">Reports & Backups</h3>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest italic">Generate system reports and manage database files</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
+                        <!-- Left Column: Generate Reports -->
                         <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Connected Database</p>
-                            <h3 id="diag_db_name" class="text-2xl font-black text-gray-900 tracking-tight">---</h3>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="size-2 bg-green-500 rounded-full animate-pulse"></span>
-                            <span id="diag_status" class="text-xs font-bold text-green-600 uppercase tracking-tighter">Operational</span>
-                        </div>
-                    </div>
-
-                    <!-- Version Card -->
-                    <div class="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm h-[200px] flex flex-col justify-center">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">DB Version</p>
-                        <h3 id="diag_db_version" class="text-2xl font-black text-gray-900 tracking-tight">---</h3>
-                    </div>
-
-                    <!-- Maintenance Card -->
-                    <div class="bg-red-50 border border-red-100 rounded-3xl p-8 shadow-sm h-[200px] flex flex-col justify-between">
-                        <div>
-                            <p class="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">System Reset</p>
-                            <h3 class="text-sm font-bold text-red-900 leading-tight">Perform full database migration and factory reset.</h3>
-                        </div>
-                        <button onclick="confirmMigration()" 
-                                class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-lg shadow-red-200">
-                            Run Migration
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden flex flex-col">
-                    <div class="p-8 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
-                        <div>
-                            <h3 class="text-xl font-black text-gray-900 tracking-tight uppercase">Database Schema Overview</h3>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live table metrics and row counts</p>
-                        </div>
-                    </div>
-                    <div id="diag_table_list" class="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <!-- Dynamic items from loadDiagnostics() -->
-                    </div>
-                </div>
-            </section>
-                <div class="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
-                    <div class="flex items-center gap-4">
-                        <div class="size-12 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-100">
-                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-black text-gray-900 tracking-tight leading-none mb-1 uppercase">System Configuration</h3>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest italic">Manage store parameters and system-wide defaults</p>
-                        </div>
-                    </div>
-                </div>
-
-                <form action="../include/inc.admin/admin.ctrl.php" method="POST" class="p-8 space-y-8" oninput="window.formHasUnsavedChanges = true">
-                    <input type="hidden" name="action" value="update_system_config">
-                    
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <!-- Left Column: Store Profile -->
-                        <div class="space-y-6">
-                            <div class="border-b border-gray-50 pb-2">
-                                <h4 class="text-xs font-black text-red-600 uppercase tracking-tighter">Business Identity</h4>
+                            <div class="border-b border-gray-50 pb-2 mb-4">
+                                <h4 class="text-xs font-black text-red-600 uppercase tracking-tighter">System Reports</h4>
                             </div>
                             
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 ml-1">Store Name</label>
-                                    <input type="text" name="store_name" value="Prime-In-Sync Furniture" placeholder="Enter Business Name" 
-                                           class="w-full px-5 py-3.5 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-600 outline-none transition-all bg-gray-50 text-sm font-bold">
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 ml-1">Contact Email</label>
-                                        <input type="email" name="store_email" value="contact@primeconcept.ph" placeholder="business@mail.com"
-                                               class="w-full px-5 py-3.5 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-600 outline-none transition-all bg-gray-50 text-sm font-bold">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 ml-1">Phone Number</label>
-                                        <input type="text" name="store_phone" value="0917 123 4567" placeholder="+63 000 0000"
-                                               class="w-full px-5 py-3.5 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-600 outline-none transition-all bg-gray-50 text-sm font-bold">
-                                    </div>
+                            <div class="p-6 rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-4 text-center hover:border-red-200 hover:bg-red-50/20 transition-all group cursor-pointer h-[250px]">
+                                <div class="size-16 bg-gray-50 text-gray-400 group-hover:text-red-500 group-hover:bg-red-100 transition-colors rounded-xl flex items-center justify-center">
+                                    <svg class="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-6-9a3 3 0 116 0 3 3 0 01-6 0zm11 2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 012-2 2 2 0 012-2h10z" /></svg>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 ml-1">Business Address</label>
-                                    <textarea name="store_address" rows="3" placeholder="Street, City, Province, Zip"
-                                              class="w-full px-5 py-3.5 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-600 outline-none transition-all bg-gray-50 text-sm font-bold resize-none">123 Prime St, Showroom City, PH 4000</textarea>
+                                    <h5 class="font-bold text-gray-800 text-base mb-1">Full System Report</h5>
+                                    <p class="text-xs text-gray-500 mb-5 px-6 leading-relaxed">Generate a comprehensive summary of inventory, staff performance, and complete sales data across all system modules.</p>
+                                    <button class="px-6 py-3 bg-gray-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition active:scale-95 shadow-lg">Generate Report</button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right Column: Financials & Rules -->
-                        <div class="space-y-6">
-                            <div class="border-b border-gray-50 pb-2">
-                                <h4 class="text-xs font-black text-red-600 uppercase tracking-tighter">System Parameters</h4>
+                        <!-- Right Column: Backups -->
+                        <div>
+                            <div class="border-b border-gray-50 pb-2 mb-4">
+                                <h4 class="text-xs font-black text-red-600 uppercase tracking-tighter">Data Backup & Recovery</h4>
                             </div>
-                            
-                            <div class="space-y-4">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 ml-1">VAT / Tax Rate (%)</label>
-                                        <div class="relative">
-                                            <input type="number" step="0.01" name="tax_rate" value="12.00" 
-                                                   class="w-full px-5 py-3.5 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-600 outline-none transition-all bg-gray-50 text-sm font-bold">
-                                            <span class="absolute right-5 top-1/2 -translate-y-1/2 font-black text-gray-300">%</span>
+                            <div class="grid gap-4">
+                                <div class="p-5 border border-gray-100 rounded-2xl flex items-center justify-between hover:border-gray-200 transition-all bg-gray-50/50 group h-[117px]">
+                                    <div class="flex items-center gap-4">
+                                        <div class="size-12 bg-white shadow-sm border border-gray-200 rounded-xl flex items-center justify-center text-gray-500 group-hover:text-gray-900 transition-colors">
+                                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                                        </div>
+                                        <div>
+                                            <h5 class="text-sm font-bold text-gray-800 leading-tight mb-0.5">Save New Backup</h5>
+                                            <p class="text-[10px] text-gray-500 font-medium tracking-tight">Export database state</p>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 ml-1">Currency Symbol</label>
-                                        <input type="text" name="currency" value="₱" 
-                                               class="w-full px-5 py-3.5 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-600 outline-none transition-all bg-gray-50 text-sm font-bold">
-                                    </div>
+                                    <button class="shrink-0 px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:text-black hover:border-gray-300 rounded-xl text-xs font-bold transition shadow-sm active:scale-95">Download .sql</button>
                                 </div>
-                                <div class="p-6 bg-red-50/50 rounded-2xl border border-red-100/50">
-                                    <label class="block text-[10px] font-black text-red-600 uppercase tracking-wider mb-2 ml-1">Low Stock Threshold</label>
+
+                                <div class="p-5 border border-gray-100 rounded-2xl flex items-center justify-between hover:border-gray-200 hover:bg-gray-50/50 transition-all bg-white group h-[117px]">
                                     <div class="flex items-center gap-4">
-                                        <input type="range" name="low_stock_limit" min="1" max="50" value="10" 
-                                               class="flex-1 accent-red-600 cursor-pointer h-1.5 bg-red-200 rounded-lg"
-                                               oninput="this.nextElementSibling.innerText = this.value + ' units'">
-                                        <span class="text-sm font-black text-red-600 min-w-[70px] text-right">10 units</span>
+                                        <div class="size-12 bg-white flex items-center justify-center text-gray-500 rounded-xl border border-gray-200 group-hover:text-gray-900 transition-colors">
+                                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                        </div>
+                                        <div>
+                                            <h5 class="text-sm font-bold text-gray-800 leading-tight mb-0.5">Restore Backup</h5>
+                                            <p class="text-[10px] text-gray-500 font-medium tracking-tight">Upload previous version</p>
+                                        </div>
                                     </div>
-                                    <p class="text-[9px] text-red-400 font-bold uppercase tracking-widest mt-2 italic">*Global threshold for dashboard inventory alerts</p>
-                                </div>
-                                
-                                <div class="p-6 rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-3">
-                                    <div class="size-10 bg-white shadow-sm border border-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="2" /></svg>
-                                    </div>
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Upload System Logo</p>
-                                    <p class="text-[9px] text-gray-300 italic">PNG / SVG (Max 1MB)</p>
+                                    <button class="shrink-0 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold transition shadow-md active:scale-95 border border-transparent">Select File</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div class="pt-10 flex justify-end">
-                        <button type="submit" class="card-style bg-gray-900 border border-black hover:bg-black text-white px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition active:scale-95 flex items-center gap-3">
-                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                            Save All Configurations
-                        </button>
-                    </div>
-                </form>
+                </div>
             </section>
+
 
             <div id="resetModal"
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 opacity-0 pointer-events-none transition-all duration-300">

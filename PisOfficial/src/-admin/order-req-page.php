@@ -43,8 +43,8 @@ if (isset($_SESSION['user_id'])) {
     <title>Prime-In-Sync | Order Requests</title>
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js" defer></script>
-    <script src="../../public/assets/js/order.js" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.1.0" defer></script>
+    <script src="../../public/assets/js/order.js?v=1.1.0" defer></script>
     <?php include '../include/toast.php'; ?>
 
 
@@ -315,7 +315,7 @@ if (isset($_SESSION['user_id'])) {
                                     <table class="w-full text-left border-collapse">
                                         <thead class="bg-gray-50 text-gray-400 text-[9px] uppercase font-bold tracking-widest border-b border-gray-100">
                                             <tr>
-                                                <th class="px-6 py-3">Product Info</th>
+                                                <th class="px-6 py-3 text-center">Availability</th><th class="px-6 py-3">Product Info</th>
                                                 <th class="px-6 py-3 text-center">Qty</th>
                                                 <th class="px-6 py-3 text-right">Price</th>
                                             </tr>
@@ -365,7 +365,7 @@ if (isset($_SESSION['user_id'])) {
                             </div>
                         </div>
 
-                        <div class="px-8 py-5 bg-white border-t border-gray-100 flex gap-3">
+                        <div id="modal-action-footer" class="px-8 py-5 bg-white border-t border-gray-100 flex gap-3">
                             <button id="approveBtn" onclick="handleAction('approve')"
                                 class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] text-[11px] uppercase tracking-widest shadow-lg shadow-red-100">
                                 Confirm & Approve
@@ -454,7 +454,8 @@ if (isset($_SESSION['user_id'])) {
                     .then(res => res.json())
                     .then(response => {
                         if (response.success) {
-                            allRequestsData = response.data;
+                            // Filter: Hidden Admin POS orders from Request review (Admin POS is pre-approved)
+                            allRequestsData = response.data.filter(row => row.creator_role !== 'admin');
                             renderRequestsTable();
                         }
                     });
