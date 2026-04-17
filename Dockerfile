@@ -1,4 +1,4 @@
-# Production-ready Apache Environment (Build Trigger: 2026-04-17-01)
+# Production-ready Apache Environment (Build Trigger: 2026-04-17-03-CONTEXT-FIX)
 FROM php:8.2-apache
 
 # 1. Install system dependencies & PHP extensions
@@ -17,7 +17,7 @@ RUN rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm
     a2enmod mpm_prefork rewrite headers deflate
 
 # 3. Configure PHP (Production Settings + OPcache)
-COPY php-prod.ini /usr/local/etc/php/conf.d/php-prod.ini
+COPY PisOfficial/php-prod.ini /usr/local/etc/php/conf.d/php-prod.ini
 
 # 4. Install Node.js 20 (For Tailwind build)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
@@ -37,7 +37,7 @@ COPY PisOfficial/ .
 RUN npm run build
 
 # 9. Final setup: Copy entrypoint script and fix permissions
-COPY docker-entrypoint.sh /usr/local/bin/
+COPY PisOfficial/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 RUN chown -R www-data:www-data /var/www/html
 
