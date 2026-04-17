@@ -1,4 +1,4 @@
-# Production-ready Apache Environment for Prime-In-Sync
+# Production-ready Apache Environment (Build Trigger: 2026-04-17-01)
 FROM php:8.2-apache
 
 # 1. Install system dependencies & PHP extensions
