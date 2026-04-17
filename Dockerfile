@@ -36,13 +36,11 @@ COPY PisOfficial/ .
 # 8. Build Tailwind CSS
 RUN npm run build
 
-# 9. Fix permissions for Apache
+# 9. Final setup: Copy entrypoint script and fix permissions
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 RUN chown -R www-data:www-data /var/www/html
 
-# 10. Configure Apache to listen on $PORT at RUNTIME
-# We use a custom entrypoint command to ensure $PORT is correctly mapped
-RUN sed -i 's/Listen 80/Listen ${PORT}/g' /etc/apache2/ports.conf
-RUN sed -i 's/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/g' /etc/apache2/sites-available/000-default.conf
-
-# Use the standard start command but Apache will now pick up the $PORT env var
+# Use our custom entrypoint but keep the standard command
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
