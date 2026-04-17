@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["php82", "nodejs_20", "php82Extensions.pdo", "php82Extensions.pdo_mysql", "php82Extensions.mbstring", "php82Extensions.openssl"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "php -S 0.0.0.0:${PORT:-8000} router.php"
