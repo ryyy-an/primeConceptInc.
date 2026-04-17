@@ -12,7 +12,9 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql opcache
 
 # 2. Enable Apache modules for routing and performance
-RUN a2enmod rewrite headers deflate
+# Also ensure ONLY mpm_prefork is loaded to avoid "More than one MPM loaded" error
+RUN a2dismod mpm_event mpm_worker || true && \
+    a2enmod mpm_prefork rewrite headers deflate
 
 # 3. Configure PHP (Production Settings + OPcache)
 COPY php-prod.ini /usr/local/etc/php/conf.d/php-prod.ini
