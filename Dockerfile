@@ -27,11 +27,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
 WORKDIR /var/www/html
 
 # 6. Copy package files first for better caching
-COPY package*.json ./
+COPY PisOfficial/package*.json ./
 RUN npm install
 
 # 7. Copy the rest of the application
-COPY . .
+COPY PisOfficial/ .
 
 # 8. Build Tailwind CSS
 RUN npm run build
