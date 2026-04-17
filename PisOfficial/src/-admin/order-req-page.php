@@ -454,7 +454,8 @@ if (isset($_SESSION['user_id'])) {
                     .then(res => res.json())
                     .then(response => {
                         if (response.success) {
-                            allRequestsData = response.data;
+                            // Filter: Hidden Admin POS orders from Request review (Admin POS is pre-approved)
+                            allRequestsData = response.data.filter(row => row.creator_role !== 'admin');
                             renderRequestsTable();
                         }
                     });

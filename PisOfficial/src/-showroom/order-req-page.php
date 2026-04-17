@@ -243,7 +243,7 @@ if (isset($_SESSION['user_id'])) {
                     <div class="flex flex-col gap-1">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Status</label>
                         <select name="status" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all min-w-[140px]">
-                            <?php $statuses = ['All', 'For Review', 'Approved', 'Rejected', 'Cancelled', 'Success']; ?>
+                            <?php $statuses = ['All', 'For Review', 'Approved', 'Rejected', 'Cancelled']; ?>
                             <?php foreach ($statuses as $st): ?>
                                 <option value="<?= $st ?>" <?= $status_filter === $st ? 'selected' : '' ?>><?= $st ?></option>
                             <?php endforeach; ?>

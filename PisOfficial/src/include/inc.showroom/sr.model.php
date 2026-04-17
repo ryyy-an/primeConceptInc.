@@ -21,7 +21,7 @@ function fetch_requests(PDO $pdo, int $userId = 0, array $filters = [], int $lim
                 FROM orders o
                 LEFT JOIN users u ON o.created_by = u.id
                 LEFT JOIN customers c ON o.customer_id = c.id
-                WHERE 1 = 1";
+                WHERE o.status != 'Success'";
 
         $params = [];
 
@@ -68,7 +68,7 @@ function fetch_requests(PDO $pdo, int $userId = 0, array $filters = [], int $lim
 function count_requests(PDO $pdo, int $userId = 0, array $filters = []): int
 {
     try {
-        $sql = "SELECT COUNT(*) FROM orders o WHERE 1 = 1";
+        $sql = "SELECT COUNT(*) FROM orders o WHERE o.status != 'Success'";
         $params = [];
 
         if ($userId > 0) {

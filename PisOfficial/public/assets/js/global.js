@@ -274,10 +274,6 @@ window.addEventListener("click", function (event) {
  * LOGOUT MODAL (devRyan)
  */
 window.toggleLogoutModal = function (show) {
-  console.log("Toggle Logout Modal Called. Show:", show);
-  // Temporary Alert for Diagnostics
-  if (show) alert("Opening Logout Modal...");
-  
   if (show) {
     window.openModal("logout-modal");
   } else {
