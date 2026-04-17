@@ -1,7 +1,7 @@
-# Production-ready Apache Environment (Build Trigger: 2026-04-17-03-CONTEXT-FIX)
+# Production-ready Apache Environment (Build Trigger: 2026-04-17-04-METAL-ULTRA)
 FROM php:8.2-apache
 
-# 1. Install system dependencies & PHP extensions
+# 1. Install all system dependencies, Node.js, and PHP extensions in one optimized layer
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -9,19 +9,17 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     curl \
-    && docker-php-ext-install pdo pdo_mysql opcache
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && docker-php-ext-install pdo pdo_mysql opcache \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 2. Enable Apache modules for routing and performance
-# More aggressive fix for "More than one MPM loaded" error
 RUN rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_worker.load || true && \
     a2enmod mpm_prefork rewrite headers deflate
 
 # 3. Configure PHP (Production Settings + OPcache)
 COPY PisOfficial/php-prod.ini /usr/local/etc/php/conf.d/php-prod.ini
-
-# 4. Install Node.js 20 (For Tailwind build)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs
 
 # 5. Set working directory
 WORKDIR /var/www/html
