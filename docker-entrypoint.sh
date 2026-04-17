@@ -1,4 +1,5 @@
 #!/bin/bash
+# Build Tag: 2026-04-17-02
 set -e
 
 # 1. FORCE DISABLE conflicting Apache MPM modules at RUNTIME
