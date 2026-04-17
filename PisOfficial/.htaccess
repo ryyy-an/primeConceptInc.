@@ -16,6 +16,14 @@ RewriteRule ^ - [L]
 # Custom 404 handler
 ErrorDocument 404 /public/404.php
 
+# 1.5 Security Headers
+<IfModule mod_headers.c>
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
 # 2. Performance: Gzip / Deflate Compression
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/plain

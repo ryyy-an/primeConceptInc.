@@ -189,6 +189,10 @@ if ($action === 'get_customer_history') {
 if ($action === 'get_notifications') {
     $userId = (int)($_SESSION['user_id'] ?? 0);
     $role = $_SESSION['role'] ?? '';
+    
+    // Release session lock early to prevent UI blocking for other requests
+    session_write_close(); 
+
     if (!$userId || !$role) {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
