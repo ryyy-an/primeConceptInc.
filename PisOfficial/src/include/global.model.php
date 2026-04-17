@@ -25,7 +25,8 @@ function get_inventory_cards(PDO $pdo): array
                 pv.min_buildable_qty,
                 SUM(COALESCE(ss.qty_on_hand, 0)) AS variant_stocks_in_SR,
                 MAX(COALESCE(ws_agg.buildable_qty, 0)) AS variant_stocks_in_WH,
-                (SUM(COALESCE(ss.qty_on_hand, 0)) + MAX(COALESCE(ws_agg.buildable_qty, 0))) AS overall_stocks
+                (SUM(COALESCE(ss.qty_on_hand, 0)) + MAX(COALESCE(ws_agg.buildable_qty, 0))) AS overall_stocks,
+                loc_agg.locations
             FROM 
                 products p
             LEFT JOIN 
@@ -40,6 +41,12 @@ function get_inventory_cards(PDO $pdo): array
                 JOIN product_components pc ON ws.product_comp_id = pc.id
                 GROUP BY ws.variant_id
             ) ws_agg ON pv.id = ws_agg.variant_id
+            LEFT JOIN (
+                SELECT prod_id, GROUP_CONCAT(DISTINCT location SEPARATOR ', ') as locations
+                FROM product_components
+                WHERE is_deleted = 0
+                GROUP BY prod_id
+            ) loc_agg ON p.id = loc_agg.prod_id
             WHERE p.is_deleted = 0
             GROUP BY pv.id, p.id
             ORDER BY p.name ASC";
@@ -66,6 +73,7 @@ function get_inventory_cards(PDO $pdo): array
                 'discount'    => (int)($row['discount'] ?? 0),
                 'is_on_sale'  => (bool)($row['is_on_sale'] ?? false),
                 'image'       => $imagePath,
+                'locations'   => $row['locations'] ?? 'N/A',
                 'placeholder' => "../../public/assets/img/furnitures/default-placeholder.png",
                 'total_sr'    => 0,
                 'total_wh'    => 0,
@@ -201,61 +209,7 @@ function get_cart_items(PDO $pdo, int $userId): array
     }
 }
 
-/**
- * Fetches recent system activities
- */
-function get_recent_activities(PDO $pdo, int $limit = 4): array
-{
-    try {
-        // Use CAST with length for broader compatibility. 
-        // Also use LEFT JOIN on transactions for temp customers.
-        $sql = "SELECT 
-                    'request' as type,
-                    COALESCE(c.name, o.temp_customer_name) as fname, 
-                    '' as lname, 
-                    CAST(o.id AS CHAR(11)) as ref_id,
-                    'placed a request' as action,
-                    o.created_at as timestamp,
-                    (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
-                FROM orders o
-                LEFT JOIN customers c ON o.customer_id = c.id
-                UNION ALL
-                SELECT 
-                    'transaction' as type,
-                    COALESCE(c.name, o.temp_customer_name) as fname,
-                    '' as lname,
-                    CAST(t.id AS CHAR(11)) as ref_id,
-                    'transaction processed' as action,
-                    t.date_paid as timestamp,
-                    0 as item_count
-                FROM transactions t
-                JOIN orders o ON t.order_id = o.id
-                LEFT JOIN customers c ON o.customer_id = c.id
-                ORDER BY timestamp DESC
-                LIMIT " . (int)$limit;
 
-        $stmt = $pdo->query($sql);
-        return $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-    } catch (PDOException $e) {
-        error_log("Get Recent Activities Error: " . $e->getMessage());
-        return [];
-    }
-}
-
-/**
- * Helper to format timestamps into relative time.
- */
-function format_activity_time(string $timestamp): string
-{
-    $time = strtotime($timestamp);
-    if (!$time) return "Unknown time";
-
-    $diff = time() - $time;
-    if ($diff < 60) return "Just now";
-    if ($diff < 3600) return (string)floor($diff / 60) . " mins ago";
-    if ($diff < 86400) return (string)floor($diff / 3600) . " hours ago";
-    return date('M d', $time);
-}
 
 function get_order_details_shared(PDO $pdo, int $orderId): array
 {
@@ -317,4 +271,107 @@ function get_or_create_customer(PDO $pdo, array $data): int
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$name, $contact, $type, $branch]);
     return (int)$pdo->lastInsertId();
+}
+/**
+ * --- NOTIFICATION SYSTEM ---
+ */
+
+/**
+ * Creates a notification entry in the database.
+ */
+function create_notification(PDO $pdo, int $senderId, string $title, string $message, string $type, ?int $targetUserId = null, ?string $targetRole = null, ?string $link = null): bool
+{
+    try {
+        $sql = "INSERT INTO notifications (target_user_id, target_role, sender_id, type, title, message, link) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute([$targetUserId, $targetRole, $senderId, $type, $title, $message, $link]);
+    } catch (PDOException $e) {
+        error_log("Create Notification Error: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Fetches the latest notifications for a specific user based on their ID and Role.
+ */
+function get_user_notifications(PDO $pdo, int $userId, string $role, int $limit = 20): array
+{
+    try {
+        $sql = "SELECT n.*, u.full_name as sender_name 
+                FROM notifications n
+                LEFT JOIN users u ON n.sender_id = u.id
+                WHERE (n.target_user_id = ? OR n.target_role = ?)
+                ORDER BY n.created_at DESC
+                LIMIT ?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $role, PDO::PARAM_STR);
+        $stmt->bindValue(3, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Get Notifications Error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Gets unread count for the bell icon badge.
+ */
+function get_unread_notif_count(PDO $pdo, int $userId, string $role): int
+{
+    try {
+        $sql = "SELECT COUNT(*) FROM notifications 
+                WHERE (target_user_id = ? OR target_role = ?) AND is_read = 0";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$userId, $role]);
+        return (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Marks all notifications as read for the current user/role.
+ */
+function mark_notifs_as_read(PDO $pdo, int $userId, string $role): bool
+{
+    try {
+        $sql = "UPDATE notifications SET is_read = 1 
+                WHERE (target_user_id = ? OR target_role = ?) AND is_read = 0";
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute([$userId, $role]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Initializes the notifications table if it doesn't exist.
+ * This ensures the table schema remains consistent across environments.
+ */
+function init_notifications_table(PDO $pdo): void
+{
+    try {
+        $sql = "CREATE TABLE IF NOT EXISTS notifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            target_user_id INT NULL,
+            target_role VARCHAR(20) NULL,
+            sender_id INT NULL,
+            type VARCHAR(50) NOT NULL,
+            title VARCHAR(100) NOT NULL,
+            message TEXT NOT NULL,
+            link VARCHAR(255) NULL,
+            is_read TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX (target_user_id),
+            INDEX (target_role),
+            INDEX (is_read),
+            INDEX (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+        $pdo->exec($sql);
+    } catch (PDOException $e) {
+        error_log("Init Notifications Table Error: " . $e->getMessage());
+    }
 }

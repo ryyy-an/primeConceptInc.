@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["php", "nodejs"]
+
+[phases.install]
+cmds = ["cd PisOfficial && npm install"]
+
+[phases.build]
+cmds = ["cd PisOfficial && npm run build"]
+
+[start]
+cmd = "cd PisOfficial && php -S 0.0.0.0:$PORT router.php"

@@ -1,0 +1,25 @@
+# Dependencies
+/PisOfficial/node_modules
+/PisOfficial/npm-debug.log*
+/PisOfficial/yarn-debug.log*
+/PisOfficial/yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build output
+/PisOfficial/src/output.css

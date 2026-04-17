@@ -183,3 +183,31 @@ if ($action === 'get_customer_history') {
         sendJsonResponse(['success' => false, 'message' => 'History fetch error: ' . $e->getMessage()]);
     }
 }
+/**
+ * Get Notifications
+ */
+if ($action === 'get_notifications') {
+    $userId = (int)($_SESSION['user_id'] ?? 0);
+    $role = $_SESSION['role'] ?? '';
+    if (!$userId || !$role) {
+        sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+    }
+
+    $notifications = get_user_notifications($pdo, $userId, $role);
+    $unread = get_unread_notif_count($pdo, $userId, $role);
+    sendJsonResponse(['success' => true, 'notifications' => $notifications, 'unread' => $unread]);
+}
+
+/**
+ * Mark Notifications as Read
+ */
+if ($action === 'mark_notifs_read') {
+    $userId = (int)($_SESSION['user_id'] ?? 0);
+    $role = $_SESSION['role'] ?? '';
+    if (!$userId || !$role) {
+        sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+    }
+
+    mark_notifs_as_read($pdo, $userId, $role);
+    sendJsonResponse(['success' => true]);
+}

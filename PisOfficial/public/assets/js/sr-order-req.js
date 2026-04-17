@@ -5,7 +5,7 @@
 
 // --- MODAL UTILITIES ---
 
-function openModal(modalId, boxId) {
+function openSrModal(modalId, boxId) {
     const modal = document.getElementById(modalId);
     const box = document.getElementById(boxId);
     if (!modal || !box) return;
@@ -18,7 +18,7 @@ function openModal(modalId, boxId) {
     }, 10);
 }
 
-function closeModal(modalId, boxId) {
+function closeSrModal(modalId, boxId) {
     const modal = document.getElementById(modalId);
     const box = document.getElementById(boxId);
     if (!modal || !box) return;
@@ -161,7 +161,7 @@ async function openRequestInfoModal(req) {
 }
 
 function closeRequestInfoModal() {
-    closeModal('requestInfoModal', 'requestInfoBox');
+    closeSrModal('requestInfoModal', 'requestInfoBox');
 }
 
 // --- CANCELLATION LOGIC ---
@@ -169,11 +169,11 @@ function closeRequestInfoModal() {
 function cancelRequest(prNo) {
     document.getElementById('cancel-pr-no-display').textContent = `#${prNo}`;
     document.getElementById('cancel-pr-no-input').value = prNo;
-    openModal('cancelConfirmModal', 'cancelConfirmBox');
+    openSrModal('cancelConfirmModal', 'cancelConfirmBox');
 }
 
 function closeCancelConfirmModal() {
-    closeModal('cancelConfirmModal', 'cancelConfirmBox');
+    closeSrModal('cancelConfirmModal', 'cancelConfirmBox');
 }
 
 function confirmCancelExecution() {
@@ -195,7 +195,7 @@ function confirmCancelExecution() {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                closeCancelConfirmModal();
+                closeSrModal('cancelConfirmModal', 'cancelConfirmBox');
                 setTimeout(() => {
                     if (typeof showToast === 'function') showToast('Request cancelled successfully!', 'success');
                     setTimeout(() => location.reload(), 1500);
@@ -302,22 +302,22 @@ async function populateRequestSummary(req) {
 function showValidationError(title, message) {
     document.getElementById('validation-title').textContent = title;
     document.getElementById('validation-message').textContent = message;
-    openModal('validationErrorModal', 'validationErrorBox');
+    openSrModal('validationErrorModal', 'validationErrorBox');
 }
 
 function closeValidationErrorModal() {
-    closeModal('validationErrorModal', 'validationErrorBox');
+    closeSrModal('validationErrorModal', 'validationErrorBox');
 }
 
 /**
  * Shows the custom finalize confirmation modal
  */
 function showFinalizeConfirm() {
-    openModal('finalizeConfirmModal', 'finalizeConfirmBox');
+    openSrModal('finalizeConfirmModal', 'finalizeConfirmBox');
 }
 
 function closeFinalizeConfirmModal() {
-    closeModal('finalizeConfirmModal', 'finalizeConfirmBox');
+    closeSrModal('finalizeConfirmModal', 'finalizeConfirmBox');
 }
 
 async function handleShowroomCompleteSale() {
@@ -378,7 +378,7 @@ async function executeFinalizeTransaction() {
         balance: 0,
     };
 
-    closeFinalizeConfirmModal();
+    closeSrModal('finalizeConfirmModal', 'finalizeConfirmBox');
     btn.disabled = true;
     btn.innerHTML = `<span class="animate-pulse">Processing...</span>`;
 

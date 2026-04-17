@@ -1,10 +1,10 @@
 <?php
 
-$dbHost = "localhost";
-$dbName = "pis-sys-db";
-$dbUser = "root";
-$dbPass = "";
-$dbPort = "3306";
+$dbHost = getenv('MYSQLHOST') ?: "localhost";
+$dbName = getenv('MYSQLDATABASE') ?: "pis-sys-db";
+$dbUser = getenv('MYSQLUSER') ?: "root";
+$dbPass = getenv('MYSQLPASSWORD') ?: "";
+$dbPort = getenv('MYSQLPORT') ?: "3306";
 
 // DSN (Data Source Name)
 $dsn = "mysql:host=" . $dbHost . ";port=" . $dbPort . ";dbname=" . $dbName;

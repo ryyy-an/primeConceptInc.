@@ -23,39 +23,12 @@ if (isset($_SESSION["user_id"])) {
     exit();
 }
 
-// Fetch Dashboard Stats for Order Fulfillment Page
-$totalProducts = 0;
-$userTransactions = 0;
-$pendingWH = 0;
-$pendingSR = 0;
-
-try {
-    // 1. Available Products
-    $totalProducts = $pdo->query("SELECT COUNT(*) FROM products WHERE is_deleted = 0")->fetchColumn();
-
-    // 2. Your Transactions
-    $stmt_user = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_by = ?");
-    $stmt_user->execute([$userId]);
-    $userTransactions = $stmt_user->fetchColumn();
-
-    // 3. Pending Warehouse Requests
-    $pendingWH = $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o 
-                             JOIN order_items oi ON o.id = oi.order_id 
-                             WHERE LOWER(o.status) = 'approved' 
-                             AND (oi.get_from = 'WH' OR oi.get_from = 'Warehouse')
-                             AND NOT EXISTS (
-                                 SELECT 1 FROM showroom_stocks ss 
-                                 WHERE ss.variant_id = oi.variant_id AND ss.qty_on_hand > 0
-                             )")->fetchColumn();
-
-    // 4. Pending Showroom Requests
-    $pendingSR = $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o 
-                             JOIN order_items oi ON o.id = oi.order_id 
-                             WHERE LOWER(o.status) = 'approved' AND (oi.get_from = 'SR' OR oi.get_from = 'Showroom')")->fetchColumn();
-
-} catch (PDOException $e) {
-    error_log("Fulfillment Stats Error: " . $e->getMessage());
-}
+// Fetch Dashboard Stats & Fulfillment Data
+$stats = get_warehouse_dashboard_stats($pdo, (int)$userId);
+$totalProducts = $stats['total_products'];
+$userTransactions = $stats['user_transactions'];
+$pendingWH = $stats['pending_wh'];
+$pendingSR = $stats['pending_sr'];
 
 // Fetch Fulfillment Orders
 $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
@@ -131,7 +104,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
                 <?= htmlspecialchars(ucfirst($role)) ?> User
             </div>
 
-            <button
+            <button id="notifButton"
                 class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke-width="1.5" stroke="currentColor">
@@ -139,6 +112,8 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
                         d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
                 </svg>
             </button>
+
+            <?php include '../include/sidebar-notif.php'; ?>
 
             <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
                 class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
@@ -220,14 +195,14 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
                     </a>
                 </li>
                 <li>
-                    <a href="product-status.php"
+                    <a href="stocks-logs.php"
                         class="flex items-center justify-center gap-2 h-10 px-4 text-gray-700 font-medium hover:text-red-600 transition">
                         <svg class="w-5 h-5 " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                             stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                         </svg>
-                        <span>Product Status</span>
+                        <span>Warehouse Stocks Report</span>
                     </a>
                 </li>
             </ul>
@@ -258,7 +233,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
                                 break;
                             }
                         }
-                        ?>
+                    ?>
                         <div id="order-card-<?= $order['order_id'] ?>" data-order-id="<?= $order['order_id'] ?>"
                             class="fulfillment-card card-style bg-white p-8 border border-gray-200 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:border-red-500 transition-all duration-500 flex flex-col group h-full">
                             <!-- Order Badge Area -->
@@ -425,7 +400,8 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
                         </div>
 
                         <div id="productDetailContent" class="hidden space-y-8 pb-10">
-                            <!-- Image + Info Header Row -->                            <div class="flex gap-12 items-start">
+                            <!-- Image + Info Header Row -->
+                            <div class="flex gap-12 items-start">
                                 <!-- Col 1: Visuals -->
                                 <div class="w-72 flex-shrink-0">
                                     <div class="h-72 bg-gray-50 rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm transition-all duration-500 hover:shadow-md">
@@ -437,7 +413,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
                                 <div class="flex-1 space-y-8">
                                     <div>
                                         <h3 class="text-3xl font-black text-gray-900 tracking-tight" id="detailName">Product Name</h3>
-                                        
+
                                         <!-- Minimalist Horizontal Metrics -->
                                         <div class="flex items-center gap-6 mt-4">
                                             <div class="flex items-center gap-2">
@@ -502,390 +478,11 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
         </div>
     </div>
     <script>
-        // Export PHP Mock Data to JS for Fallback Support
-        const mockOrders = <?= json_encode($fulfillmentOrders) ?>;
-
-        const modal = document.getElementById('fulfillmentModal');
-        const modalSidebar = document.getElementById('modalSidebar');
-        const modalDetailPane = document.getElementById('modalDetailPane');
-        const detailPaneFooter = document.getElementById('detailPaneFooter');
-        const productDetailContent = document.getElementById('productDetailContent');
-        const noSelectionState = document.getElementById('noSelectionState');
-        const markReadyBtn = document.getElementById('markReadyBtn');
-        const cancelReadyBtn = document.getElementById('cancelReadyBtn');
-        const finalFulfillBtn = document.getElementById('finalFulfillBtn');
-        const activeFulfillBtn = document.getElementById('activeFulfillBtn');
-        const progressHeader = document.getElementById('fulfillmentProgressHeader');
-
-        let currentOrder = null;
-        let selectedProductIndex = -1;
-
-        async function openOrderFulfillmentModal(event, orderId) {
-            if (event) event.stopPropagation();
-            if (!modal) return;
-
-            // 1. Immediate UI Setup: Show modal backdrop & loading state
-            document.body.style.overflow = 'hidden';
-            modal.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
-            modal.classList.add('flex', 'opacity-100');
-
-            // Reset Sub-states
-            selectedProductIndex = -1;
-            currentOrder = null;
-            document.getElementById('modalOrderHeadline').innerText = `Order #${orderId}`;
-            noSelectionState.classList.remove('hidden');
-            productDetailContent.classList.add('hidden');
-            detailPaneFooter.classList.add('hidden');
-
-            // Show skeleton loading in sidebar
-            modalSidebar.innerHTML = `
-                <div class="p-8 text-center space-y-4 animate-pulse">
-                    <div class="h-10 bg-gray-100 rounded-xl w-full"></div>
-                    <div class="h-10 bg-gray-100 rounded-xl w-3/4 mx-auto"></div>
-                    <div class="h-10 bg-gray-100 rounded-xl w-full"></div>
-                    <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest mt-4">Syncing Archive...</p>
-                </div>
-            `;
-
-            try {
-                console.log(`[Fulfillment] Fetching details for Order ID: ${orderId}`);
-                const formData = new FormData();
-                formData.append('action', 'get_order_details');
-                formData.append('order_id', orderId);
-
-                const response = await fetch('../include/inc.warehouse/wh.ctrl.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                console.log(`[Fulfillment] Server Response Status: ${response.status}`);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error(`[Fulfillment] Server Error Text:`, errorText);
-                    throw new Error(`Server responded with ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log(`[Fulfillment] Received Data:`, data);
-
-                if (data.success) {
-                    currentOrder = data.order;
-                    console.log(`[Fulfillment] Order loaded successfully:`, currentOrder);
-                    document.getElementById('modalOrderHeadline').innerText = `Order #${currentOrder.order_id}`;
-                    renderSidebar();
-                    updateFulfillmentProgress();
-
-                    if (currentOrder.products && currentOrder.products.length > 0) {
-                        selectProduct(0);
-                    } else {
-                        console.warn(`[Fulfillment] Order # ${orderId} has no products.`);
-                        modalSidebar.innerHTML = '<p class="p-6 text-sm text-gray-400">No products found in this order.</p>';
-                    }
-                } else if (data.message === 'Order not found.') {
-                    // MOCK FALLBACK: Check if this exists in our mock data
-                    console.log(`[Fulfillment] Order not in Database. Checking local mock data...`);
-                    const mockMatch = mockOrders.find(o => o.order_id == orderId);
-
-                    if (mockMatch) {
-                        console.log(`[Fulfillment] Using Mock Fallback for Order #${orderId}`);
-                        currentOrder = JSON.parse(JSON.stringify(mockMatch)); // Deep clone
-                        document.getElementById('modalOrderHeadline').innerText = `Order #${currentOrder.order_id} (Demo Mode)`;
-                        renderSidebar();
-                        updateFulfillmentProgress();
-                        if (currentOrder.products && currentOrder.products.length > 0) selectProduct(0);
-
-                        if (typeof showToast === 'function') showToast('Viewing Mock Order (No DB connection)', 'info');
-                    } else {
-                        console.error(`[Fulfillment] Backend returned failure:`, data.message);
-                        // Original error display
-                        modalSidebar.innerHTML = `
-                            <div class="p-6 text-center">
-                                <p class="text-sm text-red-500 font-bold mb-2">Error Loading Order</p>
-                                <p class="text-xs text-gray-500">${data.message || 'The requested order could not be retrieved from the database.'}</p>
-                                <button onclick="closeFulfillmentModal()" class="mt-4 text-[10px] font-black uppercase text-gray-400 hover:text-black">Dismiss</button>
-                            </div>
-                        `;
-                    }
-                } else {
-                    console.error(`[Fulfillment] Backend returned failure:`, data.message);
-                    // Stay in modal but show error
-                    modalSidebar.innerHTML = `
-                        <div class="p-6 text-center">
-                            <p class="text-sm text-red-500 font-bold mb-2">Error Loading Order</p>
-                            <p class="text-xs text-gray-500">${data.message || 'The requested order could not be retrieved from the database.'}</p>
-                            <button onclick="closeFulfillmentModal()" class="mt-4 text-[10px] font-black uppercase text-gray-400 hover:text-black">Dismiss</button>
-                        </div>
-                    `;
-                    if (typeof showToast === 'function') showToast(data.message || 'Failed to load order', 'error');
-                }
-            } catch (err) {
-                console.error("Fulfillment Modal Error:", err);
-                modalSidebar.innerHTML = `
-                        <div class="p-6 text-center">
-                            <p class="text-sm text-red-500 font-bold mb-2">Network Error</p>
-                            <p class="text-xs text-gray-500">Could not connect to the server. Please check your connection or try again later.</p>
-                            <button onclick="closeFulfillmentModal()" class="mt-4 text-[10px] font-black uppercase text-gray-400 hover:text-black">Dismiss</button>
-                        </div>
-                    `;
-                if (typeof showToast === 'function') showToast('Network or Server error', 'error');
-            }
-        }
-
-        function closeFulfillmentModal() {
-            modal.classList.remove('opacity-100');
-            modal.classList.add('pointer-events-none');
-            document.body.style.overflow = '';
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }, 300);
-        }
-
-        document.getElementById('closeModal').onclick = closeFulfillmentModal;
-
-        function renderSidebar() {
-            modalSidebar.innerHTML = '';
-            currentOrder.products.forEach((product, index) => {
-                const isSelected = index === selectedProductIndex;
-                const isReady = product.wh_item_status === 'ready';
-
-                const sidebarItem = document.createElement('button');
-                // CLEAN SIDEBAR CARD (Snapshot Style)
-                sidebarItem.className = `w-full text-left p-4 rounded-xl transition-all duration-300 flex items-center gap-4 ${isSelected ? 'bg-white shadow-md border-transparent' : 'bg-transparent border border-transparent hover:bg-white/40'}`;
-
-                sidebarItem.innerHTML = `
-                    <div class="w-14 h-14 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative border border-gray-100 shadow-sm">
-                        <img src="../../public/assets/img/furnitures/${encodeURIComponent(product.img?.trim() || 'default-placeholder.png')}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='../../public/assets/img/primeLogo.ico'">
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="text-sm font-bold text-gray-900 truncate leading-tight mb-0.5">${product.prod_name}</h4>
-                        <div class="flex items-center gap-2">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tight">${product.prod_code}</p>
-                            <span class="text-[9px] font-black text-red-600 bg-red-50 px-1.5 rounded-md border border-red-100">x${product.qty_to_pick}</span>
-                        </div>
-                    </div>
-                    ${isReady ? `
-                        <div class="bg-green-500 text-white rounded-full p-1 border-2 border-white shadow-sm flex items-center justify-center -ml-2 self-start mt-2 relative z-10">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </div>
-                    ` : ''}
-                `;
-
-                sidebarItem.onclick = () => selectProduct(index);
-                modalSidebar.appendChild(sidebarItem);
-            });
-        }
-
-        function selectProduct(index) {
-            selectedProductIndex = index;
-            const product = currentOrder.products[index];
-            const isReady = product.wh_item_status === 'ready';
-
-            noSelectionState.classList.add('hidden');
-            productDetailContent.classList.remove('hidden');
-            detailPaneFooter.classList.remove('hidden');
-
-            // Populate Fields
-            document.getElementById('detailImg').src = `../../public/assets/img/furnitures/${encodeURIComponent(product.img?.trim() || 'default-placeholder.png')}`;
-            document.getElementById('detailCode').innerText = product.prod_code;
-            document.getElementById('detailName').innerText = product.prod_name;
-            document.getElementById('detailQty').innerText = product.qty_to_pick;
-            document.getElementById('detailStock').innerText = product.available_stock;
-
-            // Show Variant with name if exists
-            if (product.variant_name && product.variant_name !== 'Standard') {
-                document.getElementById('detailName').innerText += ` (${product.variant_name})`;
-            }
-
-            // Mock description if missing
-            const descEl = document.getElementById('detailDescription');
-            descEl.innerText = product.description || `Premium quality ${product.prod_name} build. Requires careful handling and verification of all components before staging.`;
-
-            // Locations List
-            const locContainer = document.getElementById('detailLocations');
-            locContainer.innerHTML = '';
-            product.components.forEach(comp => {
-                locContainer.innerHTML += `
-                    <div class="flex items-center gap-3 bg-[#f8fafc] p-4 rounded-xl border-none group hover:bg-blue-50 transition-all duration-300">
-                        <div class="text-gray-400 group-hover:text-blue-600 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">${comp.component_name}</p>
-                            <p class="text-lg font-black text-gray-900 leading-none tracking-tight">${comp.location || 'N/A'}</p>
-                        </div>
-                    </div>
-                `;
-            });
-
-            // Action Button Visibility
-            if (isReady) {
-                markReadyBtn.classList.add('hidden');
-                cancelReadyBtn.classList.remove('hidden');
-            } else {
-                markReadyBtn.classList.remove('hidden');
-                cancelReadyBtn.classList.add('hidden');
-            }
-
-            renderSidebar();
-            updateFulfillmentProgress();
-            syncGridState();
-        }
-
-        function syncGridState() {
-            if (!currentOrder) return;
-            const orderId = currentOrder.order_id;
-            const pillContainer = document.getElementById(`status-pill-${orderId}`);
-
-            // Defensive Check: Modal might be open while main grid items are being refreshed/filtered
-            if (!pillContainer) return;
-
-            const isModified = currentOrder.products.some(p => p.wh_item_status === 'ready');
-
-            if (isModified) {
-                pillContainer.innerHTML = `
-                    <div class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200">
-                        <span class="text-[8px] font-black uppercase tracking-wider">In Progress</span>
-                    </div>
-                `;
-            } else {
-                pillContainer.innerHTML = `
-                    <div class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">
-                        <span class="text-[8px] font-black uppercase tracking-wider">New</span>
-                    </div>
-                `;
-            }
-        }
-
-        markReadyBtn.onclick = () => updateItemStatus('ready');
-        cancelReadyBtn.onclick = () => updateItemStatus('pending');
-
-        async function updateItemStatus(newStatus) {
-            if (selectedProductIndex === -1) return;
-            const product = currentOrder.products[selectedProductIndex];
-
-            try {
-                const formData = new FormData();
-                formData.append('action', 'mark_item_ready');
-                formData.append('item_id', product.item_id);
-                formData.append('status', newStatus);
-
-                const response = await fetch('../include/inc.warehouse/wh.ctrl.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    product.wh_item_status = newStatus;
-
-                    // Show subtle success feedback
-                    if (typeof showToast === 'function') {
-                        const msg = newStatus === 'ready' ? 'Product marked as ready' : 'Staging cancelled';
-                        showToast(msg, 'success');
-                    }
-
-                    selectProduct(selectedProductIndex);
-                } else {
-                    if (typeof showToast === 'function') {
-                        showToast(data.message || 'Verification failed', 'error');
-                    } else {
-                        console.error('Action failed:', data.message);
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        function updateFulfillmentProgress() {
-            const total = currentOrder.products.length;
-            const readyItems = currentOrder.products.filter(p => p.wh_item_status === 'ready').length;
-            const isAllReady = total > 0 && readyItems === total;
-
-            progressHeader.innerText = `${readyItems} of ${total} products ready`;
-
-            // Fulfill Button Visibility (Snapshot Requirement)
-            if (isAllReady) {
-                finalFulfillBtn.classList.add('hidden');
-                activeFulfillBtn.classList.remove('hidden');
-            } else {
-                finalFulfillBtn.classList.remove('hidden');
-                activeFulfillBtn.classList.add('hidden');
-            }
-        }
-
-        activeFulfillBtn.onclick = async () => {
-            if (!currentOrder) return;
-            try {
-                const formData = new FormData();
-                formData.append('action', 'fulfill_order');
-                formData.append('order_id', currentOrder.order_id);
-
-                const response = await fetch('../include/inc.warehouse/wh.ctrl.php', { method: 'POST', body: formData });
-                const data = await response.json();
-                if (data.success) {
-                    if (typeof showToast === 'function') {
-                        showToast('Order fulfilled successfully', 'success');
-                        setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                        window.location.reload();
-                    }
-                } else {
-                    if (typeof showToast === 'function') {
-                        showToast(data.message || 'Fulfillment failed', 'error');
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                }
-            } catch (err) { console.error(err); }
-        };
-
-        // Bulk Reset Function
-        async function resetAllOrderItems() {
-            if (!currentOrder) return;
-
-            // Wait for visual feedback
-            const checkbox = document.getElementById('unmarkAllCheckbox');
-            if (!checkbox.checked) return;
-
-            try {
-                const formData = new FormData();
-                formData.append('action', 'reset_all_ready');
-                formData.append('order_id', currentOrder.order_id);
-
-                const response = await fetch('../include/inc.warehouse/wh.ctrl.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    currentOrder.products.forEach(p => p.wh_item_status = 'pending');
-
-                    if (typeof showToast === 'function') {
-                        showToast('Order progress reset to New arrival', 'success');
-                    }
-
-                    selectProduct(selectedProductIndex);
-                    checkbox.checked = false;
-                } else {
-                    if (typeof showToast === 'function') {
-                        showToast(data.message || 'Reset failed', 'error');
-                    }
-                    checkbox.checked = false;
-                }
-            } catch (err) {
-                console.error(err);
-                checkbox.checked = false;
-            }
-        }
-
-        window.onclick = (e) => {
-            if (e.target === modal) closeFulfillmentModal();
-        };
+        // Export data for the external fulfillment script
+        window.mockOrders = <?= json_encode($fulfillmentOrders) ?>;
     </script>
+    <script src="../../public/assets/js/warehouse.js" defer></script>
+    <script src="../../public/assets/js/warehouse-fulfillment.js" defer></script>
 </body>
 
 </html>

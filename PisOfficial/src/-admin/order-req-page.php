@@ -23,8 +23,6 @@ if (isset($_SESSION['user_id'])) {
     $totalTransactionsCount = $stats['total_transactions'];
     $pendingRequestsCount = $stats['pending_requests'];
 
-    // Fetch recent activities for the notification dropdown
-    $activities = get_recent_activities($pdo, 5);
 
     // Fetch total cart items for Admin POS badge
     $cartItems = get_cart_items($pdo, $userId);
@@ -84,7 +82,7 @@ if (isset($_SESSION['user_id'])) {
                 <?= h(ucfirst($role)) ?> User
             </div>
 
-            <!-- Notifications -->
+            <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
                     class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
@@ -94,42 +92,9 @@ if (isset($_SESSION['user_id'])) {
                             d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
                     </svg>
                 </button>
-
-                <div id="notifDropdown"
-                    class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden transition-all duration-300">
-                    <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-tight">Recent Activity</h3>
-                    </div>
-
-                    <div id="notifList" class="overflow-y-auto transition-all duration-500 ease-in-out"
-                        style="max-height: 200px;">
-                        <div class="divide-y divide-gray-50 bg-white">
-                            <?php if (empty($activities)): ?>
-                                <div class="px-4 py-6 text-center text-gray-400 text-xs italic">
-                                    No recent activities found.
-                                </div>
-                            <?php else: ?>
-                                <?php foreach ($activities as $act): ?>
-                                    <div class="px-4 py-3 hover:bg-red-50/50 transition-colors">
-                                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                                            <?= h($act['type']) ?>
-                                        </p>
-                                        <div class="text-xs text-gray-700 leading-relaxed">
-                                            <?= h($act['action']) ?>
-                                        </div>
-                                        <span class="text-[10px] text-gray-400 mt-2 block italic"><?= format_activity_time($act['timestamp']) ?></span>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <button id="viewAllBtn"
-                        class="block w-full py-3 text-center text-[11px] font-extrabold text-red-600 bg-gray-50 hover:bg-red-100 border-t border-gray-100 transition-all uppercase tracking-widest">
-                        View All Notifications
-                    </button>
-                </div>
             </div>
+            <?php include '../include/sidebar-notif.php'; ?>
+
 
             <!-- Settings -->
             <a href="../-admin/settings.php"

@@ -19,16 +19,31 @@ if (isset($_SESSION['user_id'])) {
     // Fetch total cart items for notification badge
     require_once '../include/global.model.php';
     require_once '../include/inc.showroom/sr.model.php';
-    
+
     $cartItemsCount = count(get_cart_items($pdo, $userId));
     $totalCartItems = $cartItemsCount;
 
-    // Fetch transactions
-    $transactions = fetch_sr_transaction_history($pdo, $userId);
+    // --- PAGINATION & FILTERING ---
+    $currentPage = (int)($_GET['page'] ?? 1);
+    if ($currentPage < 1) $currentPage = 1;
+    $limit = 10;
+    $offset = ($currentPage - 1) * $limit;
+
+    $start_date = $_GET['start_date'] ?? '';
+    $end_date = $_GET['end_date'] ?? '';
+
+    $filters = [
+        'start_date' => $start_date,
+        'end_date' => $end_date
+    ];
+
+    $total_records = count_sr_transaction_history($pdo, $userId, $filters);
+    $total_pages = max(1, (int)ceil($total_records / $limit));
+    $transactions = fetch_sr_transaction_history($pdo, $userId, $filters, $limit, $offset);
 
     // Fetch counts for the stats cards
     $totalProducts = (int)$pdo->query("SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0")->fetchColumn();
-    
+
     $totalTransactions = $pdo->prepare("SELECT COUNT(*) FROM transactions t JOIN orders o ON t.order_id = o.id WHERE o.created_by = ?");
     $totalTransactions->execute([$userId]);
     $totalTransactionsCount = (int)$totalTransactions->fetchColumn();
@@ -54,7 +69,9 @@ if (isset($_SESSION['user_id'])) {
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
     <style>
-        html { zoom: 90%; }
+        html {
+            zoom: 90%;
+        }
     </style>
 </head>
 
@@ -77,24 +94,19 @@ if (isset($_SESSION['user_id'])) {
                 <?= ucfirst($role) ?> User
             </div>
 
+            <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
-                <button id="notifButton" class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
-                    <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
+                <button id="notifButton"
+                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
                     </svg>
                 </button>
-
-                <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden">
-                    <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-tight">Recent Activity</h3>
-                    </div>
-                    <div id="notifList" class="overflow-y-auto" style="max-height: 200px;">
-                        <div class="px-4 py-6 text-center text-gray-400 text-xs italic">
-                            No recent activities found.
-                        </div>
-                    </div>
-                </div>
             </div>
+            <?php include '../include/sidebar-notif.php'; ?>
+
 
             <a href="javascript:void(0)" onclick="toggleLogoutModal(true)" class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -167,11 +179,33 @@ if (isset($_SESSION['user_id'])) {
 
     <div class="flex flex-center w-full">
         <div class="border border-gray-300 rounded-2xl p-12 w-[1250px]">
-            <div class="flex justify-between items-end mb-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
                     <h2 class="text-2xl font-semibold mb-2">Transaction History</h2>
-                    <p class="text-gray-600 mb-6">Browse and manage your transaction records.</p>
+                    <p class="text-gray-600 font-medium">Browse and manage your transaction records.</p>
                 </div>
+
+                <!-- Date Filter Bar -->
+                <form method="GET" class="flex flex-wrap items-end gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">From</label>
+                        <input type="date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">To</label>
+                        <input type="date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all">
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button type="submit" class="h-10 px-5 bg-red-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95">
+                            Filter
+                        </button>
+                        <a href="transaction-history.php" class="h-10 px-5 bg-white border border-gray-200 text-gray-400 text-xs font-bold uppercase tracking-widest rounded-xl hover:text-gray-600 flex items-center transition-all active:scale-95">
+                            Reset
+                        </a>
+                    </div>
+                </form>
             </div>
 
             <div class="w-full overflow-hidden border border-gray-100 rounded-2xl shadow-sm bg-white font-sans text-gray-900">
@@ -179,8 +213,7 @@ if (isset($_SESSION['user_id'])) {
                     <thead class="bg-gray-50 text-gray-400 text-[9px] font-bold uppercase tracking-widest border-b border-gray-100">
                         <tr>
                             <th class="px-6 py-4 w-[15%]">Transaction ID</th>
-                            <th class="px-4 py-4 w-[18%]">Customer / Type</th>
-                            <th class="px-4 py-4 w-[15%]">Branch</th>
+                            <th class="px-4 py-4 w-[33%]">Customer / Type</th>
                             <th class="px-4 py-4 w-[15%]">Method</th>
                             <th class="px-4 py-4 text-center w-[12%]">Date</th>
                             <th class="px-4 py-4 text-center w-[10%]">Status</th>
@@ -190,7 +223,7 @@ if (isset($_SESSION['user_id'])) {
                     <tbody class="divide-y divide-gray-50">
                         <?php if (empty($transactions)): ?>
                             <tr>
-                                <td colspan="7" class="px-6 py-15 text-center">
+                                <td colspan="6" class="px-6 py-15 text-center">
                                     <div class="flex flex-col items-center gap-3">
                                         <div class="size-16 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100">
                                             <svg class="size-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -215,9 +248,6 @@ if (isset($_SESSION['user_id'])) {
                                             <span class="text-sm font-bold text-gray-900"><?= htmlspecialchars($trans['customer_name']) ?></span>
                                             <span class="text-[10px] font-black text-red-500 uppercase"><?= htmlspecialchars($trans['client_type']) ?></span>
                                         </div>
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <span class="text-xs font-bold text-gray-600"><?= htmlspecialchars($trans['gov_branch'] ?? 'N/A') ?></span>
                                     </td>
                                     <td class="px-4 py-4">
                                         <div class="flex items-center gap-2">
@@ -246,21 +276,45 @@ if (isset($_SESSION['user_id'])) {
                     </tbody>
                 </table>
             </div>
-            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                <div class="text-xs font-black text-gray-400 uppercase tracking-widest">
-                    Showing <?= count($transactions) ?> of <?= count($transactions) ?> Results
+            <!-- Pagination Footer -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                <div class="text-[11px] text-gray-400 font-bold uppercase tracking-widest">
+                    Showing <span class="text-gray-900"><?= $total_records > 0 ? $offset + 1 : 0 ?></span> to <span class="text-gray-900"><?= min($offset + $limit, $total_records) ?></span> of <span class="text-gray-900"><?= $total_records ?></span> results
                 </div>
-                <div class="flex gap-3">
-                    <div class="px-5 py-2 border border-gray-300 rounded-lg text-xs font-black text-gray-400 uppercase tracking-tight opacity-50 cursor-not-allowed">
-                        Previous
-                    </div>
-                    <div class="px-5 py-2 bg-red-600 border border-red-600 rounded-lg text-xs font-black text-white uppercase tracking-tight shadow-md opacity-50 cursor-not-allowed">
-                        Next Page
-                    </div>
+                <div class="flex items-center gap-1">
+                    <?php if ($currentPage > 1): ?>
+                        <a href="?page=<?= $currentPage - 1 ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
+                            class="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all active:scale-95 text-gray-400 hover:text-gray-600">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                            </svg>
+                        </a>
+                    <?php endif; ?>
+
+                    <?php
+                    $startPage = max(1, $currentPage - 2);
+                    $endPage = min($total_pages, $currentPage + 2);
+                    if ($startPage > 1) echo '<span class="px-2 text-gray-300">...</span>';
+                    for ($i = $startPage; $i <= $endPage; $i++): ?>
+                        <a href="?page=<?= $i ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
+                            class="size-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all <?= $i === $currentPage ? 'bg-red-600 text-white shadow-md shadow-red-200' : 'text-gray-400 hover:bg-gray-100' ?>">
+                            <?= $i ?>
+                        </a>
+                    <?php endfor; ?>
+                    <?php if ($endPage < $total_pages) echo '<span class="px-2 text-gray-300">...</span>'; ?>
+
+                    <?php if ($currentPage < $total_pages): ?>
+                        <a href="?page=<?= $currentPage + 1 ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
+                            class="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all active:scale-95 text-gray-400 hover:text-gray-600">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                            </svg>
+                        </a>
+                    <?php endif; ?>
                 </div>
-            </div>
             </div>
         </div>
+    </div>
     </div>
 
 </body>

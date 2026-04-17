@@ -5,9 +5,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../global.model.php';
 
 /**
- * Fetches order requests. If $userId is provided (>0), filters by that user.
+ * Fetches order requests with support for filtering and pagination.
  */
-function fetch_requests(PDO $pdo, int $userId = 0): array
+function fetch_requests(PDO $pdo, int $userId = 0, array $filters = [], int $limit = 10, int $offset = 0): array
 {
     try {
         $sql = "SELECT 
@@ -20,23 +20,86 @@ function fetch_requests(PDO $pdo, int $userId = 0): array
                     c.name AS customer_name
                 FROM orders o
                 LEFT JOIN users u ON o.created_by = u.id
-                LEFT JOIN customers c ON o.customer_id = c.id";
-        
+                LEFT JOIN customers c ON o.customer_id = c.id
+                WHERE 1 = 1";
+
+        $params = [];
+
         if ($userId > 0) {
-            $sql .= " WHERE o.created_by = :user_id";
+            $sql .= " AND o.created_by = :user_id";
+            $params[':user_id'] = $userId;
         }
-        
-        $sql .= " ORDER BY o.id DESC";
+
+        if (!empty($filters['status']) && $filters['status'] !== 'All') {
+            $sql .= " AND o.status = :status";
+            $params[':status'] = $filters['status'];
+        }
+
+        if (!empty($filters['start_date'])) {
+            $sql .= " AND DATE(o.created_at) >= :start_date";
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $sql .= " AND DATE(o.created_at) <= :end_date";
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        $sql .= " ORDER BY o.created_at DESC, o.id DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $pdo->prepare($sql);
-        if ($userId > 0) {
-            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
         }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (PDOException $e) {
         error_log("Fetch Requests Error: " . $e->getMessage());
         return [];
+    }
+}
+
+/**
+ * Counts total order requests matching the given filters.
+ */
+function count_requests(PDO $pdo, int $userId = 0, array $filters = []): int
+{
+    try {
+        $sql = "SELECT COUNT(*) FROM orders o WHERE 1 = 1";
+        $params = [];
+
+        if ($userId > 0) {
+            $sql .= " AND o.created_by = :user_id";
+            $params[':user_id'] = $userId;
+        }
+
+        if (!empty($filters['status']) && $filters['status'] !== 'All') {
+            $sql .= " AND o.status = :status";
+            $params[':status'] = $filters['status'];
+        }
+
+        if (!empty($filters['start_date'])) {
+            $sql .= " AND DATE(o.created_at) >= :start_date";
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $sql .= " AND DATE(o.created_at) <= :end_date";
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Count Requests Error: " . $e->getMessage());
+        return 0;
     }
 }
 
@@ -95,10 +158,17 @@ function process_showroom_finalize_order(PDO $pdo, array $data): array
 
         foreach ($items as $item) {
             $neededQty = (int)$item['qty'];
+            $vId = (int)$item['variant_id'];
+
+            // Get prod_id for accurate logging
+            $stmtProd = $pdo->prepare("SELECT prod_id FROM product_variant WHERE id = ?");
+            $stmtProd->execute([$vId]);
+            $prodId = (int)($stmtProd->fetchColumn() ?: 0);
+
             if ($item['get_from'] === 'SR') {
                 // A. Showroom Stock Locking & Validation
                 $stmtCheck = $pdo->prepare("SELECT qty_on_hand FROM showroom_stocks WHERE variant_id = ? FOR UPDATE");
-                $stmtCheck->execute([$item['variant_id']]);
+                $stmtCheck->execute([$vId]);
                 $current = (int)($stmtCheck->fetchColumn() ?: 0);
 
                 if ($current < $neededQty) {
@@ -106,27 +176,27 @@ function process_showroom_finalize_order(PDO $pdo, array $data): array
                 }
 
                 $pdo->prepare("UPDATE showroom_stocks SET qty_on_hand = qty_on_hand - ? WHERE variant_id = ?")
-                    ->execute([$neededQty, $item['variant_id']]);
+                    ->execute([$neededQty, $vId]);
                 
-                $pdo->prepare("INSERT INTO showroom_logs (variant_id, action, qty) VALUES (?, ?, ?)")
-                    ->execute([$item['variant_id'], "Showroom Sale (Finalized Request #$orderId)", -$neededQty]);
+                $pdo->prepare("INSERT INTO showroom_logs (variant_id, prod_id, action, qty) VALUES (?, ?, ?, ?)")
+                    ->execute([$vId, $prodId, "Showroom Sale (Finalized Request #$orderId)", -$neededQty]);
             } else {
                 // B. Warehouse Stock Locking & Validation (Recipe Based)
                 $stmtRecipe = $pdo->prepare("SELECT pc.id, pc.comp_id, pc.qty_needed 
                                            FROM product_components pc 
                                            JOIN product_variant pv ON pc.prod_id = pv.prod_id 
                                            WHERE pv.id = ? AND pc.is_deleted = 0");
-                $stmtRecipe->execute([$item['variant_id']]);
+                $stmtRecipe->execute([$vId]);
                 $recipe = $stmtRecipe->fetchAll(PDO::FETCH_ASSOC);
 
-                if (empty($recipe)) throw new Exception("Product recipe missing for variant ID: " . $item['variant_id']);
+                if (empty($recipe)) throw new Exception("Product recipe missing for variant ID: " . $vId);
 
                 foreach ($recipe as $r) {
                     $deduction = $neededQty * (int)$r['qty_needed'];
 
                     // Lock and Check Warehouse Component Row
                     $stmtCheckWH = $pdo->prepare("SELECT qty_on_hand FROM warehouse_stocks WHERE variant_id = ? AND product_comp_id = ? FOR UPDATE");
-                    $stmtCheckWH->execute([$item['variant_id'], $r['id']]);
+                    $stmtCheckWH->execute([$vId, $r['id']]);
                     $currentWH = (int)($stmtCheckWH->fetchColumn() ?: 0);
 
                     if ($currentWH < $deduction) {
@@ -134,10 +204,10 @@ function process_showroom_finalize_order(PDO $pdo, array $data): array
                     }
 
                     $pdo->prepare("UPDATE warehouse_stocks SET qty_on_hand = qty_on_hand - ? WHERE variant_id = ? AND product_comp_id = ?")
-                        ->execute([$deduction, $item['variant_id'], $r['id']]);
+                        ->execute([$deduction, $vId, $r['id']]);
                     
-                    $pdo->prepare("INSERT INTO warehouse_logs (comp_id, action, qty) VALUES (?, ?, ?)")
-                        ->execute([$r['comp_id'], "Sold (Finalized Showroom Request #$orderId)", -$deduction]);
+                    $pdo->prepare("INSERT INTO warehouse_logs (comp_id, prod_id, variant_id, action, qty) VALUES (?, ?, ?, ?, ?)")
+                        ->execute([$r['comp_id'], $prodId, $vId, "Sold (Finalized Showroom Request #$orderId)", -$deduction]);
                 }
             }
         }
@@ -205,9 +275,9 @@ function cancel_product_request(PDO $pdo, string $prNo): bool
 }
 
 /**
- * Fetches transaction history for a specific Showroom user.
+ * Fetches transaction history for a specific Showroom user with filtering and pagination.
  */
-function fetch_sr_transaction_history(PDO $pdo, int $userId): array
+function fetch_sr_transaction_history(PDO $pdo, int $userId, array $filters = [], int $limit = 10, int $offset = 0): array
 {
     try {
         $sql = "SELECT 
@@ -222,15 +292,66 @@ function fetch_sr_transaction_history(PDO $pdo, int $userId): array
                 FROM transactions t
                 JOIN orders o ON t.order_id = o.id
                 JOIN customers c ON o.customer_id = c.id
-                WHERE o.created_by = :user_id
-                ORDER BY t.transaction_date DESC, t.id DESC";
+                WHERE o.created_by = :user_id";
+
+        $params = [':user_id' => $userId];
+
+        if (!empty($filters['start_date'])) {
+            $sql .= " AND t.transaction_date >= :start_date";
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $sql .= " AND t.transaction_date <= :end_date";
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        $sql .= " ORDER BY t.transaction_date DESC, t.id DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $pdo->prepare($sql);
-        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (PDOException $e) {
         error_log("Fetch SR Transaction History Error: " . $e->getMessage());
         return [];
+    }
+}
+
+/**
+ * Counts total transaction history records matching the given filters.
+ */
+function count_sr_transaction_history(PDO $pdo, int $userId, array $filters = []): int
+{
+    try {
+        $sql = "SELECT COUNT(*) 
+                FROM transactions t 
+                JOIN orders o ON t.order_id = o.id 
+                WHERE o.created_by = :user_id";
+        $params = [':user_id' => $userId];
+
+        if (!empty($filters['start_date'])) {
+            $sql .= " AND t.transaction_date >= :start_date";
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $sql .= " AND t.transaction_date <= :end_date";
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Count SR Transaction History Error: " . $e->getMessage());
+        return 0;
     }
 }

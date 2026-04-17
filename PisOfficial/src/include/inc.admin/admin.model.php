@@ -296,17 +296,24 @@ function process_admin_pos_sale(PDO $pdo, array $data): array
         if (empty($cartItems)) throw new Exception("Cart is empty.");
 
         foreach ($cartItems as $item) {
+            $vId = (int)$item['variant_id'];
+            $neededQty = (int)$item['qty'];
+
+            // Get prod_id for logging
+            $stmtProd = $pdo->prepare("SELECT prod_id FROM product_variant WHERE id = ?");
+            $stmtProd->execute([$vId]);
+            $prodId = (int)($stmtProd->fetchColumn() ?: 0);
+
             // Insert into order_items
             $sql = "INSERT INTO order_items (order_id, variant_id, qty, get_from, unit_price) VALUES (?, ?, ?, ?, ?)";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$orderId, $item['variant_id'], $item['qty'], $item['source'], $item['price']]);
+            $stmt->execute([$orderId, $vId, $neededQty, $item['source'], $item['price']]);
 
             // Stock Deduction & Logging
-            $neededQty = (int)$item['qty'];
             if ($item['source'] === 'SR') {
                 // LOCK and CHECK Showroom Stock
                 $stmtCheck = $pdo->prepare("SELECT qty_on_hand FROM showroom_stocks WHERE variant_id = ? FOR UPDATE");
-                $stmtCheck->execute([$item['variant_id']]);
+                $stmtCheck->execute([$vId]);
                 $currentSR = (int)($stmtCheck->fetchColumn() ?: 0);
 
                 if ($currentSR < $neededQty) {
@@ -314,26 +321,25 @@ function process_admin_pos_sale(PDO $pdo, array $data): array
                 }
 
                 $pdo->prepare("UPDATE showroom_stocks SET qty_on_hand = qty_on_hand - ? WHERE variant_id = ?")
-                    ->execute([$neededQty, $item['variant_id']]);
+                    ->execute([$neededQty, $vId]);
 
-                // Showroom Log using variant_id (Correct column name)
-                $pdo->prepare("INSERT INTO showroom_logs (variant_id, action, qty) VALUES (?, ?, ?)")
-                    ->execute([$item['variant_id'], "Sold (Order #$orderId)", -$neededQty]);
+                // Showroom Log
+                $pdo->prepare("INSERT INTO showroom_logs (variant_id, prod_id, action, qty) VALUES (?, ?, ?, ?)")
+                    ->execute([$vId, $prodId, "Sold (Order #$orderId)", -$neededQty]);
             } else {
-                // Warehouse Stock Deduction (Targets all component rows for this specific variant)
-                // We use the recipe to ensure correct deduction multiplier
+                // Warehouse Stock Deduction
                 $stmtRecipe = $pdo->prepare("SELECT pc.id, pc.comp_id, pc.qty_needed FROM product_components pc JOIN product_variant pv ON pc.prod_id = pv.prod_id WHERE pv.id = ? AND pc.is_deleted = 0");
-                $stmtRecipe->execute([$item['variant_id']]);
+                $stmtRecipe->execute([$vId]);
                 $recipe = $stmtRecipe->fetchAll(PDO::FETCH_ASSOC);
 
-                if (empty($recipe)) throw new Exception("Product recipe missing for variant ID: " . $item['variant_id']);
+                if (empty($recipe)) throw new Exception("Product recipe missing for variant ID: " . $vId);
 
                 foreach ($recipe as $r) {
                     $deduction = $neededQty * (int)$r['qty_needed'];
 
                     // LOCK and CHECK Warehouse Stock
                     $stmtCheckWH = $pdo->prepare("SELECT qty_on_hand FROM warehouse_stocks WHERE variant_id = ? AND product_comp_id = ? FOR UPDATE");
-                    $stmtCheckWH->execute([$item['variant_id'], $r['id']]);
+                    $stmtCheckWH->execute([$vId, $r['id']]);
                     $currentWH = (int)($stmtCheckWH->fetchColumn() ?: 0);
 
                     if ($currentWH < $deduction) {
@@ -341,11 +347,18 @@ function process_admin_pos_sale(PDO $pdo, array $data): array
                     }
 
                     $pdo->prepare("UPDATE warehouse_stocks SET qty_on_hand = qty_on_hand - ? WHERE variant_id = ? AND product_comp_id = ?")
-                        ->execute([$deduction, $item['variant_id'], $r['id']]);
+                        ->execute([$deduction, $vId, $r['id']]);
 
-                    // Log each component deduction specifically using comp_id (Correct column name)
-                    $pdo->prepare("INSERT INTO warehouse_logs (comp_id, action, qty) VALUES (?, ?, ?)")
-                        ->execute([$r['comp_id'], "Sold (Order #$orderId)", -$deduction]);
+                    $newWH = $currentWH - $deduction;
+                    if ($newWH <= 10) { // Threshold for alert
+
+                        $adminId = (int)($_SESSION['user_id'] ?? 0);
+                        create_notification($pdo, $adminId, 'Low Stock Alert', "Critical: Component ID {$r['comp_id']} is down to $newWH units.", 'low_stock', null, 'admin');
+                    }
+
+                    // Log each component deduction with full context
+                    $pdo->prepare("INSERT INTO warehouse_logs (comp_id, prod_id, variant_id, action, qty) VALUES (?, ?, ?, ?, ?)")
+                        ->execute([$r['comp_id'], $prodId, $vId, "Sold (Order #$orderId)", -$deduction]);
                 }
             }
         }
@@ -436,6 +449,11 @@ function update_stock_adjustment(PDO $pdo, array $adjustments, int $userId): arr
             if ($diff === 0) continue;
 
             if ($type === 'SR_VAR') {
+                // Get prod_id for logging
+                $stmtProd = $pdo->prepare("SELECT prod_id FROM product_variant WHERE id = ?");
+                $stmtProd->execute([$id]);
+                $prodId = (int)($stmtProd->fetchColumn() ?: 0);
+
                 // 1. Update Showroom Stock
                 $stmt = $pdo->prepare("INSERT INTO showroom_stocks (variant_id, qty_on_hand, last_update) 
                                      VALUES (?, ?, CURDATE()) 
@@ -443,8 +461,8 @@ function update_stock_adjustment(PDO $pdo, array $adjustments, int $userId): arr
                 $stmt->execute([$id, $diff, $diff]);
 
                 // 2. Log Showroom Adjustment
-                $stmtLog = $pdo->prepare("INSERT INTO showroom_logs (variant_id, action, qty) VALUES (?, 'INVENTORY_ADJUSTMENT', ?)");
-                $stmtLog->execute([$id, $diff]);
+                $stmtLog = $pdo->prepare("INSERT INTO showroom_logs (variant_id, prod_id, action, qty) VALUES (?, ?, 'INVENTORY_ADJUSTMENT', ?)");
+                $stmtLog->execute([$id, $prodId, $diff]);
 
                 // Buffer Warehouse Deduction (Transfer)
                 $stmtRecipe = $pdo->prepare("SELECT pc.id, pc.qty_needed, pc.comp_id 
@@ -468,16 +486,17 @@ function update_stock_adjustment(PDO $pdo, array $adjustments, int $userId): arr
                     $actualCompId = $stmtGetComp->fetchColumn();
 
                     // 3. Log Warehouse Deduction specifically for this part
-                    $stmtLogWH = $pdo->prepare("INSERT INTO warehouse_logs (comp_id, action, qty) VALUES (?, ?, ?)");
-                    $stmtLogWH->execute([(int)$actualCompId, "Stock Transfer to Showroom (Variant ID $id)", -$deduction]);
+                    $stmtLogWH = $pdo->prepare("INSERT INTO warehouse_logs (comp_id, prod_id, variant_id, action, qty) VALUES (?, ?, ?, ?, ?)");
+                    $stmtLogWH->execute([(int)$actualCompId, $prodId, $id, "Stock Transfer to Showroom (Variant ID $id)", -$deduction]);
                 }
             } else if ($type === 'WH_VAR') {
-                // 1. Log Warehouse Variant Adjustment Activity
-                $stmtLog = $pdo->prepare("INSERT INTO warehouse_logs (comp_id, action, qty) VALUES (NULL, ?, ?)");
-                $stmtLog->execute(["Warehouse Variant Adjustment (Variant ID $id) by User #$userId", $diff]);
+                // Get prod_id for logging
+                $stmtProd = $pdo->prepare("SELECT prod_id FROM product_variant WHERE id = ?");
+                $stmtProd->execute([$id]);
+                $prodId = (int)($stmtProd->fetchColumn() ?: 0);
+
 
                 // 2. Update Component Stocks based on Recipe Multiplier
-                // Get the components for this variant's product
                 $stmtRecipe = $pdo->prepare("SELECT pc.id, pc.qty_needed 
                                            FROM product_variant pv 
                                            JOIN product_components pc ON pv.prod_id = pc.prod_id 
@@ -486,10 +505,8 @@ function update_stock_adjustment(PDO $pdo, array $adjustments, int $userId): arr
                 $components = $stmtRecipe->fetchAll(PDO::FETCH_ASSOC);
 
                 foreach ($components as $comp) {
-                    // FORMULA: Input Quantity * Quantity Needed per unit
                     $actualChange = $diff * (int)$comp['qty_needed'];
 
-                    // Update the specific component row for this variant
                     $stmtUpdateComp = $pdo->prepare("UPDATE warehouse_stocks SET qty_on_hand = GREATEST(0, qty_on_hand + ?), last_update = CURDATE() 
                                                    WHERE product_comp_id = ? AND variant_id = ?");
                     $stmtUpdateComp->execute([$actualChange, $comp['id'], $id]);
@@ -500,21 +517,23 @@ function update_stock_adjustment(PDO $pdo, array $adjustments, int $userId): arr
                     $actualCompId = $stmtGetActual->fetchColumn();
 
                     // Log Component Level Change
-                    $stmtLogComp = $pdo->prepare("INSERT INTO warehouse_logs (comp_id, action, qty) VALUES (?, ?, ?)");
-                    $stmtLogComp->execute([(int)$actualCompId, "Recipe Adjusted (Variant ID $id multiplier: $diff)", $actualChange]);
+                    $stmtLogComp = $pdo->prepare("INSERT INTO warehouse_logs (comp_id, prod_id, variant_id, action, qty) VALUES (?, ?, ?, ?, ?)");
+                    $stmtLogComp->execute([(int)$actualCompId, $prodId, $id, "Recipe Adjusted (Variant ID $id multiplier: $diff)", $actualChange]);
                 }
             } else if ($type === 'WH_COMP') {
-                // Direct Manual Component Adjustment (Updates this component across all associated variants, capped at 0)
+                // Direct Manual Component Adjustment
                 $stmt = $pdo->prepare("UPDATE warehouse_stocks SET qty_on_hand = GREATEST(0, qty_on_hand + ?), last_update = CURDATE() WHERE product_comp_id = ?");
                 $stmt->execute([$diff, $id]);
 
-                // Resolve actual Raw Component ID for logging
-                $stmtGetComp = $pdo->prepare("SELECT comp_id FROM product_components WHERE id = ?");
+                // Resolve Context for logging
+                $stmtGetComp = $pdo->prepare("SELECT comp_id, prod_id FROM product_components WHERE id = ?");
                 $stmtGetComp->execute([$id]);
-                $actualCompId = $stmtGetComp->fetchColumn();
+                $compInfo = $stmtGetComp->fetch(PDO::FETCH_ASSOC);
+                $actualCompId = (int)($compInfo['comp_id'] ?? 0);
+                $prodId = (int)($compInfo['prod_id'] ?? 0);
 
-                $stmtLog = $pdo->prepare("INSERT INTO warehouse_logs (comp_id, action, qty) VALUES (?, 'MANUAL_ADJUSTMENT', ?)");
-                $stmtLog->execute([$actualCompId, $diff]);
+                $stmtLog = $pdo->prepare("INSERT INTO warehouse_logs (comp_id, prod_id, variant_id, action, qty) VALUES (?, ?, NULL, 'MANUAL_ADJUSTMENT', ?)");
+                $stmtLog->execute([$actualCompId, $prodId, $diff]);
             }
         }
 
@@ -698,16 +717,21 @@ function update_order_status(PDO $pdo, int $orderId, string $status, float $disc
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$status, $discount, $comment, $orderId]);
 
-        // 3. Insert Notification for the Showroom User
-        if ($creatorId > 0) {
-            $notifTitle = ($status === 'Approved') ? "Order Request Approved" : "Order Request Rejected";
-            $notifMsg = "Order #$orderId has been $status. Admin Note: " . (empty($comment) ? "No additional remarks." : $comment);
+        $pdo->commit();
 
-            $stmtNotif = $pdo->prepare("INSERT INTO notification (user_id, title, message, type, link_id) VALUES (?, ?, ?, 'order', ?)");
-            $stmtNotif->execute([$creatorId, $notifTitle, $notifMsg, $orderId]);
+        // Notification: Admin -> Showroom (Order Update Result)
+        if ($creatorId > 0) {
+
+            $adminId = (int)($_SESSION['user_id'] ?? 0);
+            $msg = "Ang iyong order request #$orderId ay naging " . strtolower($status) . ".";
+            create_notification($pdo, $adminId, "Order Update", $msg, 'result', $creatorId);
+
+            // Notification: Admin -> Warehouse (If approved, for fulfillment)
+            if ($status === 'Approved') {
+                create_notification($pdo, $adminId, 'Order to Fulfill', "Order #$orderId has been approved and is ready for fulfillment.", 'fulfillment', null, 'warehouse');
+            }
         }
 
-        $pdo->commit();
         return true;
     } catch (PDOException $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -922,21 +946,38 @@ function get_recent_orders(PDO $pdo, int $limit = 5): array
 /**
  * Fetches revenue trends for the last 6 months for Chart.js
  */
-function get_monthly_sales_trend(PDO $pdo): array
+function get_monthly_sales_trend(PDO $pdo, ?string $start = null, ?string $end = null): array
 {
     try {
-        $sql = "SELECT DATE_FORMAT(transaction_date, '%b') as month_name, SUM(amount) as revenue 
+        $params = [];
+        $whereSql = "WHERE status = 'Success'";
+
+        if ($start) {
+            $whereSql .= " AND transaction_date >= ?";
+            $params[] = $start . " 00:00:00";
+        }
+        if ($end) {
+            $whereSql .= " AND transaction_date <= ?";
+            $params[] = $end . " 23:59:59";
+        }
+
+        // Fallback to last 6 months if no filters
+        if (!$start && !$end) {
+            $whereSql .= " AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)";
+        }
+
+        $sql = "SELECT DATE_FORMAT(transaction_date, '%b %Y') as month_name, SUM(amount) as revenue 
                 FROM transactions 
-                WHERE status = 'Success' 
-                  AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-                GROUP BY DATE_FORMAT(transaction_date, '%m'), month_name
+                $whereSql 
+                GROUP BY DATE_FORMAT(transaction_date, '%Y-%m'), month_name
                 ORDER BY MIN(transaction_date) ASC";
-        $stmt = $pdo->query($sql);
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Fill with zeros if empty
         if (empty($data)) {
-            return [['month_name' => date('M'), 'revenue' => 0]];
+            return [['month_name' => date('M Y'), 'revenue' => 0]];
         }
         return $data;
     } catch (PDOException $e) {
@@ -986,17 +1027,34 @@ function get_inventory_health_stats(PDO $pdo): array
 /**
  * Fetches top performing products by volume
  */
-function get_top_performing_products(PDO $pdo, int $limit = 5): array
+function get_top_performing_products(PDO $pdo, int $limit = 5, string $period = 'all'): array
 {
     try {
+        $whereSql = "WHERE p.is_deleted = 0";
+        $params = [];
+
+        if ($period === 'this_month') {
+            $whereSql .= " AND t.first_txn_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')";
+        } else if ($period === 'last_month') {
+            $whereSql .= " AND t.first_txn_date >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH) 
+                           AND t.first_txn_date < DATE_FORMAT(CURDATE(), '%Y-%m-01')";
+        }
+
         $sql = "SELECT p.name, pv.variant, SUM(oi.qty) as total_sold, pv.variant_image, p.default_image
                 FROM order_items oi
                 JOIN product_variant pv ON oi.variant_id = pv.id
                 JOIN products p ON pv.prod_id = p.id
-                WHERE p.is_deleted = 0
+                JOIN (
+                    SELECT order_id, MIN(transaction_date) as first_txn_date
+                    FROM transactions 
+                    WHERE status = 'Success'
+                    GROUP BY order_id
+                ) t ON oi.order_id = t.order_id
+                $whereSql
                 GROUP BY pv.id
                 ORDER BY total_sold DESC
                 LIMIT :limit";
+        
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
@@ -1047,6 +1105,32 @@ function get_monthly_stock_in_stats(PDO $pdo): array
         ];
     } catch (PDOException $e) {
         return ['qty_ordered' => 0, 'total_cost' => 0];
+    }
+}
+
+/**
+ * Fetches total and monthly sales revenue statistics
+ */
+function get_revenue_stats(PDO $pdo): array
+{
+    try {
+        // Overall Revenue (Success only)
+        $totalSql = "SELECT SUM(amount) FROM transactions WHERE status = 'Success'";
+        $total = (float)$pdo->query($totalSql)->fetchColumn();
+
+        // Monthly Revenue (Current Month)
+        $monthlySql = "SELECT SUM(amount) FROM transactions 
+                       WHERE status = 'Success' 
+                       AND transaction_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')";
+        $monthly = (float)$pdo->query($monthlySql)->fetchColumn();
+
+        return [
+            'total' => $total,
+            'monthly' => $monthly
+        ];
+    } catch (PDOException $e) {
+        error_log("Get Revenue Stats Error: " . $e->getMessage());
+        return ['total' => 0.0, 'monthly' => 0.0];
     }
 }
 

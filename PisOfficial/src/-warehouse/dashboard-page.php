@@ -35,6 +35,7 @@ if (isset($_SESSION['user_id'])) {
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js" defer></script>
+    <script src="../../public/assets/js/warehouse.js" defer></script>
 
     <style>
         /* Shrink entire UI by 10% */
@@ -69,14 +70,19 @@ if (isset($_SESSION['user_id'])) {
                 <?= htmlspecialchars(ucfirst($role)) ?> User
             </div>
 
-            <button
-                class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition">
-                <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
-                </svg>
-            </button>
+            <!-- Notifications (Icon Only) -->
+            <div class="relative inline-block">
+                <button id="notifButton"
+                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
+                    </svg>
+                </button>
+            </div>
+            <?php include '../include/sidebar-notif.php'; ?>
+
 
             <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
                 class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
@@ -94,160 +100,119 @@ if (isset($_SESSION['user_id'])) {
 
     <!-- Smart Stock Alerts -->
     <?php
-    $whAlerts = [];
-    $srAlerts = [];
-    try {
-        $wh_sql = "SELECT p.name as prod_name, pv.variant as variant_name, COALESCE(pv.variant_image, p.default_image) as img, ws.qty_on_hand, pv.min_buildable_qty
-                   FROM warehouse_stocks ws
-                   JOIN product_variant pv ON ws.variant_id = pv.id
-                   JOIN products p ON pv.prod_id = p.id
-                   WHERE ws.qty_on_hand <= pv.min_buildable_qty
-                   ORDER BY ws.last_update DESC";
-        $whStmt = $pdo->query($wh_sql);
-        $whAlerts = $whStmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $sr_sql = "SELECT p.name as prod_name, pv.variant as variant_name, COALESCE(pv.variant_image, p.default_image) as img, ss.qty_on_hand, ss.min_display_qty
-                   FROM showroom_stocks ss
-                   JOIN product_variant pv ON ss.variant_id = pv.id
-                   JOIN products p ON pv.prod_id = p.id
-                   WHERE ss.qty_on_hand <= ss.min_display_qty
-                   ORDER BY ss.last_update DESC";
-        $srStmt = $pdo->query($sr_sql);
-        $srAlerts = $srStmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Alert Query Error: " . $e->getMessage());
-    }
+    // Fetch Stock Alerts
+    $alerts = get_warehouse_stock_alerts($pdo);
+    $whAlerts = $alerts['warehouse'];
+    $srAlerts = $alerts['showroom'];
     $hasAlerts = count($whAlerts) > 0 || count($srAlerts) > 0;
 
-    // Fetch Dashboard Stats
-    $totalProducts = 0;
-    $userTransactions = 0;
-    $pendingWH = 0;
-    $pendingSR = 0;
+    // Fetch Dashboard Stats & Warehouse Data
+    $stats = get_warehouse_dashboard_stats($pdo, (int)$userId);
+    $totalProducts = $stats['total_products'];
+    $userTransactions = $stats['user_transactions'];
+    $pendingWH = $stats['pending_wh'];
+    $pendingSR = $stats['pending_sr'];
 
-    try {
-        // 1. Available Products (Count of unique base products with warehouse stock > 0)
-        $totalProducts = $pdo->query("SELECT COUNT(DISTINCT p.id) 
-                                    FROM products p
-                                    JOIN product_variant pv ON p.id = pv.prod_id
-                                    JOIN warehouse_stocks ws ON pv.id = ws.variant_id
-                                    WHERE ws.qty_on_hand > 0 AND p.is_deleted = 0")->fetchColumn();
-
-        // 2. Your Transactions (Orders created by current user)
-        $stmt_user = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_by = ?");
-        $stmt_user->execute([$userId]);
-        $userTransactions = $stmt_user->fetchColumn();
-
-        $pendingWH = $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o 
-                                JOIN order_items oi ON o.id = oi.order_id 
-                                WHERE o.status = 'approved' AND (oi.get_from = 'WH' OR oi.get_from = 'Warehouse')")->fetchColumn();
-
-        $pendingSR = $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o 
-                                JOIN order_items oi ON o.id = oi.order_id 
-                                WHERE o.status = 'approved' AND (oi.get_from = 'SR' OR oi.get_from = 'Showroom')")->fetchColumn();
-    } catch (PDOException $e) {
-        error_log("Stats Fetch Error: " . $e->getMessage());
-    }
-
-    // New Warehouse Specific Data
     $whRequests = get_pending_warehouse_requests($pdo);
     $whStockOverview = get_warehouse_stock_overview($pdo);
     $whHealth = get_warehouse_health_stats($pdo);
     ?>
 
-    <?php if ($hasAlerts): ?>
-        <div class="flex flex-col gap-4 px-6 bg-white container">
-            <?php if (count($whAlerts) > 0): ?>
-                <!-- Warehouse Alert -->
-                <div class="w-full bg-yellow-50 border border-red-300 rounded-xl shadow-md p-6 flex flex-col gap-4">
-                    <div class="flex flex-row gap-3">
-                        <div
-                            class="flex items-center justify-center bg-yellow-100 text-yellow-700 rounded-full w-12 h-12 text-xl font-bold">
-                            ⚠️
-                        </div>
-                        <div>
-                            <h2 class="text-lg font-semibold text-yellow-800">Smart Stock Alert - Warehouse</h2>
-                            <p class="text-sm text-yellow-700"><?= count($whAlerts) ?> warehouse
-                                product<?= count($whAlerts) > 1 ? 's need' : ' needs' ?> immediate restocking (on/below
-                                buildable limit)</p>
-                        </div>
-                    </div>
-
-                    <div class="flex p-4 flex-wrap gap-4">
-                        <?php foreach ($whAlerts as $alert):
-                            $imgFile = rawurlencode(trim($alert['img'] ?? 'default-placeholder.png'));
-                            $imgPath = "../../public/assets/img/furnitures/" . $imgFile;
-                            ?>
-                            <div class="flex items-center gap-4 border p-2 card-style bg-white w-fit pr-4 h-[84px]">
-                                <!-- Product Image -->
-                                <div
-                                    class="w-16 h-16 bg-white border border-gray-300 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                    <img src="<?= htmlspecialchars($imgPath) ?>" alt="<?= htmlspecialchars($alert['prod_name']) ?>"
-                                        class="object-contain h-full w-full" />
-                                </div>
-                                <!-- Product Info -->
-                                <div class="flex flex-col justify-center">
-                                    <h3 class="text-md font-semibold text-gray-800 line-clamp-1"
-                                        title="<?= htmlspecialchars($alert['prod_name'] . ' - ' . $alert['variant_name']) ?>">
-                                        <?= htmlspecialchars($alert['prod_name']) ?> <span
-                                            class="font-normal text-sm text-gray-500">(<?= htmlspecialchars($alert['variant_name']) ?>)</span>
-                                    </h3>
-                                    <p class="text-sm text-red-600 font-semibold mt-1">Only <?= (int) $alert['qty_on_hand'] ?>
-                                        unit<?= $alert['qty_on_hand'] == 1 ? '' : 's' ?> left</p>
-                                    <p class="text-xs text-gray-500">Min Buildable: <?= (int) $alert['min_buildable_qty'] ?></p>
-                                </div>
+    <section class="flex flex-center w-full">
+        <?php if ($hasAlerts): ?>
+            <div class="gap w-[1250px]">
+                <?php if (count($whAlerts) > 0): ?>
+                    <!-- Warehouse Alert -->
+                    <div class="w-full bg-yellow-50 border border-red-300 rounded-xl shadow-md p-6 flex flex-col gap-4">
+                        <div class="flex flex-row gap-3">
+                            <div
+                                class="flex items-center justify-center bg-yellow-100 text-yellow-700 rounded-full w-12 h-12 text-xl font-bold">
+                                ⚠️
                             </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <?php if (count($srAlerts) > 0): ?>
-                <!-- Showroom Alert -->
-                <div class="w-full bg-yellow-50 border border-red-300 rounded-xl shadow-md p-6 flex flex-col gap-4">
-                    <div class="flex flex-row gap-3">
-                        <div
-                            class="flex items-center justify-center bg-yellow-100 text-yellow-700 rounded-full w-12 h-12 text-xl font-bold">
-                            ⚠️
-                        </div>
-                        <div>
-                            <h2 class="text-lg font-semibold text-yellow-800">Smart Stock Alert - Showroom</h2>
-                            <p class="text-sm text-yellow-700"><?= count($srAlerts) ?> showroom
-                                product<?= count($srAlerts) > 1 ? 's need' : ' needs' ?> immediate restocking (on/below display
-                                limit)</p>
-                        </div>
-                    </div>
-
-                    <div class="flex p-4 flex-wrap gap-4">
-                        <?php foreach ($srAlerts as $alert):
-                            $imgFile = rawurlencode(trim($alert['img'] ?? 'default-placeholder.png'));
-                            $imgPath = "../../public/assets/img/furnitures/" . $imgFile;
-                            ?>
-                            <div class="flex items-center gap-4 border p-2 card-style bg-white w-fit pr-4 h-[84px]">
-                                <!-- Product Image -->
-                                <div
-                                    class="w-16 h-16 bg-white border border-gray-300 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                    <img src="<?= htmlspecialchars($imgPath) ?>" alt="<?= htmlspecialchars($alert['prod_name']) ?>"
-                                        class="object-contain h-full w-full" />
-                                </div>
-                                <!-- Product Info -->
-                                <div class="flex flex-col justify-center">
-                                    <h3 class="text-md font-semibold text-gray-800 line-clamp-1"
-                                        title="<?= htmlspecialchars($alert['prod_name'] . ' - ' . $alert['variant_name']) ?>">
-                                        <?= htmlspecialchars($alert['prod_name']) ?> <span
-                                            class="font-normal text-sm text-gray-500">(<?= htmlspecialchars($alert['variant_name']) ?>)</span>
-                                    </h3>
-                                    <p class="text-sm text-red-600 font-semibold mt-1">Only <?= (int) $alert['qty_on_hand'] ?>
-                                        unit<?= $alert['qty_on_hand'] == 1 ? '' : 's' ?> left</p>
-                                    <p class="text-xs text-gray-500">Min Display: <?= (int) $alert['min_display_qty'] ?></p>
-                                </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-yellow-800">Smart Stock Alert - Warehouse</h2>
+                                <p class="text-sm text-yellow-700"><?= count($whAlerts) ?> warehouse
+                                    product<?= count($whAlerts) > 1 ? 's need' : ' needs' ?> immediate restocking (on/below
+                                    buildable limit)</p>
                             </div>
-                        <?php endforeach; ?>
+                        </div>
+
+                        <div class="flex p-4 flex-wrap gap-4">
+                            <?php foreach ($whAlerts as $alert):
+                                $imgFile = rawurlencode(trim($alert['img'] ?? 'default-placeholder.png'));
+                                $imgPath = "../../public/assets/img/furnitures/" . $imgFile;
+                            ?>
+                                <div class="flex items-center gap-4 border p-2 card-style bg-white w-fit pr-4 h-[84px]">
+                                    <!-- Product Image -->
+                                    <div
+                                        class="w-16 h-16 bg-white border border-gray-300 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                        <img src="<?= htmlspecialchars($imgPath) ?>" alt="<?= htmlspecialchars($alert['prod_name']) ?>"
+                                            class="object-contain h-full w-full" />
+                                    </div>
+                                    <!-- Product Info -->
+                                    <div class="flex flex-col justify-center">
+                                        <h3 class="text-md font-semibold text-gray-800 line-clamp-1"
+                                            title="<?= htmlspecialchars($alert['prod_name'] . ' - ' . $alert['variant_name']) ?>">
+                                            <?= htmlspecialchars($alert['prod_name']) ?> <span
+                                                class="font-normal text-sm text-gray-500">(<?= htmlspecialchars($alert['variant_name']) ?>)</span>
+                                        </h3>
+                                        <p class="text-sm text-red-600 font-semibold mt-1">Only <?= (int) $alert['qty_on_hand'] ?>
+                                            unit<?= $alert['qty_on_hand'] == 1 ? '' : 's' ?> left</p>
+                                        <p class="text-xs text-gray-500">Min Buildable: <?= (int) $alert['min_buildable_qty'] ?></p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
-                </div>
-            <?php endif; ?>
-        </div>
-    <?php endif; ?>
+                <?php endif; ?>
+
+                <?php if (count($srAlerts) > 0): ?>
+                    <!-- Showroom Alert -->
+                    <div class="w-full bg-yellow-50 border border-red-300 rounded-xl shadow-md p-6 flex flex-col gap-4">
+                        <div class="flex flex-row gap-3">
+                            <div
+                                class="flex items-center justify-center bg-yellow-100 text-yellow-700 rounded-full w-12 h-12 text-xl font-bold">
+                                ⚠️
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-yellow-800">Smart Stock Alert - Showroom</h2>
+                                <p class="text-sm text-yellow-700"><?= count($srAlerts) ?> showroom
+                                    product<?= count($srAlerts) > 1 ? 's need' : ' needs' ?> immediate restocking (on/below display
+                                    limit)</p>
+                            </div>
+                        </div>
+
+                        <div class="flex p-4 flex-wrap gap-4">
+                            <?php foreach ($srAlerts as $alert):
+                                $imgFile = rawurlencode(trim($alert['img'] ?? 'default-placeholder.png'));
+                                $imgPath = "../../public/assets/img/furnitures/" . $imgFile;
+                            ?>
+                                <div class="flex items-center gap-4 border p-2 card-style bg-white w-fit pr-4 h-[84px]">
+                                    <!-- Product Image -->
+                                    <div
+                                        class="w-16 h-16 bg-white border border-gray-300 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                        <img src="<?= htmlspecialchars($imgPath) ?>" alt="<?= htmlspecialchars($alert['prod_name']) ?>"
+                                            class="object-contain h-full w-full" />
+                                    </div>
+                                    <!-- Product Info -->
+                                    <div class="flex flex-col justify-center">
+                                        <h3 class="text-md font-semibold text-gray-800 line-clamp-1"
+                                            title="<?= htmlspecialchars($alert['prod_name'] . ' - ' . $alert['variant_name']) ?>">
+                                            <?= htmlspecialchars($alert['prod_name']) ?> <span
+                                                class="font-normal text-sm text-gray-500">(<?= htmlspecialchars($alert['variant_name']) ?>)</span>
+                                        </h3>
+                                        <p class="text-sm text-red-600 font-semibold mt-1">Only <?= (int) $alert['qty_on_hand'] ?>
+                                            unit<?= $alert['qty_on_hand'] == 1 ? '' : 's' ?> left</p>
+                                        <p class="text-xs text-gray-500">Min Display: <?= (int) $alert['min_display_qty'] ?></p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </section>
 
     <section class="px-6 py-4">
         <div class="grid grid-cols-[repeat(4,300px)] justify-center gap-5">
@@ -323,7 +288,7 @@ if (isset($_SESSION['user_id'])) {
 
                 <!-- Product Status -->
                 <li>
-                    <a href="product-status.php"
+                    <a href="stocks-logs.php"
                         class="flex items-center justify-center gap-2 h-10 px-4 text-gray-700 font-medium hover:text-red-600 transition">
                         <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none"
                             viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -333,7 +298,7 @@ if (isset($_SESSION['user_id'])) {
                      1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 
                      1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                         </svg>
-                        <span>Product Status</span>
+                        <span>Warehouse Stocks Reports</span>
                     </a>
                 </li>
 
@@ -341,8 +306,8 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </nav>
 
-    <section class="px-[100px] py-4">
-        <div class="border border-gray-300 rounded-2xl p-8 w-full bg-white">
+    <section class="flex flex-center w-full">
+        <div class="border border-gray-300 rounded-2xl p-12 gap w-[1250px]">
             <h2 class="text-2xl font-semibold mb-2">Warehouse Overview</h2>
             <p class="text-gray-600">Monitor fulfillment queue, inventory levels, and warehouse operations.</p>
 
@@ -429,7 +394,7 @@ if (isset($_SESSION['user_id'])) {
                                     $encodedImg = rawurlencode(trim($img ?? 'default-placeholder.png'));
                                     $imgPath = "../../public/assets/img/furnitures/" . $encodedImg;
                                     $isLow = (int) $stock['total_qty'] <= 5;
-                                    ?>
+                                ?>
                                     <div
                                         class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:border-red-300 transition-all">
                                         <div class="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 shrink-0">

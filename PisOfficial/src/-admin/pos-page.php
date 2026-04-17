@@ -77,15 +77,18 @@ if (isset($_SESSION['user_id'])) {
                 <?= htmlspecialchars(ucfirst($role)) ?> User
             </div>
 
-            <!-- Notification -->
-            <button
-                class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition cursor-pointer">
-                <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
-                </svg>
-            </button>
+            <!-- Notifications (Icon Only) -->
+            <div class="relative inline-block">
+                <button id="notifButton"
+                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
+                    </svg>
+                </button>
+            </div>
+            <?php include '../include/sidebar-notif.php'; ?>
 
             <!-- Settings -->
             <a href="../-admin/settings.php"
@@ -830,7 +833,7 @@ if (isset($_SESSION['user_id'])) {
                                         <span id="customerBadge"
                                             class="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-600 rounded-full">New
                                             Account</span>
-                                        <button onclick="closeModal('reviewCartModal')"
+                                        <button onclick="closeModalWithCheck('reviewCartModal', 'clientName')"
                                             class="p-2 text-gray-400 hover:text-black transition-colors rounded-xl hover:bg-gray-50">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round"
@@ -1181,7 +1184,7 @@ if (isset($_SESSION['user_id'])) {
         <div
             class="modal-box relative bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 font-sans p-6 text-center border border-gray-100">
             <div
-                class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-50 mb-4 ring-8 ring-red-50/30">
+                class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-50 mb-4 ring-8 ring-red-50/50">
                 <svg class="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                         d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
@@ -1194,7 +1197,7 @@ if (isset($_SESSION['user_id'])) {
             </div>
             <div class="flex gap-3">
                 <button onclick="closeModal('customConfirmModal')"
-                    class="w-full inline-flex justify-center rounded-xl border border-gray-200 shadow-sm px-4 py-3.5 bg-white text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-all uppercase tracking-widest text-[10px]">
+                    class="flex-1 inline-flex justify-center rounded-xl border border-gray-200 shadow-sm px-4 py-3.5 bg-white text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-all uppercase tracking-widest text-[10px]">
                     Cancel
                 </button>
                 <button id="customConfirmBtn"
@@ -1206,6 +1209,29 @@ if (isset($_SESSION['user_id'])) {
     </div>
 
 
+
+    <!-- Discard Changes Modal -->
+    <div id="discardModal"
+        class="fixed inset-0 z-[1000] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="absolute inset-0 bg-black/50"></div>
+        <div class="modal-box relative bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden flex flex-col transition-all duration-300 font-sans p-8 text-center border border-gray-100">
+            <div class="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-orange-50/50">
+                <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                    </path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-black text-gray-900 tracking-tight mb-2">Unsaved Changes</h3>
+            <p class="text-sm font-medium text-gray-500 mb-8 leading-relaxed">Mayroon kang mga sinimulang ilagay. Sigurado ka ba na gusto mong i-discard ang mga changes na ito?</p>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeModal('discardModal')"
+                    class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Keep Editing</button>
+                <button type="button" id="confirmDiscardBtn"
+                    class="flex-1 py-4 bg-red-500 rounded-2xl font-black text-white hover:bg-gray-900 shadow-lg shadow-red-100 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
+            </div>
+        </div>
+    </div>
 
     <?php include '../include/toast.php'; ?>
 </body>

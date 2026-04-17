@@ -6,6 +6,7 @@ require_once "../include/config.php";
 require_once "../include/dbh.inc.php";
 require_once "../include/global.model.php";
 require_once "../include/inc.showroom/sr.model.php";
+require_once "../include/inc.warehouse/wh.model.php";
 
 /** @var PDO $pdo */
 if (!isset($pdo) || !($pdo instanceof PDO)) {
@@ -25,19 +26,11 @@ if (isset($_SESSION["user_id"])) {
 $inventory = get_inventory_cards($pdo);
 
 // Dashboard Stats
-$totalProducts = $pdo->query("SELECT COUNT(*) FROM products WHERE is_deleted = 0")->fetchColumn();
-
-$stmt_user = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_by = ?");
-$stmt_user->execute([$userId]);
-$userTransactions = $stmt_user->fetchColumn();
-
-$pendingWH = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o 
-                         JOIN order_items oi ON o.id = oi.order_id 
-                         WHERE o.status = 'pending' AND (oi.get_from = 'WH' OR oi.get_from = 'Warehouse')")->fetchColumn();
-
-$pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o 
-                         JOIN order_items oi ON o.id = oi.order_id 
-                         WHERE o.status = 'pending' AND (oi.get_from = 'SR' OR oi.get_from = 'Showroom')")->fetchColumn();
+$stats = get_warehouse_dashboard_stats($pdo, (int)$userId);
+$totalProducts = $stats['total_products'];
+$userTransactions = $stats['user_transactions'];
+$pendingWH = $stats['pending_wh'];
+$pendingSR = $stats['pending_sr'];
 ?>
 
 
@@ -51,6 +44,7 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js" defer></script>
+    <script src="../../public/assets/js/warehouse.js" defer></script>
 
     <style>
         /* Shrink entire UI by 10% */
@@ -74,8 +68,8 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
                 <div>
                     <h1 class="text-2xl font-semibold text-red-600">Prime-In-Sync</h1>
                     <h4 class="text-base text-gray-500">Welcome, <?= htmlspecialchars(
-                        $username,
-                    ) ?></h4>
+                                                                        $username,
+                                                                    ) ?></h4>
                 </div>
             </a>
         </div>
@@ -86,7 +80,7 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
                 <?= htmlspecialchars(ucfirst($role)) ?> User
             </div>
 
-            <button
+            <button id="notifButton"
                 class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke-width="1.5" stroke="currentColor">
@@ -94,6 +88,8 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
                         d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
                 </svg>
             </button>
+
+            <?php include '../include/sidebar-notif.php'; ?>
 
             <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
                 class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
@@ -179,7 +175,7 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
 
                 <!-- Product Status -->
                 <li>
-                    <a href="product-status.php"
+                    <a href="stocks-logs.php"
                         class="flex items-center justify-center gap-2 h-10 px-4 text-gray-700 font-medium hover:text-red-600 transition">
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                             stroke-width="1.5" stroke="currentColor">
@@ -189,7 +185,7 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
                      1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 
                      1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                         </svg>
-                        <span>Product Status</span>
+                        <span>Warehouse Stocks Reports</span>
                     </a>
                 </li>
 
@@ -198,8 +194,8 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
     </nav>
 
 
-    <section class="px-4 md:px-[100px] py-4">
-        <div class="card-look p-12 bg-white border border-gray-300 rounded-2xl shadow-sm">
+    <section class="flex flex-center w-full">
+        <div class="border border-gray-300 rounded-2xl p-12 gap w-[1250px]">
             <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
                 <div>
                     <h2 class="text-2xl font-semibold mb-2">Warehouse Inventory Overview</h2>
@@ -278,6 +274,14 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
                                     <?= htmlspecialchars($item['desc'] ?? 'No description available.') ?>
                                 </p>
 
+                                <div class="mt-2 flex items-center gap-2">
+                                    <svg class="size-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                                    </svg>
+                                    <span class="text-[11px] font-black text-blue-600 uppercase tracking-tight">Loc: <?= htmlspecialchars($item['locations'] ?? 'N/A') ?></span>
+                                </div>
+
                                 <div class="pt-3 border-t border-gray-100 mt-4">
                                     <h3
                                         class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-50 pb-1">
@@ -324,15 +328,16 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
                         }
                     }
                 }
+
                 function openViewModal(code) {
                     const formData = new FormData();
                     formData.append('action', 'get_product_details');
                     formData.append('code', code);
 
                     fetch('../include/inc.admin/admin.ctrl.php', {
-                        method: 'POST',
-                        body: formData
-                    })
+                            method: 'POST',
+                            body: formData
+                        })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -399,23 +404,34 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
                                     compContainer.innerHTML = '<p class="text-sm text-gray-400 italic">No component recipe established.</p>';
                                 }
 
-                                openModal('viewModal');
+                                openWhModal('viewModal');
                             }
                         })
                         .catch(err => console.error(err));
                 }
 
-                function closeViewModal() {
-                    closeModal('viewModal');
+                function openWhModal(id) {
+                    const modal = document.getElementById(id);
+                    if (!modal) return;
+                    modal.classList.remove("opacity-0", "pointer-events-none");
+                    modal.classList.add("opacity-100", "pointer-events-auto");
+                }
+
+                function closeWhModal() {
+                    const modal = document.getElementById('viewModal');
+                    if (!modal) return;
+                    modal.classList.add("opacity-0", "pointer-events-none");
+                    modal.classList.remove("opacity-100", "pointer-events-auto");
                 }
             </script>
         </div>
     </section>
 
+
     <!-- View Product Details Modal (Read Only) -->
     <div id="viewModal"
         class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeViewModal()"></div>
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeWhModal()"></div>
         <div
             class="relative bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col h-[90vh] transition-all duration-300">
             <!-- Header -->
@@ -426,7 +442,7 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
                         Warehouse View • Code: <span class="text-blue-600" id="viewCodeHeader">...</span>
                     </p>
                 </div>
-                <button onclick="closeViewModal()"
+                <button onclick="closeWhModal()"
                     class="p-3 hover:bg-gray-100 rounded-2xl text-gray-400 hover:text-gray-900 transition-all group">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -503,7 +519,7 @@ $pendingSR = (int) $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o
 
             <!-- Footer -->
             <div class="p-8 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
-                <button onclick="closeViewModal()"
+                <button onclick="closeWhModal()"
                     class="px-10 py-4 bg-gray-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-lg shadow-gray-200">
                     Close Window
                 </button>

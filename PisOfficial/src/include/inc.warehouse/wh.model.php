@@ -102,7 +102,7 @@ function get_warehouse_health_stats(PDO $pdo): array
                           JOIN product_components pc ON ws.product_comp_id = pc.id
                           GROUP BY ws.variant_id
                       ) ws_agg ON pv.id = ws_agg.variant_id";
-        
+
         $stmt = $pdo->query($sqlHealth);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -163,7 +163,7 @@ function get_fulfillment_ready_items(PDO $pdo, ?int $orderId = null): array
 {
     try {
         $filter = $orderId ? " AND o.id = ? " : "";
-        
+
         // 1. Fetch the items first
         $sql = "SELECT 
                     o.id AS order_id,
@@ -222,7 +222,7 @@ function get_fulfillment_ready_items(PDO $pdo, ?int $orderId = null): array
         // Components and Locations
         $prodIds = array_unique(array_column($items, 'prod_id'));
         $pPlaceholders = implode(',', array_fill(0, count($prodIds), '?'));
-        
+
         $sqlComp = "SELECT 
                         pc.prod_id,
                         comp.component_name,
@@ -241,7 +241,7 @@ function get_fulfillment_ready_items(PDO $pdo, ?int $orderId = null): array
             $pId = (int)$item['prod_id'];
             $item['available_stock'] = (int)($stocks[$vId] ?? 0);
             $item['components'] = $allComponents[$pId] ?? [];
-            
+
             // Format Date
             $item['formatted_date'] = date('M d, Y', strtotime($item['created_at']));
         }
@@ -276,18 +276,18 @@ function get_fulfillment_ready_orders(PDO $pdo): array
                 'products'       => []
             ];
         }
-            $orders[$oId]['products'][] = [
-                'item_id'         => $item['item_id'],
-                'wh_item_status'  => $item['wh_item_status'] ?: 'pending',
-                'prod_name'       => $item['prod_name'],
-                'prod_code'       => $item['prod_code'],
-                'variant_name'    => $item['variant_name'],
-                'img'             => $item['img'],
-                'qty_to_pick'     => $item['qty_to_pick'],
-                'available_stock' => $item['available_stock'],
-                'components'      => $item['components'],
-                'description'     => $item['description']
-            ];
+        $orders[$oId]['products'][] = [
+            'item_id'         => $item['item_id'],
+            'wh_item_status'  => $item['wh_item_status'] ?: 'pending',
+            'prod_name'       => $item['prod_name'],
+            'prod_code'       => $item['prod_code'],
+            'variant_name'    => $item['variant_name'],
+            'img'             => $item['img'],
+            'qty_to_pick'     => $item['qty_to_pick'],
+            'available_stock' => $item['available_stock'],
+            'components'      => $item['components'],
+            'description'     => $item['description']
+        ];
     }
 
     return array_values($orders);
@@ -378,5 +378,174 @@ function reset_order_items_status(PDO $pdo, int $orderId): bool
     }
 }
 
+/**
+ * Fetches warehouse stock logs with filtering and pagination.
+ */
+function get_warehouse_logs(PDO $pdo, array $filters = [], int $limit = 5, int $offset = 0): array
+{
+    try {
+        $sql = "SELECT 
+                    wl.log_id, 
+                    wl.action, 
+                    wl.qty, 
+                    wl.log_date, 
+                    COALESCE(p_new.code, p_old.code) AS product_code,
+                    COALESCE(p_new.name, p_old.name) AS product_name,
+                    COALESCE(pv_new.variant, pv_old.variant) AS variant_name,
+                    COALESCE(c_new.component_name, c_old.component_name) AS component_name
+                FROM warehouse_logs wl
+                -- NEW LOGIC: Joins for entries with direct prod_id/variant_id
+                LEFT JOIN products p_new ON wl.prod_id = p_new.id
+                LEFT JOIN product_variant pv_new ON wl.variant_id = pv_new.id
+                LEFT JOIN components c_new ON wl.comp_id = c_new.id AND wl.prod_id IS NOT NULL
+                
+                -- LEGACY LOGIC: Fallback for older entries (via warehouse_stocks)
+                LEFT JOIN warehouse_stocks ws ON wl.comp_id = ws.id AND wl.prod_id IS NULL
+                LEFT JOIN products p_old ON ws.prod_id = p_old.id
+                LEFT JOIN product_variant pv_old ON ws.variant_id = pv_old.id
+                LEFT JOIN product_components pc ON ws.product_comp_id = pc.id
+                LEFT JOIN components c_old ON pc.comp_id = c_old.id
+                WHERE 1 = 1";
 
+        $params = [];
 
+        if (!empty($filters['start_date'])) {
+            $sql .= " AND DATE(wl.log_date) >= :start_date";
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $sql .= " AND DATE(wl.log_date) <= :end_date";
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        $sql .= " ORDER BY wl.log_date DESC, wl.log_id DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        error_log("Get Warehouse Logs Error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Counts total warehouse stock logs matching the given filters.
+ */
+function count_warehouse_logs(PDO $pdo, array $filters = []): int
+{
+    try {
+        $sql = "SELECT COUNT(*) FROM warehouse_logs wl WHERE 1 = 1";
+        $params = [];
+
+        if (!empty($filters['start_date'])) {
+            $sql .= " AND DATE(wl.log_date) >= :start_date";
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $sql .= " AND DATE(wl.log_date) <= :end_date";
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Count Warehouse Logs Error: " . $e->getMessage());
+        return 0;
+    }
+}
+/**
+ * Fetches comprehensive dashboard statistics for the warehouse module.
+ */
+function get_warehouse_dashboard_stats(PDO $pdo, int $userId): array
+{
+    try {
+        // 1. Available Products (Count of unique base products with warehouse stock > 0)
+        $totalProducts = (int)$pdo->query("SELECT COUNT(DISTINCT p.id) 
+                                    FROM products p
+                                    JOIN product_variant pv ON p.id = pv.prod_id
+                                    JOIN warehouse_stocks ws ON pv.id = ws.variant_id
+                                    WHERE ws.qty_on_hand > 0 AND p.is_deleted = 0")->fetchColumn();
+
+        // 2. Your Transactions (Orders created by current user)
+        $stmtUser = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_by = ?");
+        $stmtUser->execute([$userId]);
+        $userTransactions = (int)$stmtUser->fetchColumn();
+
+        // 3. Pending Warehouse Requests (Approved orders getting from WH, checking if not available in SR)
+        $pendingWH = (int)$pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o 
+                                 JOIN order_items oi ON o.id = oi.order_id 
+                                 WHERE LOWER(o.status) = 'approved' 
+                                 AND (oi.get_from = 'WH' OR oi.get_from = 'Warehouse')
+                                 AND NOT EXISTS (
+                                     SELECT 1 FROM showroom_stocks ss 
+                                     WHERE ss.variant_id = oi.variant_id AND ss.qty_on_hand > 0
+                                 )")->fetchColumn();
+
+        // 4. Pending Showroom Requests (Approved orders getting from SR)
+        $pendingSR = (int)$pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o 
+                                 JOIN order_items oi ON o.id = oi.order_id 
+                                 WHERE LOWER(o.status) = 'approved' AND (oi.get_from = 'SR' OR oi.get_from = 'Showroom')")->fetchColumn();
+
+        return [
+            'total_products'    => $totalProducts,
+            'user_transactions' => $userTransactions,
+            'pending_wh'        => $pendingWH,
+            'pending_sr'        => $pendingSR
+        ];
+    } catch (PDOException $e) {
+        error_log("Get Warehouse Dashboard Stats Error: " . $e->getMessage());
+        return [
+            'total_products'    => 0,
+            'user_transactions' => 0,
+            'pending_wh'        => 0,
+            'pending_sr'        => 0
+        ];
+    }
+}
+
+/**
+ * Fetches stock alerts for both Warehouse and Showroom.
+ */
+function get_warehouse_stock_alerts(PDO $pdo): array
+{
+    try {
+        // Warehouse Alerts (Low buildable quantity)
+        $wh_sql = "SELECT p.name as prod_name, pv.variant as variant_name, COALESCE(pv.variant_image, p.default_image) as img, ws.qty_on_hand, pv.min_buildable_qty
+                   FROM warehouse_stocks ws
+                   JOIN product_variant pv ON ws.variant_id = pv.id
+                   JOIN products p ON pv.prod_id = p.id
+                   WHERE ws.qty_on_hand <= pv.min_buildable_qty
+                   ORDER BY ws.last_update DESC";
+        $whAlerts = $pdo->query($wh_sql)->fetchAll(PDO::FETCH_ASSOC);
+
+        // Showroom Alerts (Low display quantity)
+        $sr_sql = "SELECT p.name as prod_name, pv.variant as variant_name, COALESCE(pv.variant_image, p.default_image) as img, ss.qty_on_hand, ss.min_display_qty
+                   FROM showroom_stocks ss
+                   JOIN product_variant pv ON ss.variant_id = pv.id
+                   JOIN products p ON pv.prod_id = p.id
+                   WHERE ss.qty_on_hand <= ss.min_display_qty
+                   ORDER BY ss.last_update DESC";
+        $srAlerts = $pdo->query($sr_sql)->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            'warehouse' => $whAlerts ?: [],
+            'showroom'  => $srAlerts ?: []
+        ];
+    } catch (PDOException $e) {
+        error_log("Get Warehouse Stock Alerts Error: " . $e->getMessage());
+        return ['warehouse' => [], 'showroom' => []];
+    }
+}

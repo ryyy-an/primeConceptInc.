@@ -21,11 +21,27 @@ if (isset($_SESSION['user_id'])) {
     $cartItemsCount = count(get_cart_items($pdo, $userId));
     $totalCartItems = $cartItemsCount;
 
-    // Fetch requests specific to this showroom user
-    $requests = fetch_requests($pdo, $userId);
+    // --- PAGINATION & FILTERING ---
+    $currentPage = (int)($_GET['page'] ?? 1);
+    if ($currentPage < 1) $currentPage = 1;
+    $limit = 10;
+    $offset = ($currentPage - 1) * $limit;
 
-    // Fetch recent activities for the notification dropdown
-    $activities = get_recent_activities($pdo, 5);
+    $status_filter = $_GET['status'] ?? 'All';
+    $start_date = $_GET['start_date'] ?? '';
+    $end_date = $_GET['end_date'] ?? '';
+
+    $filters = [
+        'status' => $status_filter,
+        'start_date' => $start_date,
+        'end_date' => $end_date
+    ];
+
+    // Get counts and fetch filtered data
+    $total_records = count_requests($pdo, $userId, $filters);
+    $total_pages = max(1, (int)ceil($total_records / $limit));
+    $requests = fetch_requests($pdo, $userId, $filters, $limit, $offset);
+
 
     // Fetch counts for the stats cards
     $totalProducts = $pdo->query("SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0")->fetchColumn();
@@ -33,7 +49,7 @@ if (isset($_SESSION['user_id'])) {
     $totalTransactions->execute([$userId]);
     $totalTransactionsCount = $totalTransactions->fetchColumn();
 
-    $pendingRequests = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_by = ? AND status IN ('For Review', 'Pending', 'Approved')");
+    $pendingRequests = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_by = ? AND status IN ('For Review', 'Approved')");
     $pendingRequests->execute([$userId]);
     $pendingRequestsCount = $pendingRequests->fetchColumn();
 } else {
@@ -89,6 +105,7 @@ if (isset($_SESSION['user_id'])) {
                 <?= h(ucfirst($role)) ?> User
             </div>
 
+            <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
                     class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
@@ -98,53 +115,9 @@ if (isset($_SESSION['user_id'])) {
                             d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
                     </svg>
                 </button>
-
-                <div id="notifDropdown"
-                    class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden transition-all duration-300">
-                    <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-tight">Recent Activity</h3>
-                    </div>
-
-                    <div id="notifList" class="overflow-y-auto transition-all duration-500 ease-in-out"
-                        style="max-height: 200px;">
-                        <div class="divide-y divide-gray-50 bg-white">
-                            <?php if (empty($activities)): ?>
-                                <div class="px-4 py-6 text-center text-gray-400 text-xs italic">
-                                    No recent activities found.
-                                </div>
-                            <?php else: ?>
-                                <?php foreach ($activities as $act): ?>
-                                    <div class="px-4 py-3 hover:bg-blue-50/50 transition-colors">
-                                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                                            <?= $act['type'] === 'request' ? 'New Request' : 'Order Approved' ?>
-                                        </p>
-                                        <div class="text-xs text-gray-700 leading-relaxed">
-                                            <?php if ($act['type'] === 'request'): ?>
-                                                <span
-                                                    class="font-bold text-gray-900"><?= h($act['fname'] . ' ' . $act['lname']) ?></span>
-                                                placed a request for <span
-                                                    class="text-green-600 font-semibold"><?= $act['item_count'] ?> items</span>.
-                                            <?php else: ?>
-                                                Order <span class="font-bold text-gray-900">#<?= h($act['ref_id']) ?></span>
-                                                for <span
-                                                    class="text-blue-600 font-semibold"><?= h($act['fname'] . ' ' . $act['lname']) ?></span>
-                                                has been processed.
-                                            <?php endif; ?>
-                                        </div>
-                                        <span
-                                            class="text-[10px] text-gray-400 mt-2 block italic"><?= format_activity_time($act['timestamp']) ?></span>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <button id="viewAllBtn"
-                        class="block w-full py-3 text-center text-[11px] font-extrabold text-blue-600 bg-gray-50 hover:bg-blue-100 border-t border-gray-100 transition-all uppercase tracking-widest">
-                        View All Notifications
-                    </button>
-                </div>
             </div>
+            <?php include '../include/sidebar-notif.php'; ?>
+
 
             <!-- Logout -->
             <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
@@ -253,9 +226,43 @@ if (isset($_SESSION['user_id'])) {
     <div class="flex flex-center w-full">
         <div class="border border-gray-300 rounded-2xl p-12 gap w-[1250px]">
 
-            <div>
-                <h2 class="text-2xl font-semibold mb-2">Product Requests</h2>
-                <p class="text-gray-600 mb-6 font-medium">Review and manage your product requests below.</p>
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                <div>
+                    <h2 class="text-2xl font-semibold mb-2">Product Requests</h2>
+                    <p class="text-gray-600 font-medium">Review and manage your product requests below.</p>
+                </div>
+
+                <!-- Filter Bar -->
+                <form method="GET" class="flex flex-wrap items-end gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Status</label>
+                        <select name="status" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all min-w-[140px]">
+                            <?php $statuses = ['All', 'For Review', 'Approved', 'Rejected', 'Cancelled', 'Success']; ?>
+                            <?php foreach ($statuses as $st): ?>
+                                <option value="<?= $st ?>" <?= $status_filter === $st ? 'selected' : '' ?>><?= $st ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">From</label>
+                        <input type="date" name="start_date" value="<?= h($start_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">To</label>
+                        <input type="date" name="end_date" value="<?= h($end_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all">
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button type="submit" class="h-10 px-5 bg-red-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95">
+                            Filter
+                        </button>
+                        <a href="order-req-page.php" class="h-10 px-5 bg-white border border-gray-200 text-gray-400 text-xs font-bold uppercase tracking-widest rounded-xl hover:text-gray-600 flex items-center transition-all active:scale-95">
+                            Reset
+                        </a>
+                    </div>
+                </form>
             </div>
 
             <div
@@ -294,8 +301,8 @@ if (isset($_SESSION['user_id'])) {
                         <?php else: ?>
                             <?php foreach ($requests as $row):
                                 // Match Admin Status Logic
-                                $status = strtolower($row['status'] ?? 'pending');
-
+                                $status = strtolower($row['status'] ?? 'for review');
+                                
                                 // Dynamic Status Coloring
                                 if ($status === 'approved') {
                                     $statusClass = 'bg-green-50 text-green-600 border border-green-100';
@@ -308,8 +315,12 @@ if (isset($_SESSION['user_id'])) {
                                 } else {
                                     $statusClass = 'bg-yellow-50 text-yellow-600 border border-yellow-100';
                                 }
+
+                                // Gray out logic for older requests (anything not today)
+                                $isToday = date('Y-m-d', strtotime($row['date'])) === date('Y-m-d');
+                                $rowClass = !$isToday ? 'opacity-60 grayscale-[0.2]' : '';
                             ?>
-                                <tr class="hover:bg-gray-50 transition-colors group" data-pr-no="<?= h($row['pr_no']) ?>">
+                                <tr class="hover:bg-gray-50 transition-colors group <?= $rowClass ?>" data-pr-no="<?= h($row['pr_no']) ?>">
                                     <td class="px-6 py-5 font-bold text-gray-900">
                                         <?= h($row['pr_no']) ?>
                                     </td>
@@ -348,6 +359,44 @@ if (isset($_SESSION['user_id'])) {
                         <?php endif; ?>
                     </tbody>
                 </table>
+
+                <!-- Pagination Footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                    <div class="text-[11px] text-gray-400 font-bold uppercase tracking-widest">
+                        Showing <span class="text-gray-900"><?= $total_records > 0 ? $offset + 1 : 0 ?></span> to <span class="text-gray-900"><?= min($offset + $limit, $total_records) ?></span> of <span class="text-gray-900"><?= $total_records ?></span> results
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <?php if ($currentPage > 1): ?>
+                            <a href="?page=<?= $currentPage - 1 ?>&status=<?= $status_filter ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
+                                class="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all active:scale-95 text-gray-400 hover:text-gray-600">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                </svg>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php
+                        $startPage = max(1, $currentPage - 2);
+                        $endPage = min($total_pages, $currentPage + 2);
+                        if ($startPage > 1) echo '<span class="px-2 text-gray-300">...</span>';
+                        for ($i = $startPage; $i <= $endPage; $i++): ?>
+                            <a href="?page=<?= $i ?>&status=<?= $status_filter ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
+                                class="size-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all <?= $i === $currentPage ? 'bg-red-600 text-white shadow-md shadow-red-200' : 'text-gray-400 hover:bg-gray-100' ?>">
+                                <?= $i ?>
+                            </a>
+                        <?php endfor; ?>
+                        <?php if ($endPage < $total_pages) echo '<span class="px-2 text-gray-300">...</span>'; ?>
+
+                        <?php if ($currentPage < $total_pages): ?>
+                            <a href="?page=<?= $currentPage + 1 ?>&status=<?= $status_filter ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
+                                class="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all active:scale-95 text-gray-400 hover:text-gray-600">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                </svg>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
 
             <!-- View Modal -->

@@ -23,8 +23,6 @@ if (isset($_SESSION['user_id'])) {
     $totalTransactionsCount = $stats['total_transactions'];
     $pendingRequestsCount = $stats['pending_requests'];
 
-    // Fetch recent activities for the notification dropdown
-    $activities = get_recent_activities($pdo, 5);
 
     // Fetch total cart items for Admin POS badge
     $cartItems = get_cart_items($pdo, $userId);
@@ -33,9 +31,9 @@ if (isset($_SESSION['user_id'])) {
     // Fetch Advanced Analytics Data
     $salesTrend = get_monthly_sales_trend($pdo);
     $stockHealth = get_inventory_health_stats($pdo);
-    $topProducts = get_top_performing_products($pdo, 5);
+    $topProducts = get_top_performing_products($pdo, 5, 'this_month');
     $categoryData = get_category_distribution($pdo);
-    $stockInStats = get_monthly_stock_in_stats($pdo);
+    $revenueStats = get_revenue_stats($pdo);
     $orderSummary = get_order_status_summary($pdo);
     $pendingRequests = get_pending_order_requests($pdo, 5);
 } else {
@@ -92,7 +90,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="rounded-md bg-red-100 px-3 py-1 text-sm text-red-600 font-medium">
                 <?= htmlspecialchars(ucfirst($role)) ?> User</div>
 
-            <!-- Notifications -->
+            <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
                     class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
@@ -102,42 +100,8 @@ if (isset($_SESSION['user_id'])) {
                             d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
                     </svg>
                 </button>
-
-                <div id="notifDropdown"
-                    class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden transition-all duration-300">
-                    <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-tight">Recent Activity</h3>
-                    </div>
-
-                    <div id="notifList" class="overflow-y-auto transition-all duration-500 ease-in-out"
-                        style="max-height: 200px;">
-                        <div class="divide-y divide-gray-50 bg-white">
-                            <?php if (!empty($activities)): ?>
-                                <?php foreach ($activities as $activity): ?>
-                                    <div class="px-4 py-3 hover:bg-gray-50 transition-colors">
-                                        <div class="flex flex-col gap-1">
-                                            <p class="text-xs text-gray-800 leading-relaxed font-semibold">
-                                                <?= htmlspecialchars($activity['fname'] . " " . $activity['action']) ?>
-                                            </p>
-                                            <span class="text-[10px] text-gray-400 font-medium">
-                                                <?= format_activity_time($activity['timestamp']) ?>
-                                            </span>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="px-4 py-8 text-center">
-                                    <p class="text-xs text-gray-400 italic">No recent activities</p>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="px-4 py-2 bg-gray-50 border-t border-gray-100 text-center">
-                        <button class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 transition-colors">View All Logs</button>
-                    </div>
-                </div>
             </div>
+            <?php include '../include/sidebar-notif.php'; ?>
 
             <!-- Settings -->
             <a href="../-admin/settings.php"
@@ -305,11 +269,13 @@ if (isset($_SESSION['user_id'])) {
                 <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-6">
                         <h3 class="font-bold text-gray-700 uppercase text-sm tracking-widest">Top Selling Variants</h3>
-                        <select class="text-xs font-bold text-gray-400 bg-transparent focus:outline-none cursor-pointer">
-                            <option>This month</option>
+                        <select id="topProductsFilter" onchange="fetchTopProducts()" class="text-xs font-bold text-gray-400 bg-transparent focus:outline-none cursor-pointer hover:text-red-500 transition-colors">
+                            <option value="all">Overall</option>
+                            <option value="this_month" selected>This month</option>
+                            <option value="last_month">Last month</option>
                         </select>
                     </div>
-                    <div class="grid grid-cols-3 gap-4 text-center">
+                    <div id="topProductsContainer" class="grid grid-cols-3 gap-4 text-center">
                         <?php if (!empty($topProducts)): ?>
                             <?php foreach (array_slice($topProducts, 0, 3) as $tp):
                                 $tpImg = !empty($tp['variant_image']) ? $tp['variant_image'] : $tp['default_image'];
@@ -430,17 +396,17 @@ if (isset($_SESSION['user_id'])) {
             </div>
 
             <div class="flex flex-col lg:flex-row gap-6 w-full mt-6">
-                <!-- Warehouse Stock-In (35% Width) -->
+                <!-- Total Revenue (35% Width) -->
                 <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between" style="width: 35%;">
                     <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-6">
-                        <h3 class="font-bold text-gray-700 uppercase text-sm tracking-widest">Warehouse Stock-In</h3>
+                        <h3 class="font-bold text-gray-700 uppercase text-sm tracking-widest text-red-600">Total Sales Revenue</h3>
                     </div>
                     <div class="text-center py-4">
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Qty Ordered</p>
-                        <p class="text-3xl font-black text-blue-500"><?= number_format($stockInStats['qty_ordered']) ?></p>
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Year To Date (Overall)</p>
+                        <p class="text-3xl font-black text-red-600">₱<?= number_format($revenueStats['total'], 2) ?></p>
                         <div class="w-full border-t border-dashed border-gray-200 my-6"></div>
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Total Cost Value</p>
-                        <p class="text-3xl font-black text-blue-700">₱<?= number_format($stockInStats['total_cost'], 2) ?></p>
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">This Month Performance</p>
+                        <p class="text-3xl font-black text-red-500">₱<?= number_format($revenueStats['monthly'], 2) ?></p>
                     </div>
                 </div>
 
@@ -599,7 +565,7 @@ if (isset($_SESSION['user_id'])) {
 
             // 2. Sales Chart (Line)
             const salesCtx = document.getElementById('salesChart').getContext('2d');
-            new Chart(salesCtx, {
+            window.salesChart = new Chart(salesCtx, {
                 type: 'line',
                 data: {
                     labels: [<?= "'" . implode("','", array_column($salesTrend, 'month_name')) . "'" ?>],
@@ -670,6 +636,8 @@ if (isset($_SESSION['user_id'])) {
                             renderOrdersTable();
                         }
                     });
+
+                if (typeof updateSalesTrendChart === 'function') updateSalesTrendChart();
                 window.renderOrdersTable = function() {
                     const content = document.getElementById('ordersReportContent');
                     const footer = document.getElementById('orderTableFooter');
@@ -716,12 +684,12 @@ if (isset($_SESSION['user_id'])) {
                                 ${row.customer_name}
                             </td>
                             <td class="px-8 py-5 text-center">
-                                <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${row.client_type === 'Government' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-500'}">
+                                <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest whitespace-nowrap ${row.client_type === 'Government' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-500'}">
                                     ${row.client_type || 'Private'}
                                 </span>
                             </td>
                             <td class="px-8 py-5 text-center">
-                                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${row.plan === 'Installment' ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest whitespace-nowrap ${row.plan === 'Installment' ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}">
                                     ${row.plan === 'Installment' ? 'Installment' : 'Full Paid'}
                                 </span>
                             </td>
@@ -910,6 +878,53 @@ if (isset($_SESSION['user_id'])) {
                 window.goToOrderPage = function(page) {
                     currentPage = page;
                     renderOrdersTable();
+                };
+
+                window.updateSalesTrendChart = function() {
+                    const start = document.getElementById('reportStartDate').value;
+                    const end = document.getElementById('reportEndDate').value;
+                    
+                    fetch(`../include/inc.admin/admin.ctrl.php?action=get_revenue_trend&start=${start}&end=${end}`)
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.success && window.salesChart) {
+                                window.salesChart.data.labels = res.labels;
+                                window.salesChart.data.datasets[0].data = res.data;
+                                window.salesChart.update();
+                            }
+                        });
+                };
+
+                window.fetchTopProducts = function() {
+                    const period = document.getElementById('topProductsFilter').value;
+                    const container = document.getElementById('topProductsContainer');
+                    
+                    // Loading state
+                    container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic">Updating...</div>`;
+                    
+                    fetch(`../include/inc.admin/admin.ctrl.php?action=get_top_products&period=${period}`)
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.success && res.data) {
+                                if (res.data.length === 0) {
+                                    container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic uppercase">Walang data sa period na ito</div>`;
+                                    return;
+                                }
+                                container.innerHTML = res.data.map(tp => {
+                                    const img = tp.variant_image || tp.default_image || 'default-placeholder.png';
+                                    const path = "../../public/assets/img/furnitures/" + encodeURIComponent(img.trim());
+                                    return `
+                                        <div class="group animate-in zoom-in duration-300">
+                                            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gray-50 rounded-lg mb-3 flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-red-300 transition shadow-sm">
+                                                <img src="${path}" alt="${tp.name}" class="object-contain h-full w-full">
+                                            </div>
+                                            <p class="text-[10px] font-bold text-gray-700 truncate px-1">${tp.name}</p>
+                                            <p class="text-xs font-black text-blue-600 mt-1">${parseInt(tp.total_sold)} <span class="text-[9px] text-gray-400 uppercase">Sold</span></p>
+                                        </div>
+                                    `;
+                                }).join('');
+                            }
+                        });
                 };
             };
 

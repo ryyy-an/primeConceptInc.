@@ -105,6 +105,11 @@ if ($action === 'place_request') {
 
         $pdo->commit();
 
+        // Notification: Showroom -> Admin (Order Request)
+
+        $senderName = $_SESSION['full_name'] ?? 'Showroom User';
+        create_notification($pdo, $userId, 'New Order Request', "Order request #$orderId has been placed by $senderName.", 'request', null, 'admin');
+
         ob_clean();
         echo json_encode(['success' => true, 'pr_no' => $orderId]);
         exit;
@@ -115,6 +120,7 @@ if ($action === 'place_request') {
         exit;
     }
 }
+
 
 // 4. GET FULL REQUEST DETAILS
 if ($action === 'get_items') {
@@ -181,7 +187,7 @@ if ($action === 'cancel_request') {
 if ($action === 'finalize_order') {
     try {
         $order_id        = (int)($_POST['order_id'] ?? 0);
-        
+
         if ($order_id <= 0) {
             throw new Exception("Missing Order ID.");
         }
@@ -204,7 +210,7 @@ if ($action === 'finalize_order') {
             'paymentRef'       => trim($_POST['paymentRef'] ?? ''),
             'amountPaid'       => (float)($_POST['amountPaid'] ?? 0),
             'paymentRemarks'   => trim($_POST['paymentRemarks'] ?? ''),
-            'totalWithInterest'=> (float)($_POST['totalWithInterest'] ?? 0),
+            'totalWithInterest' => (float)($_POST['totalWithInterest'] ?? 0),
             'balance'          => (float)($_POST['balance'] ?? 0)
         ];
 
@@ -213,6 +219,11 @@ if ($action === 'finalize_order') {
         }
 
         $result = process_showroom_finalize_order($pdo, $data);
+
+        if ($result['success']) {
+
+            create_notification($pdo, $userId, 'Order to Fulfill', "Order #$order_id is finalized and ready for warehouse fulfillment.", 'fulfillment', null, 'warehouse');
+        }
 
         if (ob_get_length()) ob_clean();
         echo json_encode($result);

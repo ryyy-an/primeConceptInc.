@@ -511,6 +511,9 @@ function closeReviewModal() {
 // ==========================================
 
 async function completeSale() {
+    // Reset change tracking since we're submitting
+    window.formHasUnsavedChanges = false;
+
     const btn = document.getElementById("completeSaleBtn");
     if (!btn || btn.disabled) return;
 
@@ -766,49 +769,44 @@ async function submitOrderRequest() {
     }
 }
 
-/**
- * Showroom Home Page: Notification Dropdown logic
- */
-document.addEventListener("DOMContentLoaded", () => {
-    const notifButton = document.getElementById("notifButton");
-    const notifDropdown = document.getElementById("notifDropdown");
-    const notifList = document.getElementById("notifList");
-    const viewAllBtn = document.getElementById("viewAllBtn");
-
-    if (notifButton && notifDropdown) {
-        notifButton.addEventListener("click", (e) => {
-            e.stopPropagation();
-            notifDropdown.classList.toggle("hidden");
-        });
-    }
-
-    if (viewAllBtn && notifList) {
-        viewAllBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (notifList.style.maxHeight === "200px" || notifList.style.maxHeight === "") {
-                notifList.style.maxHeight = notifList.scrollHeight + "px";
-                viewAllBtn.textContent = "Show Less";
-                viewAllBtn.classList.add("text-red-500");
-            } else {
-                notifList.style.maxHeight = "200px";
-                viewAllBtn.textContent = "View All Notifications";
-                viewAllBtn.classList.remove("text-red-500");
-            }
-        });
-    }
-
-    window.addEventListener("click", (e) => {
-        if (notifDropdown && !notifDropdown.contains(e.target)) {
-            notifDropdown.classList.add("hidden");
+    // Handle initial tab if on home-page.php
+    document.addEventListener("DOMContentLoaded", () => {
+        if (window.location.pathname.includes("home-page.php")) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeTab = urlParams.get('tab') || '0';
+            if (typeof showTab === 'function') showTab(parseInt(activeTab));
         }
     });
 
-    // Handle initial tab if on home-page.php
-    if (window.location.pathname.includes("home-page.php")) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const activeTab = urlParams.get('tab') || '0';
-        if (typeof showTab === 'function') showTab(parseInt(activeTab));
-    }
+/**
+ * Monitor Checkout Form for Unsaved Changes
+ */
+document.addEventListener("DOMContentLoaded", () => {
+    const checkoutFields = [
+        "clientName", 
+        "clientContact", 
+        "adminDiscount", 
+        "paymentRef", 
+        "paymentRemarks", 
+        "govBranch", 
+        "deliveryAddress", 
+        "amountPaid",
+        "clientType",
+        "shippingMode",
+        "transactionType",
+        "paymentMethod"
+    ];
+    
+    checkoutFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            const trackChange = () => {
+                window.formHasUnsavedChanges = true;
+            };
+            el.addEventListener("input", trackChange);
+            el.addEventListener("change", trackChange);
+        }
+    });
 });
 
 /**

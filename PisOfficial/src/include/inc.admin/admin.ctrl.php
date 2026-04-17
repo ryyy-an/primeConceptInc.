@@ -110,6 +110,28 @@ if ($action === 'get_report_sales') {
     ]);
 }
 
+// Sales Revenue Trend Data (Chart)
+if ($action === 'get_revenue_trend') {
+    $start = $_GET['start'] ?? null;
+    $end   = $_GET['end'] ?? null;
+
+    $trend = get_monthly_sales_trend($pdo, $start, $end);
+    sendJsonResponse([
+        'success' => true,
+        'labels'  => array_column($trend, 'month_name'),
+        'data'    => array_column($trend, 'revenue')
+    ]);
+}
+
+if ($action === 'get_top_products') {
+    $period = $_GET['period'] ?? 'all';
+    $data = get_top_performing_products($pdo, 5, $period);
+    sendJsonResponse([
+        'success' => true,
+        'data' => $data
+    ]);
+}
+
 if ($action === 'get_orders_report') {
     $status = $_GET['status'] ?? 'All';
     $data = get_all_orders_data($pdo, $status);
