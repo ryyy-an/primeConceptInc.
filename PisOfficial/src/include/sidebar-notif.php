@@ -187,6 +187,6 @@
                     }
                 })
                 .catch(() => {});
-        }, 10000); // Every 10 seconds
+        }, 30000); // Every 30 seconds
     });
 </script>
