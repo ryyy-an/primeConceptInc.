@@ -7,11 +7,8 @@ ob_start();
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 // 2. Dependency Loading 
+require_once __DIR__ . '/../config.php';
 $baseDir    = __DIR__ . '/../';
 $configPath = $baseDir . 'config.php';
 $dbhPath    = $baseDir . 'dbh.inc.php';
