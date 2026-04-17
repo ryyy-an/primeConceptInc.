@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["php82", "nodejs_20", "php82Extensions.pdo", "php82Extensions.pdo_mysql", "php82Extensions.mbstring", "php82Extensions.openssl"]
+nixPkgs = ["php", "nodejs"]
 
 [phases.install]
 cmds = ["cd PisOfficial && npm install"]
@@ -8,4 +8,4 @@ cmds = ["cd PisOfficial && npm install"]
 cmds = ["cd PisOfficial && npm run build"]
 
 [start]
-cmd = "cd PisOfficial && php -S 0.0.0.0:${PORT:-8000} router.php"
+cmd = "cd PisOfficial && php -S 0.0.0.0:$PORT router.php"
