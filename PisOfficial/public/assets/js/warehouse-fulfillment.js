@@ -307,12 +307,17 @@ async function fulfillOrderHandler() {
         });
         const data = await response.json();
         if (data.success) {
-            if (typeof showToast === 'function') {
-                showToast('Order fulfilled successfully', 'success');
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                window.location.reload();
-            }
+            // Close the modal first
+            closeFulfillmentModal();
+
+            setTimeout(() => {
+                if (typeof showToast === 'function') {
+                    showToast('Order fulfilled successfully', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    window.location.reload();
+                }
+            }, 300); // Wait for modal transition
         } else {
             if (typeof showToast === 'function') showToast(data.message || 'Fulfillment failed', 'error');
         }

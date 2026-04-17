@@ -353,7 +353,7 @@ function process_admin_pos_sale(PDO $pdo, array $data): array
                     if ($newWH <= 10) { // Threshold for alert
 
                         $adminId = (int)($_SESSION['user_id'] ?? 0);
-                        create_notification($pdo, $adminId, 'Low Stock Alert', "Critical: Component ID {$r['comp_id']} is down to $newWH units.", 'low_stock', null, 'admin');
+                        create_notification($pdo, $adminId, 'Low Stocks Alert', "Status: Critical\nSummary: Component ID {$r['comp_id']} is below threshold ($newWH units).", 'low_stock', null, 'admin');
                     }
 
                     // Log each component deduction with full context
@@ -573,38 +573,34 @@ function get_dashboard_low_stock(PDO $pdo): array
     }
 }
 
-/**
- * Fetches all pending receivables (orders with a balance > 0)
- * Can be filtered by client type (e.g., 'Government', 'Private')
- */
-function get_pending_receivables(PDO $pdo, string $type = 'All'): array
+function get_pending_receivables(PDO $pdo): array
 {
     try {
-        $params = [];
-        $sql = "SELECT 
-                    o.id, 
-                    COALESCE(c.name, o.temp_customer_name) as client_name,
-                    c.gov_branch as branch,
-                    c.client_type,
-                    o.created_at, 
-                    o.total_ammount as total, 
-                    o.balance, 
-                    o.status,
-                    t.id as trans_id,
-                    t.or_number
-                FROM orders o
-                JOIN customers c ON o.customer_id = c.id
-                LEFT JOIN transactions t ON o.id = t.order_id
-                WHERE o.balance > 0";
+        $sql = "SELECT * FROM (
+                    SELECT 
+                        o.id, 
+                        c.name as client_name,
+                        c.gov_branch as branch,
+                        c.client_type,
+                        o.created_at, 
+                        o.total_ammount as total, 
+                        t.total_with_interest,
+                        (t.total_with_interest - COALESCE((SELECT SUM(pt.amount_paid) FROM payment_tracker pt WHERE pt.trans_id = t.id AND pt.status = 'Paid'), 0)) as balance,
+                        o.status as order_status,
+                        t.id as trans_id,
+                        t.or_number,
+                        t.status as status
+                    FROM orders o
+                    JOIN customers c ON o.customer_id = c.id
+                    JOIN transactions t ON o.id = t.order_id
+                    WHERE t.payment_type = 'Installment'
+                      AND t.status = 'Ongoing'
+                      AND LOWER(c.client_type) = 'government'
+                ) as sub
+                WHERE balance > 0
+                ORDER BY created_at DESC";
         
-        if ($type !== 'All') {
-            $sql .= " AND c.client_type = ?";
-            $params[] = $type;
-        }
-
-        $sql .= " GROUP BY o.id ORDER BY o.created_at DESC";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
+        $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log("Get Receivables Error: " . $e->getMessage());
@@ -612,17 +608,24 @@ function get_pending_receivables(PDO $pdo, string $type = 'All'): array
     }
 }
 
-/**
- * Calculates summary stats for all active receivables
- */
 function get_receivables_summary(PDO $pdo): array
 {
     try {
         $sql = "SELECT 
-                    COUNT(DISTINCT o.id) as pending_accounts,
-                    SUM(o.balance) as total_outstanding
-                FROM orders o
-                WHERE o.balance > 0";
+                    COUNT(*) as pending_accounts,
+                    SUM(balance) as total_outstanding
+                FROM (
+                    SELECT 
+                        o.id,
+                        (t.total_with_interest - COALESCE((SELECT SUM(pt.amount_paid) FROM payment_tracker pt WHERE pt.trans_id = t.id AND pt.status = 'Paid'), 0)) as balance
+                    FROM orders o
+                    JOIN customers c ON o.customer_id = c.id
+                    JOIN transactions t ON o.id = t.order_id
+                    WHERE t.payment_type = 'Installment'
+                      AND t.status = 'Ongoing'
+                      AND LOWER(c.client_type) = 'government'
+                ) as sub
+                WHERE balance > 0";
         $stmt = $pdo->query($sql);
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
         return [
@@ -638,7 +641,7 @@ function get_receivables_summary(PDO $pdo): array
  * Records a manual payment, marks the oldest pending installment as paid,
  * and updates the order's remaining balance.
  */
-function record_manual_collection(PDO $pdo, int $orderId, float $amount, string $reference): bool
+function record_manual_collection(PDO $pdo, int $orderId, float $amount, string $reference, string $paymentMethod = 'Cash', string $remarks = ''): bool
 {
     try {
         $pdo->beginTransaction();
@@ -661,10 +664,10 @@ function record_manual_collection(PDO $pdo, int $orderId, float $amount, string 
             if ($trackerId) {
                 // 3. Mark tracker as Paid
                 $sqlUpdTracker = "UPDATE payment_tracker 
-                                  SET status = 'Paid', amount_paid = ?, date_paid = NOW(), remarks = ? 
+                                  SET status = 'Paid', amount_paid = ?, date_paid = NOW(), reference_no = ?, payment_method = ?, remarks = ? 
                                   WHERE id = ?";
                 $stmtUpdTracker = $pdo->prepare($sqlUpdTracker);
-                $stmtUpdTracker->execute([$amount, $reference, $trackerId]);
+                $stmtUpdTracker->execute([$amount, $reference, $paymentMethod, $remarks, $trackerId]);
             }
         }
 
@@ -707,10 +710,16 @@ function update_order_status(PDO $pdo, int $orderId, string $status, float $disc
     try {
         if (!$pdo->inTransaction()) $pdo->beginTransaction();
 
-        // 1. Get the creator of the order for notification
-        $stmtCreator = $pdo->prepare("SELECT created_by FROM orders WHERE id = ?");
-        $stmtCreator->execute([$orderId]);
-        $creatorId = (int)($stmtCreator->fetchColumn() ?: 0);
+        // 1. Get the creator and customer name for notification
+        $stmtOrder = $pdo->prepare("
+            SELECT o.created_by, c.name as customer_name 
+            FROM orders o 
+            LEFT JOIN customers c ON o.customer_id = c.id 
+            WHERE o.id = ?");
+        $stmtOrder->execute([$orderId]);
+        $orderData = $stmtOrder->fetch(PDO::FETCH_ASSOC);
+        $creatorId = (int)($orderData['created_by'] ?? 0);
+        $customerName = $orderData['customer_name'] ?? 'Walk-in Customer';
 
         // 2. Update Order Details
         $sql = "UPDATE orders SET status = ?, admin_discount = ?, comments = ? WHERE id = ?";
@@ -721,14 +730,13 @@ function update_order_status(PDO $pdo, int $orderId, string $status, float $disc
 
         // Notification: Admin -> Showroom (Order Update Result)
         if ($creatorId > 0) {
-
             $adminId = (int)($_SESSION['user_id'] ?? 0);
-            $msg = "Ang iyong order request #$orderId ay naging " . strtolower($status) . ".";
-            create_notification($pdo, $adminId, "Order Update", $msg, 'result', $creatorId);
+            $msg = "Order for $customerName has been " . strtolower($status) . ".";
+            create_notification($pdo, $adminId, "Order Update", "Status: " . ucfirst($status) . "\nSummary: $msg", 'result', $creatorId);
 
             // Notification: Admin -> Warehouse (If approved, for fulfillment)
             if ($status === 'Approved') {
-                create_notification($pdo, $adminId, 'Order to Fulfill', "Order #$orderId has been approved and is ready for fulfillment.", 'fulfillment', null, 'warehouse');
+                create_notification($pdo, $adminId, 'Order to Fulfill', "Status: Approved\nSummary: #$orderId cleared for Warehouse fulfillment.", 'fulfillment', null, 'warehouse');
             }
         }
 
@@ -1243,6 +1251,7 @@ function get_order_summary_by_id(PDO $pdo, int $orderId): ?array
                     t.id as trans_id,
                     t.or_number,
                     t.payment_type,
+                    t.amount as principal_amount,
                     t.interest as interest_rate,
                     t.total_with_interest,
                     t.transaction_date

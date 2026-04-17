@@ -225,10 +225,27 @@ function get_order_details_shared(PDO $pdo, int $orderId): array
 
         if (!$details) return [];
 
-        $sqlItems = "SELECT p.name, pv.variant, oi.get_from as location, oi.qty, oi.unit_price, p.category
+        $sqlItems = "SELECT 
+                        p.name, 
+                        pv.variant, 
+                        oi.get_from as location, 
+                        oi.qty, 
+                        oi.unit_price, 
+                        p.category,
+                        CASE 
+                            WHEN oi.get_from = 'SR' THEN COALESCE(ss.qty_on_hand, 0)
+                            WHEN oi.get_from = 'WH' THEN COALESCE(ws_agg.min_qty, 0)
+                            ELSE 0
+                        END AS current_stock
                      FROM order_items oi
                      JOIN product_variant pv ON oi.variant_id = pv.id AND pv.is_deleted = 0
                      JOIN products p ON pv.prod_id = p.id
+                     LEFT JOIN showroom_stocks ss ON pv.id = ss.variant_id
+                     LEFT JOIN (
+                        SELECT variant_id, MIN(qty_on_hand) as min_qty 
+                        FROM warehouse_stocks 
+                        GROUP BY variant_id
+                     ) ws_agg ON pv.id = ws_agg.variant_id
                      WHERE oi.order_id = ?";
         $stmtItems = $pdo->prepare($sqlItems);
         $stmtItems->execute([$orderId]);

@@ -5,6 +5,37 @@
 
 // --- MODAL UTILITIES ---
 
+let initialModalState = null;
+let currentModalStatus = null; // Tracks if it's 'approved' (editable)
+
+function captureInitialState() {
+    initialModalState = {
+        clientName: document.getElementById('clientName')?.value || '',
+        clientContact: document.getElementById('clientContact')?.value || '',
+        shippingMode: document.getElementById('shippingMode')?.value || 'pickup',
+        deliveryAddress: document.getElementById('deliveryAddress')?.value || '',
+        paymentMethod: document.getElementById('paymentMethod')?.value || 'cash',
+        paymentRef: document.getElementById('paymentRef')?.value || '',
+        paymentRemarks: document.getElementById('paymentRemarks')?.value || ''
+    };
+}
+
+function isModalDirty() {
+    if (!initialModalState || currentModalStatus !== 'approved') return false;
+
+    const currentState = {
+        clientName: document.getElementById('clientName')?.value || '',
+        clientContact: document.getElementById('clientContact')?.value || '',
+        shippingMode: document.getElementById('shippingMode')?.value || 'pickup',
+        deliveryAddress: document.getElementById('deliveryAddress')?.value || '',
+        paymentMethod: document.getElementById('paymentMethod')?.value || 'cash',
+        paymentRef: document.getElementById('paymentRef')?.value || '',
+        paymentRemarks: document.getElementById('paymentRemarks')?.value || ''
+    };
+
+    return JSON.stringify(initialModalState) !== JSON.stringify(currentState);
+}
+
 function openSrModal(modalId, boxId) {
     const modal = document.getElementById(modalId);
     const box = document.getElementById(boxId);
@@ -34,6 +65,10 @@ function closeSrModal(modalId, boxId) {
 // --- REQUEST DETAILS MODAL ---
 
 async function openRequestInfoModal(req) {
+    if (!req) return;
+    currentModalStatus = (req.status || 'pending').toLowerCase();
+    initialModalState = null; // Reset for a new session
+
     document.body.style.overflow = 'hidden';
     const modal = document.getElementById('requestInfoModal');
     const box = document.getElementById('requestInfoBox');
@@ -134,7 +169,7 @@ async function openRequestInfoModal(req) {
     // Cancel Button visibility (Left Column - may keep it or hide if redundant)
     // The user wanted the footer button to be the Cancel button for 'For Review'.
     const cancelContainer = document.getElementById('modal-cancel-container');
-    if (status === 'pending') { // Only keep it here for Pending if not For Review
+    if (status === 'pending' || status === 'approved') { 
         cancelContainer.innerHTML = `
             <button onclick="cancelRequest(${req.pr_no})" 
                 class="w-full py-4 bg-white border-2 border-red-50 text-red-600 font-bold rounded-2xl hover:bg-red-50 transition-all active:scale-95 uppercase text-[11px] tracking-widest shadow-sm">
@@ -161,6 +196,11 @@ async function openRequestInfoModal(req) {
 }
 
 function closeRequestInfoModal() {
+    if (isModalDirty()) {
+        if (!confirm("You have unsaved transaction details. Are you sure you want to discard them?")) {
+            return;
+        }
+    }
     closeSrModal('requestInfoModal', 'requestInfoBox');
 }
 
@@ -285,6 +325,9 @@ async function populateRequestSummary(req) {
             
             const totalWithInterestHidden = document.getElementById("totalWithInterest");
             if (totalWithInterestHidden) totalWithInterestHidden.value = total.toFixed(2);
+
+            // Capture the state after all fields are populated
+            captureInitialState();
         } else {
             tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-red-500">Failed to load request items.</td></tr>`;
         }
@@ -392,12 +435,17 @@ async function executeFinalizeTransaction() {
         });
         const result = await res.json();
         if (result.success) {
-            if (typeof showToast === 'function') {
-                showToast('Transaction completed successfully!', 'success');
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                window.location.reload();
-            }
+            // Close the main info modal first
+            closeSrModal('requestInfoModal', 'requestInfoBox');
+            
+            setTimeout(() => {
+                if (typeof showToast === 'function') {
+                    showToast('Transaction completed successfully!', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    window.location.reload();
+                }
+            }, 300); // Wait for modal transition
         } else {
             if (typeof showToast === 'function') showToast(result.message || "Could not finalize.", 'error');
             btn.disabled = false;

@@ -161,8 +161,7 @@ if ($action === 'get_order_details') {
 }
 
 if ($action === 'get_receivables') {
-    $type = $_GET['type'] ?? 'All';
-    $data = get_pending_receivables($pdo, $type);
+    $data = get_pending_receivables($pdo);
     $stats = get_receivables_summary($pdo);
     sendJsonResponse([
         'success' => true,
@@ -174,13 +173,15 @@ if ($action === 'get_receivables') {
 if ($action === 'record_collection') {
     $orderId   = (int)($_POST['order_id'] ?? 0);
     $amount    = (float)($_POST['amount'] ?? 0);
-    $reference = $_POST['reference'] ?? '';
+    $reference = trim($_POST['reference'] ?? '');
+    $method    = trim($_POST['payment_method'] ?? 'Cash');
+    $remarks   = trim($_POST['remarks'] ?? '');
 
     if ($orderId <= 0 || $amount <= 0) {
         sendJsonResponse(['success' => false, 'error' => 'Invalid amount or order ID']);
     }
 
-    $success = record_manual_collection($pdo, $orderId, $amount, $reference);
+    $success = record_manual_collection($pdo, $orderId, $amount, $reference, $method, $remarks);
     sendJsonResponse([
         'success' => $success,
         'message' => $success ? 'Payment recorded successfully' : 'Failed to record payment'

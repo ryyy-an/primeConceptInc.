@@ -58,8 +58,8 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js?v=1.3.0" defer></script>
-    <script src="../../public/assets/js/order.js?v=1.3.0" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.4.0" defer></script>
+    <script src="../../public/assets/js/order.js?v=1.4.0" defer></script>
     <?php include '../include/toast.php'; ?>
 
 
@@ -340,7 +340,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                 $encodedProduct = rawurlencode(json_encode($p));
                             ?>
                                 <div class="card-style p-6 border border-gray-200 rounded-2xl bg-white shadow-sm relative h-full flex flex-col hover:shadow-md transition-all duration-300 product-card"
-                                    data-name="<?= htmlspecialchars(strtolower($p['name'])) ?>" data-wh="<?= $p['total_wh'] ?>"
+                                    data-name="<?= htmlspecialchars(strtolower($p['name'])) ?>" data-code="<?= htmlspecialchars(strtolower($p['code'])) ?>" data-wh="<?= $p['total_wh'] ?>"
                                     data-sr="<?= $p['total_sr'] ?>">
 
                                     <?php if ($p['overall'] <= 0): ?>
@@ -476,7 +476,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                         <?php endif; ?>
                     </div>
 
-                    <div id="posNoResults" class="hidden flex-col items-center justify-center py-20 text-center w-full">
+                    <div id="posNoResults" class="hidden flex flex-col items-center justify-center py-20 text-center w-full">
                         <div class="bg-gray-50 p-6 rounded-full mb-4">
                             <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"

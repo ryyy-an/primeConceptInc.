@@ -21,26 +21,9 @@ if (isset($_SESSION['user_id'])) {
     $cartItemsCount = count(get_cart_items($pdo, $userId));
     $totalCartItems = $cartItemsCount;
 
-    // --- PAGINATION & FILTERING ---
-    $currentPage = (int)($_GET['page'] ?? 1);
-    if ($currentPage < 1) $currentPage = 1;
-    $limit = 10;
-    $offset = ($currentPage - 1) * $limit;
-
-    $status_filter = $_GET['status'] ?? 'All';
-    $start_date = $_GET['start_date'] ?? '';
-    $end_date = $_GET['end_date'] ?? '';
-
-    $filters = [
-        'status' => $status_filter,
-        'start_date' => $start_date,
-        'end_date' => $end_date
-    ];
-
-    // Get counts and fetch filtered data
-    $total_records = count_requests($pdo, $userId, $filters);
-    $total_pages = max(1, (int)ceil($total_records / $limit));
-    $requests = fetch_requests($pdo, $userId, $filters, $limit, $offset);
+    // --- FETCH ORDER REQUESTS ---
+    // User requested to remove filtering and pagination. Showing all active (non-Success) orders.
+    $requests = fetch_requests($pdo, $userId, [], 500, 0);
 
 
     // --- OPTIMIZED STATS FETCHING (Consolidated) ---
@@ -238,37 +221,7 @@ if (isset($_SESSION['user_id'])) {
                     <p class="text-gray-600 font-medium">Review and manage your product requests below.</p>
                 </div>
 
-                <!-- Filter Bar -->
-                <form method="GET" class="flex flex-wrap items-end gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Status</label>
-                        <select name="status" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all min-w-[140px]">
-                            <?php $statuses = ['All', 'For Review', 'Approved', 'Rejected', 'Cancelled']; ?>
-                            <?php foreach ($statuses as $st): ?>
-                                <option value="<?= $st ?>" <?= $status_filter === $st ? 'selected' : '' ?>><?= $st ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
 
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">From</label>
-                        <input type="date" name="start_date" value="<?= h($start_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all">
-                    </div>
-
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">To</label>
-                        <input type="date" name="end_date" value="<?= h($end_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all">
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button type="submit" class="h-10 px-5 bg-red-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95">
-                            Filter
-                        </button>
-                        <a href="order-req-page.php" class="h-10 px-5 bg-white border border-gray-200 text-gray-400 text-xs font-bold uppercase tracking-widest rounded-xl hover:text-gray-600 flex items-center transition-all active:scale-95">
-                            Reset
-                        </a>
-                    </div>
-                </form>
             </div>
 
             <div
@@ -308,7 +261,7 @@ if (isset($_SESSION['user_id'])) {
                             <?php foreach ($requests as $row):
                                 // Match Admin Status Logic
                                 $status = strtolower($row['status'] ?? 'for review');
-                                
+
                                 // Dynamic Status Coloring
                                 if ($status === 'approved') {
                                     $statusClass = 'bg-green-50 text-green-600 border border-green-100';
@@ -366,43 +319,7 @@ if (isset($_SESSION['user_id'])) {
                     </tbody>
                 </table>
 
-                <!-- Pagination Footer -->
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                    <div class="text-[11px] text-gray-400 font-bold uppercase tracking-widest">
-                        Showing <span class="text-gray-900"><?= $total_records > 0 ? $offset + 1 : 0 ?></span> to <span class="text-gray-900"><?= min($offset + $limit, $total_records) ?></span> of <span class="text-gray-900"><?= $total_records ?></span> results
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <?php if ($currentPage > 1): ?>
-                            <a href="?page=<?= $currentPage - 1 ?>&status=<?= $status_filter ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
-                                class="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all active:scale-95 text-gray-400 hover:text-gray-600">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                </svg>
-                            </a>
-                        <?php endif; ?>
 
-                        <?php
-                        $startPage = max(1, $currentPage - 2);
-                        $endPage = min($total_pages, $currentPage + 2);
-                        if ($startPage > 1) echo '<span class="px-2 text-gray-300">...</span>';
-                        for ($i = $startPage; $i <= $endPage; $i++): ?>
-                            <a href="?page=<?= $i ?>&status=<?= $status_filter ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
-                                class="size-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all <?= $i === $currentPage ? 'bg-red-600 text-white shadow-md shadow-red-200' : 'text-gray-400 hover:bg-gray-100' ?>">
-                                <?= $i ?>
-                            </a>
-                        <?php endfor; ?>
-                        <?php if ($endPage < $total_pages) echo '<span class="px-2 text-gray-300">...</span>'; ?>
-
-                        <?php if ($currentPage < $total_pages): ?>
-                            <a href="?page=<?= $currentPage + 1 ?>&status=<?= $status_filter ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
-                                class="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all active:scale-95 text-gray-400 hover:text-gray-600">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                                </svg>
-                            </a>
-                        <?php endif; ?>
-                    </div>
-                </div>
             </div>
 
             <!-- View Modal -->
@@ -645,9 +562,13 @@ if (isset($_SESSION['user_id'])) {
                                                 Method</label>
                                             <select id="paymentMethod"
                                                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-gray-900">
-                                                <option value="eWallet">E-Wallet</option>
-                                                <option value="gcash">GCash</option>
-                                                <option value="bankTransfer">Bank Transfer</option>
+                                                <option value="cash">💵 Cash Payment</option>
+                                                <option value="gcash">📱 GCash</option>
+                                                <option value="maya">💳 Maya (formerly PayMaya)</option>
+                                                <option value="bdo">🏦 Bank Transfer - BDO</option>
+                                                <option value="bpi">🏦 Bank Transfer - BPI</option>
+                                                <option value="check">✍️ Check Payment</option>
+                                                <option value="card">💳 Credit / Debit Card</option>
                                             </select>
                                         </div>
 
@@ -785,12 +706,12 @@ if (isset($_SESSION['user_id'])) {
                         <button type="button" onclick="closeFinalizeConfirmModal()"
                             class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-black text-[11px] uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-all">Review Again</button>
                         <button type="button" id="confirmFinalizeBtn" onclick="executeFinalizeTransaction()"
-                            class="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95">Yes, Process Sale</button>
+                            class="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-700 transition-all shadow-xl shadow-blue-100 active:scale-95">Yes, Process Sale</button>
                     </div>
                 </div>
             </div>
 
-            <script src="../../public/assets/js/sr-order-req.js?v=1.3.0" defer></script>
+            <script src="../../public/assets/js/sr-order-req.js?v=1.4.0" defer></script>
 
             <style>
                 .custom-scrollbar::-webkit-scrollbar {

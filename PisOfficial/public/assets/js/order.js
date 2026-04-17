@@ -246,11 +246,24 @@ async function openViewModal(orderId) {
         items.forEach(item => {
             const subtotal = item.qty * item.unit_price;
             baseOrderTotal += subtotal;
+
+            const stock = parseInt(item.current_stock || 0);
+            const reqQty = parseInt(item.qty);
+            const isAvailable = stock >= reqQty;
+            const stockColor = isAvailable ? 'text-green-600' : 'text-red-600';
+            const stockIcon = isAvailable ? '✅' : '🚨';
+
             tbody.innerHTML += `
                 <tr class="hover:bg-slate-50/50">
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="text-sm font-black ${stockColor}">${stockIcon} ${stock}</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">${isAvailable ? 'In Stock' : 'Insufficient'}</span>
+                        </div>
+                    </td>
                     <td class="px-6 py-4">
                         <div class="font-bold text-slate-800 text-[13px]">${item.name}</div>
-                        <div class="text-[10px] text-slate-400 uppercase font-bold">${item.category || 'General'}</div>
+                        <div class="text-[10px] text-slate-400 uppercase font-bold">${item.category || 'General'} &bull; ${item.variant}</div>
                     </td>
                     <td class="px-6 py-4 text-center font-mono text-slate-600 font-bold">${item.qty}</td>
                     <td class="px-6 py-4 text-right font-bold text-slate-900">₱${parseFloat(subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
@@ -268,6 +281,24 @@ async function openViewModal(orderId) {
             loadGlobalHistoryLog(originalRequesterName);
         } else {
             loadGlobalHistoryLog();
+        }
+
+        // Status-based UI Locking
+        const status = (data.status || '').toLowerCase();
+        const isPending = status === 'for review' || status === 'pending';
+        
+        const actionFooter = document.getElementById('modal-action-footer');
+        const notesInput = document.getElementById('admin-notes');
+        const discountInput = document.getElementById('admin-discount');
+
+        if (isPending) {
+            if (actionFooter) actionFooter.classList.remove('hidden');
+            if (notesInput) notesInput.disabled = false;
+            if (discountInput) discountInput.disabled = false;
+        } else {
+            if (actionFooter) actionFooter.classList.add('hidden');
+            if (notesInput) notesInput.disabled = true;
+            if (discountInput) discountInput.disabled = true;
         }
 
         modal.classList.remove('hidden');
@@ -332,9 +363,11 @@ async function handleAction(type) {
         const res = await response.json();
 
         if (res.success) {
-            window.showToast?.(res.message || "Action processed", "success");
             closeReviewModal();
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => {
+                window.showToast?.(res.message || "Action processed", "success");
+                setTimeout(() => location.reload(), 1000);
+            }, 300);
         } else {
             window.showCustomAlert?.(res.message || "Failed");
             // Reset
@@ -568,7 +601,12 @@ async function completeSale() {
             const res = await fetch("../include/inc.admin/admin.ctrl.php", { method: "POST", body: formData });
             const result = await res.json();
             if (result.success) {
-                window.showCustomSuccess?.(`Order #${result.order_id} recorded.`, () => window.location.reload());
+                // Close the main checkout modal first
+                closeProceedModal('reviewCartModal');
+                
+                setTimeout(() => {
+                    window.showCustomSuccess?.(`Order #${result.order_id} recorded.`, () => window.location.reload());
+                }, 300);
             } else {
                 window.showCustomAlert?.(result.message || "Failed.");
                 btn.disabled = false;
@@ -750,9 +788,14 @@ async function submitOrderRequest() {
         const data = await res.json();
 
         if (data.success) {
-            window.showCustomSuccess?.(`Order Request Submitted Successfully! PR Number: ${data.pr_no}`, () => {
-                window.location.reload(); // Refresh to clear cart
-            });
+            // Close the checkout modal first
+            closeProceedModal('reviewCartModal');
+            
+            setTimeout(() => {
+                window.showCustomSuccess?.(`Order Request Submitted Successfully! PR Number: ${data.pr_no}`, () => {
+                    window.location.reload(); // Refresh to clear cart
+                });
+            }, 300);
         } else {
             window.showCustomAlert?.(data.error || "Failed to submit request.");
             if (btn) {

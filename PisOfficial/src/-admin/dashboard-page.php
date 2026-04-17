@@ -24,7 +24,7 @@ if (isset($_SESSION['user_id'])) {
     $pendingRequestsCount = $stats['pending_requests'];
 
     // Fetch recent activities for the notification dropdown
-    
+
     // Fetch Dashboard Specific Items
     $lowStockItems = get_dashboard_low_stock($pdo);
     $govOrders = get_pending_government_orders($pdo);
@@ -52,12 +52,26 @@ if (isset($_SESSION['user_id'])) {
     <title>Prime-In-Sync | Dashboard</title>
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="../../public/assets/js/global.js" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
     <?php include '../include/toast.php'; ?>
-
-
     <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        th,
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
         /* Shrink entire UI by 10% */
         html {
             zoom: 90%;
@@ -295,12 +309,7 @@ if (isset($_SESSION['user_id'])) {
                             </div>
                         </div>
 
-                        <!-- Collection Type Filter -->
-                        <div class="flex items-center bg-gray-50 p-1 rounded-xl border border-gray-100">
-                            <button onclick="filterReceivables('All')" class="receivable-tab px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-white text-gray-900 shadow-sm border border-gray-100">All</button>
-                            <button onclick="filterReceivables('Government')" class="receivable-tab px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all text-gray-400 hover:text-gray-600">Government</button>
-                            <button onclick="filterReceivables('Private')" class="receivable-tab px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all text-gray-400 hover:text-gray-600">Private</button>
-                        </div>
+
 
                         <div class="text-right">
                             <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Outstanding</p>
@@ -310,15 +319,15 @@ if (isset($_SESSION['user_id'])) {
 
                     <div class="overflow-x-auto min-h-[300px]">
                         <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-widest border-b border-gray-100">
+                            <thead class="bg-gray-50 text-gray-400 text-[11px] font-extrabold uppercase tracking-widest border-b border-gray-100">
                                 <tr>
-                                    <th class="px-8 py-4">ID</th>
-                                    <th class="px-8 py-4">Client / Agency</th>
-                                    <th class="px-8 py-4 text-center">Type</th>
-                                    <th class="px-8 py-4 text-center text-xs">Due</th>
-                                    <th class="px-8 py-4 text-right">Balance</th>
-                                    <th class="px-8 py-4 text-center">Status</th>
-                                    <th class="px-8 py-4 text-center">Action</th>
+                                    <th class="px-8 py-5">ID</th>
+                                    <th class="px-8 py-5">Client / Agency</th>
+                                    <th class="px-8 py-5 text-center">Type</th>
+                                    <th class="px-8 py-5 text-center">Due</th>
+                                    <th class="px-8 py-5 text-right">Balance</th>
+                                    <th class="px-8 py-5 text-center">Status</th>
+                                    <th class="px-8 py-5 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="receivablesContent" class="divide-y divide-gray-50 text-sm">
@@ -326,52 +335,212 @@ if (isset($_SESSION['user_id'])) {
                             </tbody>
                         </table>
                     </div>
-                </div>
+                    <div id="collectionModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 transition-all duration-300">
+                        <div class="absolute inset-0 bg-slate-900/60" onclick="toggleCollectionModal(false)"></div>
 
-                <!-- Record Collection Modal -->
-                <div id="collectionModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 transition-all duration-300">
-                    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-                        <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-orange-50/30">
-                            <div class="flex items-center gap-3">
-                                <div class="size-10 bg-orange-600 rounded-xl flex items-center justify-center text-white">
-                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" />
+                        <div class="relative bg-white rounded-2xl shadow-2xl h-[85vh] max-w-6xl w-full overflow-hidden animate-in fade-in zoom-in duration-300 flex flex-col border border-gray-200">
+
+                            <div class="flex-none px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white z-20">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-2 h-8 bg-red-600 rounded-full"></div>
+                                    <h3 class="text-xl font-black text-gray-900 tracking-tight uppercase">Collection Details</h3>
+                                </div>
+                                <button onclick="toggleCollectionModal(false)" class="p-2 hover:bg-gray-100 rounded-xl transition-all group">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400 group-hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-sm font-black text-gray-900 uppercase">Record Collection</h3>
-                                    <p id="collInfo" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Order #00000</p>
-                                </div>
+                                </button>
                             </div>
-                            <button onclick="toggleCollectionModal(false)" class="text-gray-400 hover:text-red-500 transition-colors">
-                                <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" /></svg>
-                            </button>
-                        </div>
-                        <div class="p-6 space-y-5">
-                            <input type="hidden" id="collOrderId">
-                            <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Outstanding Balance</p>
-                                <p id="collBalance" class="text-xl font-black text-gray-900">₱0.00</p>
-                            </div>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Amount Received</label>
-                                    <div class="relative">
-                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black">₱</span>
-                                        <input type="number" id="collAmount" class="w-full bg-white border border-gray-200 rounded-2xl pl-8 pr-4 py-3 text-sm font-black text-gray-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-50 transition-all shadow-sm" placeholder="0.00">
+
+                            <div class="flex-1 flex flex-row overflow-hidden">
+
+                                <!-- Left Column: Order Stats & Base Info -->
+                                <div class="flex-1 border-r border-gray-100 overflow-y-auto p-8 space-y-8 bg-gray-50/10 custom-scrollbar">
+
+                                    <div class="max-w-xl py-4 px-2 space-y-5 bg-white rounded-xl shadow-sm border border-gray-100">
+                                        <div class="border-b border-gray-100 pb-3 mb-6 px-4">
+                                            <div class="flex items-baseline gap-2">
+                                                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Order Ref:</span>
+                                                <span id="modal-id" class="text-sm font-mono font-bold text-gray-950">--</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-x-16 px-4">
+                                            <div class="flex flex-col border-l-2 border-gray-100 pl-3">
+                                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-tight mb-0.5">TXN Date</label>
+                                                <p id="modal-date" class="text-sm font-semibold text-gray-800">--</p>
+                                            </div>
+                                            <div class="flex flex-col border-l-2 border-gray-100 pl-3">
+                                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-tight mb-0.5">Contact No.</label>
+                                                <p id="modal-contact" class="text-sm font-medium text-gray-600">--</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-x-16 pt-2 px-4">
+                                            <div class="flex flex-col border-l-2 border-gray-100 pl-3">
+                                                <label class="text-[11px] font-bold text-gray-400 uppercase tracking-tight mb-0.5">Customer Name</label>
+                                                <p id="modal-customer" class="text-sm font-extrabold text-gray-900 tracking-tight uppercase leading-none">--</p>
+                                            </div>
+                                            <div class="flex flex-col border-l-2 border-gray-100 pl-3">
+                                                <label class="text-[11px] font-bold text-gray-400 uppercase tracking-tight mb-0.5">Account Status</label>
+                                                <div id="modal-status">
+                                                    <span id="modal-status-badge" class="text-[11px] font-extrabold text-orange-600 tracking-tighter uppercase italic">
+                                                        ● Ongoing Installment
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="h-4"></div>
+                                    </div>
+
+                                    <!-- Financial summary highlight in the requested style -->
+                                    <div class="pt-4 space-y-4">
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div class="p-4 rounded-xl border border-blue-100 bg-blue-50/20 flex flex-col justify-center">
+                                                <span class="text-[10px] font-black text-blue-700 uppercase tracking-widest leading-none mb-1.5">Principal Total:</span>
+                                                <span id="modal-principal" class="text-lg font-black text-blue-900 leading-none tracking-tighter">₱ 0.00</span>
+                                            </div>
+                                            <div class="p-4 rounded-xl border border-gray-200 bg-gray-50 flex flex-col justify-center">
+                                                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1.5">Interest Rate:</span>
+                                                <span id="modal-interest" class="text-lg font-black text-gray-600 leading-none tracking-tighter">0%</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="p-5 rounded-xl border border-green-100 bg-green-50/20 flex justify-between items-center">
+                                            <span class="text-[10px] font-black text-green-700 uppercase tracking-widest">Total Payment Collected:</span>
+                                            <span id="modal-paid" class="text-xl font-black text-green-800 tracking-tighter">₱ 0.00</span>
+                                        </div>
+
+                                        <div class="p-6 rounded-2xl border-2 border-red-100 bg-red-50/30 flex justify-between items-center shadow-sm">
+                                            <div>
+                                                <span class="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] leading-none mb-1.5 block">Outstanding Balance</span>
+                                                <span id="modal-balance" class="text-4xl font-extrabold text-red-600 leading-none tracking-tighter">₱ 0.00</span>
+                                            </div>
+                                            <div class="size-14 bg-red-600 shadow-lg shadow-red-100 rounded-2xl flex items-center justify-center text-white">
+                                                <svg class="size-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2.5" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Payment Tracker Table in left Column -->
+                                    <section class="pt-6 space-y-4">
+                                        <div class="flex items-center justify-between px-1">
+                                            <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment tracker history</h3>
+                                            <span id="collNextDue" class="bg-black text-white text-[9px] px-3 py-1 rounded-full font-black italic uppercase tracking-widest">Next Term Pending</span>
+                                        </div>
+
+                                        <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                                            <table class="w-full text-left border-collapse">
+                                                <thead>
+                                                    <tr class="bg-gray-50/50 border-b border-gray-100">
+                                                        <th class="px-6 py-4 text-[9px] font-black text-gray-400 uppercase tracking-widest">Term</th>
+                                                        <th class="px-6 py-4 text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Due Date</th>
+                                                        <th class="px-6 py-4 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                                        <th class="px-6 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="collTrackerBody" class="divide-y divide-gray-100 text-gray-800">
+                                                    <!-- Dynamic Content -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                </div>
+
+                                <!-- Right Column: Finalize Transaction -->
+                                <div id="modal-right-column" class="flex-[1.5] flex flex-col bg-white overflow-hidden shadow-xl">
+                                    <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-2 h-8 bg-red-600 rounded-full"></div>
+                                            <div class="flex flex-col">
+                                                <h3 class="text-xl font-black text-gray-900 tracking-tight uppercase">Post Collection</h3>
+                                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Order Processing & Billing</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="px-3 py-1 text-[9px] font-black bg-blue-50 text-blue-600 rounded-full border border-blue-100 uppercase tracking-wider">Verified Account</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                                        <input type="hidden" id="collOrderId">
+
+                                        <div class="p-5 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-between">
+                                            <div class="space-y-0.5">
+                                                <p class="text-[10px] font-black text-orange-400 uppercase tracking-widest">Recording For</p>
+                                                <span id="termIndicator" class="text-base font-black text-orange-700 uppercase tracking-tight">Checking Next Term...</span>
+                                            </div>
+                                            <div class="size-10 bg-orange-600 text-white rounded-xl flex items-center justify-center shadow-md shadow-orange-100">
+                                                <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2.5" />
+                                                </svg>
+                                            </div>
+                                        </div>
+
+                                        <section id="modal-collection-form" class="space-y-6">
+                                            <div class="grid grid-cols-2 gap-6">
+                                                <div class="col-span-2 space-y-2.5">
+                                                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Received Amount (PHP)</label>
+                                                    <div class="relative group">
+                                                        <span class="absolute left-6 top-1/2 -translate-y-1/2 font-black text-orange-600 text-3xl transition-transform group-focus-within:scale-110 duration-300 pointer-events-none z-10">₱</span>
+                                                        <input type="number" id="collAmount"
+                                                            oninput="setCollectionFormDirty(); handleAmountInput(this.value)"
+                                                            class="w-full bg-white border border-gray-200 rounded-2xl pl-20 pr-6 py-6 text-3xl font-black text-gray-900 outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all shadow-sm"
+                                                            placeholder="0.00">
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-span-2 md:col-span-1 space-y-2.5">
+                                                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Payment Method</label>
+                                                    <select id="collMethod" onchange="setCollectionFormDirty()" class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer transition-all shadow-sm">
+                                                        <option value="Cash">💵 Cash Payment</option>
+                                                        <option value="gcash">📱 GCash</option>
+                                                        <option value="maya">💳 Maya</option>
+                                                        <option value="bdo">🏦 Bank Transfer - BDO</option>
+                                                        <option value="bpi">🏦 Bank Transfer - BPI</option>
+                                                        <option value="check">✍️ Check Payment</option>
+                                                        <option value="card">💳 Credit / Debit Card</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-span-2 md:col-span-1 space-y-2.5">
+                                                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Reference No.</label>
+                                                    <input type="text" id="collRef" oninput="setCollectionFormDirty()" autocomplete="off" class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 outline-none focus:ring-2 focus:ring-orange-500 uppercase tracking-widest shadow-sm" placeholder="TRACE-XXX">
+                                                </div>
+
+                                                <div class="col-span-2 space-y-2.5">
+                                                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Collection Remarks</label>
+                                                    <textarea id="collRemarks" oninput="setCollectionFormDirty()" rows="2" class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-orange-500 resize-none transition-all shadow-sm custom-scrollbar" placeholder="Optional notes..."></textarea>
+                                                </div>
+                                            </div>
+
+                                            <div class="p-6 bg-gray-900 rounded-2xl flex justify-between items-center shadow-lg shadow-gray-100">
+                                                <div class="space-y-0.5">
+                                                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Total Payable</p>
+                                                    <h1 id="collFooterTotal" class="text-xl font-black text-white tracking-tight leading-none">₱ 0.00</h1>
+                                                </div>
+                                                <div class="text-right space-y-0.5">
+                                                    <p class="text-[9px] font-bold text-orange-400 uppercase tracking-[0.2em]">Recording Now</p>
+                                                    <h1 class="text-xl font-black text-orange-500 tracking-tight leading-none" id="currentCapturingDisplay">₱ 0.00</h1>
+                                                </div>
+                                            </div>
+                                        </section>
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">OR / Reference Number</label>
-                                    <input type="text" id="collRef" class="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm font-black text-gray-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-50 transition-all shadow-sm uppercase tracking-widest" placeholder="OR-XXXX">
-                                </div>
                             </div>
-                        </div>
-                        <div class="p-6 bg-gray-50 border-t border-gray-100">
-                            <button onclick="submitCollection()" class="w-full bg-orange-600 text-white rounded-2xl py-4 text-xs font-black uppercase tracking-widest hover:bg-orange-700 hover:shadow-lg hover:shadow-orange-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" /></svg>
-                                Record Payment
-                            </button>
+
+                            <div class="p-8 flex justify-between items-center gap-4 bg-white border-t border-gray-100 z-20">
+                                <button onclick="toggleCollectionModal(false)" class="flex-1 justify-center bg-black hover:bg-zinc-800 text-white rounded-xl py-4 px-6 font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-gray-200 active:scale-95 flex items-center gap-2">
+                                    <span>Close Window</span>
+                                </button>
+
+                                <button onclick="submitCollection()" class="flex-1 justify-center bg-red-600 hover:bg-red-700 text-white rounded-xl py-4 px-6 font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-red-100 active:scale-95 flex items-center gap-2">
+                                    <span>Finalize Collection</span>
+                                </button>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -384,7 +553,7 @@ if (isset($_SESSION['user_id'])) {
                         </div>
                         <div class="overflow-x-auto min-h-[220px]">
                             <table class="w-full text-left">
-                                <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-bold tracking-widest border-b border-gray-50">
+                                <thead class="bg-gray-50 text-gray-400 text-[11px] font-extrabold uppercase tracking-widest border-b border-gray-50">
                                     <tr>
                                         <th class="px-6 py-4">Order ID</th>
                                         <th class="px-6 py-4">Date</th>
@@ -408,7 +577,7 @@ if (isset($_SESSION['user_id'])) {
                         </div>
                         <div class="overflow-x-auto min-h-[220px]">
                             <table class="w-full text-left">
-                                <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-bold tracking-widest border-b border-gray-50">
+                                <thead class="bg-gray-50 text-gray-400 text-[11px] font-extrabold uppercase tracking-widest border-b border-gray-50">
                                     <tr>
                                         <th class="px-6 py-4">Product</th>
                                         <th class="px-6 py-4">Variant</th>
@@ -441,7 +610,7 @@ if (isset($_SESSION['user_id'])) {
             window.renderRecentOrdersTable = function() {
                 const content = document.getElementById('recentOrdersContent');
                 const footer = document.getElementById('recentOrdersTableFooter');
-                
+
                 if (allRecentOrdersData.length === 0) {
                     content.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-gray-400 italic font-medium">No recent orders</td></tr>`;
                     footer.innerHTML = '';
@@ -464,9 +633,12 @@ if (isset($_SESSION['user_id'])) {
                 content.innerHTML = dataToShow.map(order => {
                     const status = order.status.toLowerCase();
                     const statusClass = status === 'completed' ? 'bg-green-100 text-green-600' : (status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600');
-                    
+
                     const dateObj = new Date(order.created_at);
-                    const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const formattedDate = dateObj.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                    });
 
                     return `
                         <tr class="hover:bg-gray-50/50 transition-colors">
@@ -534,7 +706,7 @@ if (isset($_SESSION['user_id'])) {
             window.renderLowStockTable = function() {
                 const content = document.getElementById('lowStockAlertsContent');
                 const footer = document.getElementById('lowStockTableFooter');
-                
+
                 if (allLowStockData.length === 0) {
                     content.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-gray-400 italic font-medium">No low stock alerts</td></tr>`;
                     footer.innerHTML = '';
@@ -558,7 +730,7 @@ if (isset($_SESSION['user_id'])) {
                     const threshold = parseInt(item.min_buildable_qty);
                     const srQty = parseInt(item.sr_qty);
                     const whQty = parseInt(item.wh_qty);
-                    
+
                     let location = '';
                     let displayQty = '';
                     if (whQty <= threshold && srQty <= threshold) {
@@ -629,18 +801,13 @@ if (isset($_SESSION['user_id'])) {
                 renderLowStockTable();
             };
 
-            // --- ACCOUNTS RECEIVABLE LOGIC ---
-            let currentReceivableFilter = 'All';
-
             window.fetchReceivables = function() {
                 const content = document.getElementById('receivablesContent');
                 const countDisplay = document.getElementById('receivableCount');
                 const totalDisplay = document.getElementById('receivableTotal');
 
-                content.innerHTML = `<tr><td colspan="7" class="py-20 text-center"><div class="animate-spin size-6 border-4 border-gray-100 border-t-orange-600 rounded-full mx-auto mb-2"></div></td></tr>`;
-
-                fetch(`../include/inc.admin/admin.ctrl.php?action=get_receivables&type=${currentReceivableFilter}`)
-                    .then(res => res.json())
+                fetch(`../include/inc.admin/admin.ctrl.php?action=get_receivables`)
+                    .then(response => response.json())
                     .then(response => {
                         if (response.success) {
                             countDisplay.innerText = `${response.stats.count} pending accounts`;
@@ -662,7 +829,7 @@ if (isset($_SESSION['user_id'])) {
                                         <p class="text-[10px] text-gray-400 font-medium">${row.branch || 'Independent Branch'}</p>
                                     </td>
                                     <td class="px-8 py-5 text-center">
-                                        <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${row.client_type === 'Government' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}">
+                                        <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-blue-50 text-blue-600">
                                             ${row.client_type}
                                         </span>
                                     </td>
@@ -674,7 +841,7 @@ if (isset($_SESSION['user_id'])) {
                                         <p class="text-[9px] text-gray-300 font-medium mt-1">OF ₱${parseFloat(row.total).toLocaleString()}</p>
                                     </td>
                                     <td class="px-8 py-5 text-center">
-                                        <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${row.status === 'Ongoing' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-gray-50 text-gray-400 border-gray-100'}">
+                                        <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-orange-50 text-orange-600 border-orange-100">
                                             ${row.status}
                                         </span>
                                     </td>
@@ -690,39 +857,147 @@ if (isset($_SESSION['user_id'])) {
                     });
             };
 
-            window.filterReceivables = function(type) {
-                currentReceivableFilter = type;
-                document.querySelectorAll('.receivable-tab').forEach(btn => {
-                    const isActive = btn.innerText.trim().toLowerCase() === type.toLowerCase();
-                    btn.classList.toggle('bg-white', isActive);
-                    btn.classList.toggle('text-gray-900', isActive);
-                    btn.classList.toggle('shadow-sm', isActive);
-                    btn.classList.toggle('border', isActive);
-                    btn.classList.toggle('border-gray-100', isActive);
-                    btn.classList.toggle('text-gray-400', !isActive);
-                });
-                fetchReceivables();
-            };
+            let isCollectionFormDirty = false;
+            window.setCollectionFormDirty = () => isCollectionFormDirty = true;
 
             window.toggleCollectionModal = function(show) {
+                if (!show && isCollectionFormDirty) {
+                    if (!confirm("You have unsaved changes in this collection form. Are you sure you want to close and discard them?")) {
+                        return;
+                    }
+                }
+
                 document.getElementById('collectionModal').classList.toggle('hidden', !show);
                 if (!show) {
                     document.getElementById('collAmount').value = '';
                     document.getElementById('collRef').value = '';
+                    document.getElementById('collRemarks').value = '';
+                    document.getElementById('collMethod').value = 'Cash';
+                    isCollectionFormDirty = false;
                 }
             };
 
-            window.openCollectionModal = function(data) {
+            window.openCollectionModal = async function(data) {
                 document.getElementById('collOrderId').value = data.id;
-                document.getElementById('collInfo').innerText = `Order #ORD-${data.id.toString().padStart(5, '0')} (${data.or || 'NO OR'})`;
-                document.getElementById('collBalance').innerText = `₱${parseFloat(data.balance).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+                // Reset fields to loading state
+                document.getElementById('modal-id').innerText = data.or || "REF-SYNC...";
+                document.getElementById('modal-customer').innerText = "Loading...";
+                document.getElementById('modal-contact').innerText = "---";
+                document.getElementById('modal-date').innerText = "---";
+
+                document.getElementById('modal-principal').innerText = "₱ 0.00";
+                document.getElementById('modal-interest').innerText = "0%";
+                document.getElementById('modal-paid').innerText = "₱ 0.00";
+                document.getElementById('modal-balance').innerText = "₱ 0.00";
+                document.getElementById('collFooterTotal').innerText = "₱ 0.00";
+
+                document.getElementById('termIndicator').innerText = "Checking...";
+                document.getElementById('collNextDue').innerText = "Syncing...";
+                document.getElementById('currentCapturingDisplay').innerText = "₱ 0.00";
+
+                const tbody = document.getElementById('collTrackerBody');
+                tbody.innerHTML = `<tr><td colspan="4" class="py-10 text-center"><div class="animate-spin size-6 border-4 border-gray-100 border-t-orange-600 rounded-full mx-auto"></div></td></tr>`;
+
+                // Named handler for real-time update and dirty state tracking
+                window.handleAmountInput = (value) => {
+                    const val = parseFloat(value || 0);
+                    document.getElementById('currentCapturingDisplay').innerText = `₱ ${val.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                };
+
                 toggleCollectionModal(true);
+
+                try {
+                    const res = await fetch(`../include/inc.admin/admin.ctrl.php?action=get_order_details&order_id=${data.id}`);
+                    const response = await res.json();
+
+                    if (response.success && response.summary) {
+                        const s = response.summary;
+                        document.getElementById('modal-customer').innerText = s.customer_name;
+                        document.getElementById('modal-contact').innerText = s.contact_no || 'N/A';
+                        document.getElementById('modal-id').innerText = s.or_number ? `#${s.or_number}` : 'NO-REF';
+                        document.getElementById('modal-date').innerText = new Date(s.created_at).toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric'
+                        });
+
+                        document.getElementById('modal-principal').innerText = `₱ ${parseFloat(s.principal_amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                        document.getElementById('modal-interest').innerText = `${s.interest_rate}%`;
+                        document.getElementById('collFooterTotal').innerText = `₱ ${parseFloat(s.total_with_interest || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                    }
+
+                    if (response.success && response.schedule) {
+                        let totalPaidSum = 0;
+                        let nextDue = null;
+                        let nextTermLabel = "Fully Paid";
+
+                        tbody.innerHTML = response.schedule.map((term, index) => {
+                            const isPaid = term.status === 'Paid';
+                            if (isPaid) totalPaidSum += parseFloat(term.amount_paid || 0);
+
+                            if (!isPaid && !nextDue) {
+                                nextDue = term;
+                                nextTermLabel = term.remarks || `Term ${index + 1}`;
+                            }
+
+                            const statusClass = isPaid ? 'bg-green-100/50 text-green-600 border-green-100' : 'bg-orange-50 text-orange-600 border-orange-100';
+
+                            return `
+                                <tr class="hover:bg-gray-50/50 transition border-b border-gray-50 last:border-0 group">
+                                    <td class="px-6 py-4">
+                                        <div class="font-extrabold text-gray-900 uppercase tracking-tighter text-[12px]">${term.remarks || `Term ${index + 1}`}</div>
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5 whitespace-nowrap">${isPaid ? 'Payment Confirmed' : 'Scheduled'}</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <p class="text-[11px] font-black text-gray-500 uppercase tracking-tighter leading-none">${term.due_date ? new Date(term.due_date).toLocaleDateString() : 'N/A'}</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-widest border ${statusClass}">
+                                            ${term.status}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <p class="text-[12px] font-extrabold text-gray-950 leading-none">₱${parseFloat(term.amount_paid || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+
+                        document.getElementById('modal-paid').innerText = `₱ ${totalPaidSum.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+                        const payable = parseFloat(response.summary.total_with_interest || 0);
+                        const currentBalance = payable - totalPaidSum;
+                        document.getElementById('modal-balance').innerText = `₱ ${currentBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+                        document.getElementById('collNextDue').innerText = nextDue ? `Next: ${nextTermLabel}` : "Cleared";
+                        document.getElementById('termIndicator').innerText = nextTermLabel;
+
+                        if (nextDue) {
+                            document.getElementById('collAmount').value = parseFloat(nextDue.amount_paid || 0).toFixed(2);
+                            document.getElementById('currentCapturingDisplay').innerText = `₱ ${parseFloat(nextDue.amount_paid || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                        } else {
+                            document.getElementById('collAmount').value = '';
+                            document.getElementById('currentCapturingDisplay').innerText = "₱ 0.00";
+                        }
+                        
+                        // Reset dirty flag after successful data load
+                        isCollectionFormDirty = false;
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-red-500 text-xs font-bold uppercase tracking-widest">Failed to load schedule</td></tr>`;
+                    }
+                } catch (e) {
+                    console.error("Error loading collection details:", e);
+                    tbody.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-red-500 text-xs font-bold uppercase tracking-widest">Sync Error</td></tr>`;
+                }
             };
 
             window.submitCollection = function() {
                 const orderId = document.getElementById('collOrderId').value;
                 const amount = document.getElementById('collAmount').value;
                 const ref = document.getElementById('collRef').value;
+                const method = document.getElementById('collMethod').value;
+                const remarks = document.getElementById('collRemarks').value;
 
                 if (!amount || parseFloat(amount) <= 0) {
                     alert('Please enter a valid amount');
@@ -733,31 +1008,109 @@ if (isset($_SESSION['user_id'])) {
                 formData.append('order_id', orderId);
                 formData.append('amount', amount);
                 formData.append('reference', ref);
+                formData.append('payment_method', method);
+                formData.append('remarks', remarks);
 
                 fetch(`../include/inc.admin/admin.ctrl.php?action=record_collection`, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(response => {
-                    if (response.success) {
-                        toggleCollectionModal(false);
-                        fetchReceivables();
-                        // Also refresh recent orders if they are on same page
-                        renderRecentOrdersTable();
-                    } else {
-                        alert(response.error || 'Failed to record payment');
-                    }
-                });
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(response => {
+                        if (response.success) {
+                            isCollectionFormDirty = false;
+                            toggleCollectionModal(false);
+                            
+                            // Show toast after modal closes
+                            if (typeof showToast === 'function') {
+                                showToast('Collection finalized successfully!', 'success');
+                            }
+                            
+                            fetchReceivables();
+                            renderRecentOrdersTable();
+                        } else {
+                            alert(response.error || 'Failed to record payment');
+                        }
+                    });
             };
 
-            // Initial Render
+            window.renderRecentOrdersTable = function() {
+                const content = document.getElementById('recentOrdersContent');
+                const footer = document.getElementById('recentOrdersTableFooter');
+
+                if (allRecentOrdersData.length === 0) {
+                    content.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-gray-400 italic font-medium">No recent orders</td></tr>`;
+                    footer.innerHTML = '';
+                    return;
+                }
+
+                const dataToShow = allRecentOrdersData.slice(0, 5);
+                content.innerHTML = dataToShow.map(order => {
+                    const status = order.status.toLowerCase();
+                    const statusClass = status === 'completed' ? 'bg-green-100 text-green-600' : (status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600');
+
+                    return `
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="px-6 py-4 font-bold text-gray-900 leading-none">
+                                #ORD-${order.id.toString().padStart(5, '0')}
+                            </td>
+                            <td class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-tighter">
+                                ${new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </td>
+                            <td class="px-6 py-4 text-right font-black text-gray-900">
+                                ₱${parseFloat(order.total_ammount).toLocaleString()}
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${statusClass}">
+                                    ${order.status}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            };
+
+            window.renderLowStockTable = function() {
+                const content = document.getElementById('lowStockAlertsContent');
+                if (allLowStockData.length === 0) {
+                    content.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-gray-400 italic font-medium">No low stock alerts</td></tr>`;
+                    return;
+                }
+
+                content.innerHTML = allLowStockData.slice(0, 5).map(item => {
+                    const threshold = parseInt(item.min_buildable_qty);
+                    const srQty = parseInt(item.sr_qty);
+                    const whQty = parseInt(item.wh_qty);
+
+                    let location = '';
+                    if (whQty <= threshold && srQty <= threshold) location = 'WH & SR';
+                    else if (whQty <= threshold) location = 'Warehouse';
+                    else location = 'Showroom';
+
+                    return `
+                        <tr class="hover:bg-red-50/20 transition-colors">
+                            <td class="px-6 py-4">
+                                <p class="text-sm font-bold text-gray-900 leading-none">${item.product_name}</p>
+                            </td>
+                            <td class="px-6 py-4 text-xs text-gray-500">${item.variant_name}</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-600">
+                                    ${location}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right font-black text-red-600">
+                                ${whQty + srQty}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            };
+
             document.addEventListener('DOMContentLoaded', function() {
                 renderLowStockTable();
                 renderRecentOrdersTable();
                 fetchReceivables();
-                
-                // Existing charts...
+
                 const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
                 const salesData = <?= json_encode($salesTrend) ?>;
                 new Chart(salesCtx, {
@@ -768,10 +1121,6 @@ if (isset($_SESSION['user_id'])) {
                             data: salesData.map(d => d.total_sales),
                             borderColor: '#111827',
                             borderWidth: 2.5,
-                            pointBackgroundColor: '#fff',
-                            pointBorderColor: '#111827',
-                            pointBorderWidth: 2,
-                            pointRadius: 4,
                             tension: 0.45,
                             fill: false
                         }]
@@ -782,32 +1131,6 @@ if (isset($_SESSION['user_id'])) {
                         plugins: {
                             legend: {
                                 display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    borderDash: [4, 4],
-                                    color: '#f3f4f6'
-                                },
-                                ticks: {
-                                    color: '#9ca3af',
-                                    font: {
-                                        size: 11
-                                    }
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    color: '#9ca3af',
-                                    font: {
-                                        size: 11
-                                    }
-                                }
                             }
                         }
                     }
@@ -820,18 +1143,16 @@ if (isset($_SESSION['user_id'])) {
                     data: {
                         labels: invData.map(d => d.category),
                         datasets: [{
-                                label: 'Warehouse',
-                                data: invData.map(d => d.wh_qty),
-                                backgroundColor: '#111827',
-                                borderRadius: 4
-                            },
-                            {
-                                label: 'Showroom',
-                                data: invData.map(d => d.sr_qty),
-                                backgroundColor: '#d1d5db',
-                                borderRadius: 4
-                            }
-                        ]
+                            label: 'Warehouse',
+                            data: invData.map(d => d.wh_qty),
+                            backgroundColor: '#111827',
+                            borderRadius: 4
+                        }, {
+                            label: 'Showroom',
+                            data: invData.map(d => d.sr_qty),
+                            backgroundColor: '#d1d5db',
+                            borderRadius: 4
+                        }]
                     },
                     options: {
                         responsive: true,
@@ -840,34 +1161,12 @@ if (isset($_SESSION['user_id'])) {
                             legend: {
                                 display: false
                             }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 60,
-                                grid: {
-                                    borderDash: [4, 4],
-                                    color: '#f3f4f6'
-                                },
-                                ticks: {
-                                    color: '#9ca3af',
-                                    font: {
-                                        size: 11
-                                    }
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                }
-                            }
                         }
                     }
                 });
             });
         </script>
     </section>
-
 </body>
 
 </html>

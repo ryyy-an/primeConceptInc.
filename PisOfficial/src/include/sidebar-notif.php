@@ -57,9 +57,8 @@
             sidebar.style.transform = 'translateX(0)';
             document.body.style.overflow = 'hidden';
             
-            // Mark as read when opened
-            fetch(`${ctrlPath}?action=mark_notifs_read`)
-                .then(() => fetchNotifications());
+            // Just refresh list, mark as read happens on CLOSE
+            fetchNotifications();
         }
 
         function hideSidebar() {
@@ -67,6 +66,10 @@
             overlay.classList.remove('opacity-100');
             setTimeout(() => overlay.classList.add('hidden'), 300);
             document.body.style.overflow = '';
+
+            // Mark all as read when closed
+            fetch(`${ctrlPath}?action=mark_notifs_read`)
+                .then(() => fetchNotifications());
         }
 
         window.markReadAndClose = function() {
@@ -77,12 +80,32 @@
                 });
         };
 
-        function fetchNotifications() {
+        let lastSeenNotifId = 0;
+
+        function fetchNotifications(isPolling = false) {
             fetch(`${ctrlPath}?action=get_notifications`)
                 .then(res => res.json())
                 .then(res => {
                     if (res.success) {
-                        renderNotifications(res.notifications);
+                        const notifs = res.notifications || [];
+                        
+                        // Check for new notifications to show toast
+                        if (isPolling && notifs.length > 0) {
+                            const newNotifs = notifs.filter(n => parseInt(n.id) > lastSeenNotifId && n.is_read == '0');
+                            newNotifs.forEach(n => {
+                                if (window.showToast) {
+                                    window.showToast(`New ${n.title}`, 'success');
+                                }
+                            });
+                        }
+
+                        // Update lastSeenNotifId
+                        if (notifs.length > 0) {
+                            const maxId = Math.max(...notifs.map(n => parseInt(n.id)));
+                            if (maxId > lastSeenNotifId) lastSeenNotifId = maxId;
+                        }
+
+                        renderNotifications(notifs);
                         updateBadge(res.unread);
                     }
                 })
@@ -115,11 +138,11 @@
                         <div class="flex justify-between items-start mb-3">
                             <div class="flex items-center gap-2">
                                 <span class="px-2 py-0.5 ${tagClass} text-[9px] font-black rounded-md uppercase tracking-tighter">${n.type.replace('_',' ')}</span>
-                                ${n.is_read == '0' ? '<span class="size-1.5 bg-red-500 rounded-full"></span>' : ''}
+                                ${n.is_read == '0' ? '<span class="px-1.5 py-0.5 bg-red-600 text-white text-[7px] font-black rounded flex items-center justify-center uppercase tracking-tighter animate-pulse">NEW</span>' : ''}
                             </div>
                             <span class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">${time}</span>
                         </div>
-                        <p class="text-[13px] text-gray-700 font-bold leading-relaxed">
+                        <p class="text-[13px] text-gray-700 font-bold leading-relaxed whitespace-pre-line">
                             ${n.message}
                         </p>
                         <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-2 italic">From: ${n.sender_name || 'System'}</p>
@@ -171,22 +194,11 @@
         document.addEventListener('keydown', (e) => { if (e.key === "Escape") hideSidebar(); });
 
         // Initial full fetch on load
-        fetchNotifications();
+        fetchNotifications(false);
 
-        // Lightweight badge-only poll every 10s (fast, just a COUNT query)
+        // Lightweight poll every 15s
         setInterval(() => {
-            fetch(`${ctrlPath}?action=get_notifications`)
-                .then(res => res.json())
-                .then(res => {
-                    if (res.success) {
-                        updateBadge(res.unread);
-                        // If sidebar is open, also re-render the list
-                        if (sidebar.style.transform === 'translateX(0px)' || sidebar.style.transform === 'translateX(0)') {
-                            renderNotifications(res.notifications);
-                        }
-                    }
-                })
-                .catch(() => {});
-        }, 30000); // Every 30 seconds
+            fetchNotifications(true);
+        }, 15000); 
     });
 </script>
