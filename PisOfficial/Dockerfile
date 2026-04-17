@@ -34,16 +34,13 @@ COPY . .
 # 8. Build Tailwind CSS
 RUN npm run build
 
-# 9. Configure Apache to listen on Railway's dynamic $PORT
-# Railway provides a $PORT environment variable. Apache defaults to 80.
-# We modify Apache to listen on $PORT and use it for the VirtualHost.
-RUN sed -i 's/80/${PORT}/g' /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
-
-# 10. Fix permissions for Apache
+# 9. Fix permissions for Apache
 RUN chown -R www-data:www-data /var/www/html
 
-# The port is dynamic, but Railway expects 80 by default unless told otherwise.
-# In Railway Dashboard, ensure the PORT variable is used or set to 80.
-# This sed command ensures Apache dynamically adapts to Railway.
+# 10. Configure Apache to listen on $PORT at RUNTIME
+# We use a custom entrypoint command to ensure $PORT is correctly mapped
+RUN sed -i 's/Listen 80/Listen ${PORT}/g' /etc/apache2/ports.conf
+RUN sed -i 's/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/g' /etc/apache2/sites-available/000-default.conf
 
+# Use the standard start command but Apache will now pick up the $PORT env var
 CMD ["apache2-foreground"]
