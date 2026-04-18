@@ -50,7 +50,7 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync | Reports</title>
-    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
+    <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
@@ -75,7 +75,7 @@ if (isset($_SESSION['user_id'])) {
         <div class="flex container">
             <a href="../-admin/dashboard-page.php" class=" flex items-center gap-4">
                 <div class="h-full w-20">
-                    <img src="../../public/assets/img/primeLogo.ico" alt="Prime Concept Logo"
+                    <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
                         class="h-full object-contain" />
                 </div>
                 <div>

@@ -9,7 +9,7 @@ require_once '../src/auth/login.view.auth.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="assets/img/primeLogo.ico">
+    <link rel="icon" type="image/png" href="assets/img/favIcon.png">
     <link rel="stylesheet" href="../src/output.css">
     <!-- <script src="https://cdn.tailwindcss.com"></script> -->
 
@@ -30,7 +30,7 @@ require_once '../src/auth/login.view.auth.php';
                 <!-- Logo + Header the Login Card -->
                 <div class="flex flex-col items-center mb-4">
                     <div class="w-24 h-24 overflow-hidden ">
-                        <img src="assets/img/primeLogo.ico" alt="Prime Concept Logo" class="object-cover w-full h-full" />
+                        <img src="assets/img/favIcon.png" alt="Prime Concept Logo" class="object-cover w-full h-full" />
                     </div>
                     <h1 class="mt-4 text-center text-gray-700 text-base font-medium">
                         Login to access your inventory management dashboard

@@ -474,7 +474,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
                     $stmt->execute([$v_name, $v_img, $min_qty, $v_id]);
                     $submitted_variant_ids[] = $v_id;
                 } else {
-                    $stmt = $pdo->prepare("INSERT INTO product_variant (prod_id, variant, variant_image, min_buildable_qty) VALUES (?, ?, ?, ?)");
+                    $stmt = $pdo->prepare("INSERT INTO product_variant (prod_id, variant, variant_image, min_buildable_qty, is_deleted) VALUES (?, ?, ?, ?, 0)");
                     $stmt->execute([$prod_id, $v_name, $v_img, $min_qty]);
                     $submitted_variant_ids[] = $pdo->lastInsertId();
                 }

@@ -50,7 +50,7 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync | Dashboard</title>
-    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
+    <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
     <link rel="stylesheet" href="../output.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +88,7 @@ if (isset($_SESSION['user_id'])) {
         <div class="flex container">
             <a href="../-admin/dashboard-page.php" class=" flex items-center gap-4">
                 <div class="h-full w-20">
-                    <img src="../../public/assets/img/primeLogo.ico" alt="Prime Concept Logo"
+                    <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
                         class="h-full object-contain" />
                 </div>
                 <div>
@@ -642,7 +642,7 @@ if (isset($_SESSION['user_id'])) {
 
                     return `
                         <tr class="hover:bg-gray-50/50 transition-colors">
-                            <td class="px-6 py-4 font-bold text-gray-900">#${order.id}</td>
+                            <td class="px-6 py-4 font-bold text-gray-900 leading-none">#ORD-${order.id.toString().padStart(5, '0')}</td>
                             <td class="px-6 py-4 text-gray-400 font-mono text-[11px] font-medium">${formattedDate}</td>
                             <td class="px-6 py-4 text-right font-black text-gray-900 leading-none">₱${parseFloat(order.total).toLocaleString()}</td>
                             <td class="px-6 py-4 text-center">
@@ -1034,77 +1034,7 @@ if (isset($_SESSION['user_id'])) {
                     });
             };
 
-            window.renderRecentOrdersTable = function() {
-                const content = document.getElementById('recentOrdersContent');
-                const footer = document.getElementById('recentOrdersTableFooter');
 
-                if (allRecentOrdersData.length === 0) {
-                    content.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-gray-400 italic font-medium">No recent orders</td></tr>`;
-                    footer.innerHTML = '';
-                    return;
-                }
-
-                const dataToShow = allRecentOrdersData.slice(0, 5);
-                content.innerHTML = dataToShow.map(order => {
-                    const status = order.status.toLowerCase();
-                    const statusClass = status === 'completed' ? 'bg-green-100 text-green-600' : (status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600');
-
-                    return `
-                        <tr class="hover:bg-gray-50/50 transition-colors">
-                            <td class="px-6 py-4 font-bold text-gray-900 leading-none">
-                                #ORD-${order.id.toString().padStart(5, '0')}
-                            </td>
-                            <td class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-tighter">
-                                ${new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </td>
-                            <td class="px-6 py-4 text-right font-black text-gray-900">
-                                ₱${parseFloat(order.total_ammount).toLocaleString()}
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${statusClass}">
-                                    ${order.status}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            };
-
-            window.renderLowStockTable = function() {
-                const content = document.getElementById('lowStockAlertsContent');
-                if (allLowStockData.length === 0) {
-                    content.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-gray-400 italic font-medium">No low stock alerts</td></tr>`;
-                    return;
-                }
-
-                content.innerHTML = allLowStockData.slice(0, 5).map(item => {
-                    const threshold = parseInt(item.min_buildable_qty);
-                    const srQty = parseInt(item.sr_qty);
-                    const whQty = parseInt(item.wh_qty);
-
-                    let location = '';
-                    if (whQty <= threshold && srQty <= threshold) location = 'WH & SR';
-                    else if (whQty <= threshold) location = 'Warehouse';
-                    else location = 'Showroom';
-
-                    return `
-                        <tr class="hover:bg-red-50/20 transition-colors">
-                            <td class="px-6 py-4">
-                                <p class="text-sm font-bold text-gray-900 leading-none">${item.product_name}</p>
-                            </td>
-                            <td class="px-6 py-4 text-xs text-gray-500">${item.variant_name}</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-600">
-                                    ${location}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right font-black text-red-600">
-                                ${whQty + srQty}
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            };
 
             document.addEventListener('DOMContentLoaded', function() {
                 renderLowStockTable();
@@ -1116,9 +1046,9 @@ if (isset($_SESSION['user_id'])) {
                 new Chart(salesCtx, {
                     type: 'line',
                     data: {
-                        labels: salesData.map(d => d.month),
+                        labels: salesData.map(d => d.month_name),
                         datasets: [{
-                            data: salesData.map(d => d.total_sales),
+                            data: salesData.map(d => d.revenue),
                             borderColor: '#111827',
                             borderWidth: 2.5,
                             tension: 0.45,

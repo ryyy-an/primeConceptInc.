@@ -42,7 +42,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
-    <link rel="icon" href="../../public/assets/img/primeLogo.ico" type="image/x-icon">
+    <link rel="icon" href="../../public/assets/img/favIcon.png" type="image/png">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
 
@@ -85,7 +85,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
         <div class="flex container">
             <a href="../-warehouse/dashboard-page.php" class="flex items-center gap-4">
                 <div class="h-full w-20">
-                    <img src="../../public/assets/img/primeLogo.ico" alt="Prime Concept Logo"
+                    <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
                         class="h-full object-contain" />
                 </div>
                 <div>
@@ -404,7 +404,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
                                 <!-- Col 1: Visuals -->
                                 <div class="w-72 flex-shrink-0">
                                     <div class="h-72 bg-gray-50 rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm transition-all duration-500 hover:shadow-md">
-                                        <img id="detailImg" src="" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='../../public/assets/img/primeLogo.ico'">
+                                        <img id="detailImg" src="" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='../../public/assets/img/favIcon.png'">
                                     </div>
                                 </div>
 

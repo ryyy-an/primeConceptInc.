@@ -37,7 +37,7 @@ $_SESSION['login_success_splash'] = false;
         <div class="relative w-32 h-32 flex items-center justify-center">
             <!-- Official Prime Concept Logo -->
             <div id="prime-logo-container" class="w-full h-full flex items-center justify-center relative z-10">
-                <img src="../../public/assets/img/primeLogo.ico"
+                <img src="../../public/assets/img/favIcon.png"
                     alt="Prime Concept"
                     class="w-20 h-20 object-contain animate-logo-pulse brightness-110 drop-shadow-2xl">
             </div>

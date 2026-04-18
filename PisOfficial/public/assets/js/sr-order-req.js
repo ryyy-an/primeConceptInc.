@@ -236,6 +236,7 @@ function confirmCancelExecution() {
         .then(res => {
             if (res.success) {
                 closeSrModal('cancelConfirmModal', 'cancelConfirmBox');
+                closeSrModal('requestInfoModal', 'requestInfoBox');
                 setTimeout(() => {
                     if (typeof showToast === 'function') showToast('Request cancelled successfully!', 'success');
                     setTimeout(() => location.reload(), 1500);

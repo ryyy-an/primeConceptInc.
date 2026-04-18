@@ -32,7 +32,7 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
-    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
+    <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
@@ -54,7 +54,7 @@ if (isset($_SESSION['user_id'])) {
         <div class="flex container">
             <a href="../-warehouse/dashboard-page.php" class="flex items-center gap-4">
                 <div class="h-full w-20">
-                    <img src="../../public/assets/img/primeLogo.ico" alt="Prime Concept Logo"
+                    <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
                         class="h-full object-contain" />
                 </div>
                 <div>
@@ -399,7 +399,7 @@ if (isset($_SESSION['user_id'])) {
                                         <div class="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 shrink-0">
                                             <img src="<?= htmlspecialchars($imgPath) ?>" alt="Product"
                                                 class="w-full h-full object-cover"
-                                                onerror="this.src='../../public/assets/img/primeLogo.ico'">
+                                                onerror="this.src='../../public/assets/img/favIcon.png'">
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <p class="font-medium text-sm truncate"><?= htmlspecialchars($stock['name']) ?></p>

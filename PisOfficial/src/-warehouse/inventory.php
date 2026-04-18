@@ -41,7 +41,7 @@ $pendingSR = $stats['pending_sr'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
-    <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
+    <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
@@ -62,7 +62,7 @@ $pendingSR = $stats['pending_sr'];
         <div class="flex container">
             <a href="../-warehouse/dashboard-page.php" class="flex items-center gap-4">
                 <div class="h-full w-20">
-                    <img src="../../public/assets/img/primeLogo.ico" alt="Prime Concept Logo"
+                    <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
                         class="h-full object-contain" />
                 </div>
                 <div>
@@ -248,7 +248,7 @@ $pendingSR = $stats['pending_sr'];
                                     <img src="<?= htmlspecialchars($item['image']) ?>"
                                         alt="<?= htmlspecialchars($item['name']) ?>"
                                         class="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-500"
-                                        onerror="this.onerror=null; this.src='../../public/assets/img/primeLogo.ico';">
+                                        onerror="this.onerror=null; this.src='../../public/assets/img/favIcon.png';">
                                 </div>
                             </div>
 
@@ -361,7 +361,7 @@ $pendingSR = $stats['pending_sr'];
                                         div.className = 'flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm';
                                         div.innerHTML = `
                                             <div class="w-12 h-12 bg-white rounded-xl border border-gray-200 flex items-center justify-center shrink-0">
-                                                <img src="../../public/assets/img/furnitures/${v.variant_image || 'default.png'}" class="object-cover w-full h-full rounded-xl" onerror="this.src='../../public/assets/img/primeLogo.ico'">
+                                                <img src="../../public/assets/img/furnitures/${v.variant_image || 'default.png'}" class="object-cover w-full h-full rounded-xl" onerror="this.src='../../public/assets/img/favIcon.png'">
                                             </div>
                                             <div class="flex-1">
                                                 <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 leading-none">Variant Name</p>

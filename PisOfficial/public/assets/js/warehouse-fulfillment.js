@@ -150,7 +150,7 @@ function renderSidebar() {
 
         sidebarItem.innerHTML = `
             <div class="w-14 h-14 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative border border-gray-100 shadow-sm">
-                <img src="../../public/assets/img/furnitures/${encodeURIComponent(product.img?.trim() || 'default-placeholder.png')}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='../../public/assets/img/primeLogo.ico'">
+                <img src="../../public/assets/img/furnitures/${encodeURIComponent(product.img?.trim() || 'default-placeholder.png')}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='../../public/assets/img/favIcon.png'">
             </div>
             <div class="flex-1 min-w-0">
                 <h4 class="text-sm font-bold text-gray-900 truncate leading-tight mb-0.5">${product.prod_name}</h4>
@@ -344,9 +344,10 @@ async function resetAllOrderItems() {
 
         const data = await response.json();
         if (data.success) {
-            currentOrder.products.forEach(p => p.wh_item_status = 'pending');
-            if (typeof showToast === 'function') showToast('Order progress reset', 'success');
-            selectProduct(selectedProductIndex);
+            closeFulfillmentModal();
+            setTimeout(() => {
+                if (typeof showToast === 'function') showToast('Order progress reset', 'success');
+            }, 300);
             checkbox.checked = false;
         } else {
             if (typeof showToast === 'function') showToast(data.message || 'Reset failed', 'error');

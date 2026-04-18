@@ -2,7 +2,7 @@
 http_response_code(404);
 
 // Dynamically fetch the logo from the filesystem, regardless of the URL or what folder the project is named
-$imgPath = __DIR__ . '/assets/img/primeLogo.ico';
+$imgPath = __DIR__ . '/assets/img/favIcon.png';
 $imgBase64 = '';
 if (file_exists($imgPath)) {
     $imgBase64 = 'data:image/x-icon;base64,' . base64_encode(file_get_contents($imgPath));
@@ -14,7 +14,7 @@ if (file_exists($imgPath)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 Not Found - Prime-In-Sync</title>
-    <link rel="icon" type="image/x-icon" href="assets/img/primeLogo.ico">
+    <link rel="icon" type="image/png" href="assets/img/favIcon.png">
     <!-- Basic Internal Styles to ensure it NEVER breaks -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');

@@ -267,14 +267,21 @@ window.saveNewProduct = async function () {
     }
 
     if (result && result.success) {
-      if (typeof window.showCustomSuccess === "function") {
-        window.showCustomSuccess("Product successfully added!", () => {
-          window.location.reload();
-        });
-      } else {
-        alert("Product successfully added!");
-        window.location.reload();
+      window.formHasUnsavedChanges = false;
+      if (typeof window.closeModal === "function") {
+          window.closeModal("addProductModal");
       }
+      
+      setTimeout(() => {
+          if (typeof window.showCustomSuccess === "function") {
+            window.showCustomSuccess("Product successfully added!", () => {
+              window.location.reload();
+            });
+          } else {
+            alert("Product successfully added!");
+            window.location.reload();
+          }
+      }, 300);
     } else {
       const errorMsg = result
         ? result.message || "Failed to add product."
@@ -338,14 +345,17 @@ window.confirmDeleteProduct = async function () {
     }
 
     if (result && result.success) {
-      if (typeof window.showCustomSuccess === "function") {
-        window.showCustomSuccess("Product deleted successfully!", () => {
-          window.location.reload();
-        });
-      } else {
-        alert("Product deleted successfully!");
-        window.location.reload();
-      }
+      closeDeleteModal();
+      setTimeout(() => {
+          if (typeof window.showCustomSuccess === "function") {
+            window.showCustomSuccess("Product deleted successfully!", () => {
+              window.location.reload();
+            });
+          } else {
+            alert("Product deleted successfully!");
+            window.location.reload();
+          }
+      }, 300);
     } else {
       const errorMsg = result
         ? result.message || "Failed to delete product."
@@ -365,8 +375,6 @@ window.confirmDeleteProduct = async function () {
     } else {
       alert("An error occurred while deleting the product: " + error.message);
     }
-  } finally {
-    closeDeleteModal();
   }
 };
 
