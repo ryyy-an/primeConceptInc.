@@ -69,15 +69,16 @@ if (isset($_SESSION['user_id'])) {
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
     <style>
-        html {
+        /* Removed zoom for native support */
+        /* html {
             zoom: 90%;
-        }
+        } */
     </style>
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-[100px]">
-    <header class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white container">
-        <div class="flex container">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
+    <header class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto px-4 md:px-8">
+        <div class="flex flex-1">
             <a href="#" class="flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo" class="h-full object-contain" />
@@ -97,7 +98,7 @@ if (isset($_SESSION['user_id'])) {
             <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
-                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                     <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -119,8 +120,8 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </header>
 
-    <section class="px-6 py-4">
-        <div class="grid grid-cols-[repeat(3,400px)] justify-center gap-5">
+    <section class="max-w-7xl w-full mx-auto px-6 py-4 px-4 md:px-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 justify-center gap-5">
             <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
                 <div class="text-sm uppercase tracking-wide text-gray-500">Available Products</div>
                 <div class="text-4xl font-bold text-gray-800"><?= number_format((float)$totalProducts) ?></div>
@@ -141,7 +142,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </section>
 
-    <nav class="px-5 flex justify-center">
+    <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">
         <div class="max-w-7xl w-full">
             <ul class="grid grid-cols-3 bg-gray-100 rounded-3xl h-12 shadow-sm px-5 items-center gap-2">
                 <li>
@@ -177,31 +178,28 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </nav>
 
-    <div class="flex flex-center w-full">
-        <div class="border border-gray-300 rounded-2xl p-12 w-[1250px]">
+    <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6 pb-12">
+        <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full max-w-7xl bg-white">
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
                     <h2 class="text-2xl font-semibold mb-2">Transaction History</h2>
                     <p class="text-gray-600 font-medium">Browse and manage your transaction records.</p>
                 </div>
 
-                <!-- Date Filter Bar -->
+                <!-- Date Filter Bar (Real-Time Auto-Submit) -->
                 <form method="GET" class="flex flex-wrap items-end gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
                     <div class="flex flex-col gap-1">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">From</label>
-                        <input type="date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all">
+                        <input type="date" name="start_date" onchange="this.form.submit()" value="<?= htmlspecialchars($start_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
                     </div>
 
                     <div class="flex flex-col gap-1">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">To</label>
-                        <input type="date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all">
+                        <input type="date" name="end_date" onchange="this.form.submit()" value="<?= htmlspecialchars($end_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
                     </div>
 
                     <div class="flex gap-2">
-                        <button type="submit" class="h-10 px-5 bg-red-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95">
-                            Filter
-                        </button>
-                        <a href="transaction-history.php" class="h-10 px-5 bg-white border border-gray-200 text-gray-400 text-xs font-bold uppercase tracking-widest rounded-xl hover:text-gray-600 flex items-center transition-all active:scale-95">
+                        <a href="transaction-history.php" class="h-10 px-6 bg-red-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95 flex items-center shadow-lg shadow-red-100">
                             Reset
                         </a>
                     </div>

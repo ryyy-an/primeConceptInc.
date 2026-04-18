@@ -11,9 +11,14 @@
     <div class="h-[100px] px-8 border-b border-gray-100 flex justify-between items-center bg-white">
         <div>
             <h3 class="font-black text-gray-900 uppercase text-xs tracking-[0.2em]">Notifications</h3>
-            <div class="flex items-center gap-2 mt-1">
-                <span class="size-1.5 bg-red-500 rounded-full animate-pulse"></span>
-                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">System Updates</p>
+            <div class="flex items-center gap-4 mt-1">
+                <div class="flex items-center gap-2">
+                    <span class="size-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">System Updates</p>
+                </div>
+                <button onclick="clearAllNotifs()" class="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline active:scale-95 transition-transform">
+                    Clear All
+                </button>
             </div>
         </div>
         <button id="closeSidebar" class="p-2 rounded-xl hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all active:scale-95">
@@ -33,7 +38,7 @@
 
     <div class="p-8 border-t border-gray-50 bg-white">
         <button onclick="markReadAndClose()" class="w-full py-4 bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-red-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all active:scale-[0.98]">
-            Clear and Close
+            Mark as Read & Close
         </button>
     </div>
 </div>
@@ -77,6 +82,19 @@
                 .then(() => {
                     fetchNotifications();
                     hideSidebar();
+                });
+        };
+
+        window.clearAllNotifs = function() {
+            if (!confirm("Are you sure you want to clear all notifications? This cannot be undone.")) return;
+            
+            fetch(`${ctrlPath}?action=clear_all_notifs`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        renderNotifications([]); // Instant UI feedback
+                        updateBadge(0);
+                    }
                 });
         };
 
@@ -169,7 +187,7 @@
                 btn.classList.add('relative');
                 badge = document.createElement('span');
                 badge.id = 'notifBadge';
-                badge.className = 'absolute -top-1 -right-1 size-4 bg-red-600 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-all animate-in zoom-in';
+                badge.className = 'absolute top-0 right-0 transform translate-x-[90%] -translate-y-1/2 size-4 bg-red-600 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-all animate-in zoom-in z-[100]';
                 btn.appendChild(badge);
             }
 

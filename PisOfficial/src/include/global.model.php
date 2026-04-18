@@ -7,9 +7,19 @@ declare(strict_types=1);
  * Serves both Admin and Showroom interfaces.
  */
 
-function get_inventory_cards(PDO $pdo): array
+function get_inventory_cards(PDO $pdo, string $search = '', ?int $limit = null): array
 {
-    // Added safety check for pc.qty_needed to avoid division by zero
+    $params = [];
+    $whereClauses = ["p.is_deleted = 0"];
+
+    if (!empty($search)) {
+        $whereClauses[] = "(p.name LIKE ? OR p.code LIKE ?)";
+        $params[] = "%$search%";
+        $params[] = "%$search%";
+    }
+
+    $whereSql = "WHERE " . implode(" AND ", $whereClauses);
+
     $sql = "SELECT 
                 p.id AS prod_id,
                 p.code,
@@ -47,12 +57,16 @@ function get_inventory_cards(PDO $pdo): array
                 WHERE is_deleted = 0
                 GROUP BY prod_id
             ) loc_agg ON p.id = loc_agg.prod_id
-            WHERE p.is_deleted = 0
+            $whereSql
             GROUP BY pv.id, p.id
             ORDER BY p.name ASC";
 
-    $stmt = $pdo->query($sql);
-    if (!$stmt) return [];
+    if ($limit !== null) {
+        $sql .= " LIMIT " . (int)$limit;
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $products = [];
@@ -312,19 +326,27 @@ function create_notification(PDO $pdo, int $senderId, string $title, string $mes
 /**
  * Fetches the latest notifications for a specific user based on their ID and Role.
  */
+/**
+ * Fetches the latest notifications for a specific user based on their ID and Role.
+ * Filters out notifications that the user has individually cleared.
+ */
 function get_user_notifications(PDO $pdo, int $userId, string $role, int $limit = 20): array
 {
     try {
-        $sql = "SELECT n.*, u.full_name as sender_name 
+        $sql = "SELECT n.*, u.full_name as sender_name, 
+                       COALESCE(nus.is_read, n.is_read) as is_read
                 FROM notifications n
                 LEFT JOIN users u ON n.sender_id = u.id
+                LEFT JOIN notification_user_status nus ON n.id = nus.notification_id AND nus.user_id = ?
                 WHERE (n.target_user_id = ? OR n.target_role = ?)
+                  AND (nus.is_cleared IS NULL OR nus.is_cleared = 0)
                 ORDER BY n.created_at DESC
                 LIMIT ?";
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(1, $userId, PDO::PARAM_INT);
-        $stmt->bindValue(2, $role, PDO::PARAM_STR);
-        $stmt->bindValue(3, $limit, PDO::PARAM_INT);
+        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(3, $role, PDO::PARAM_STR);
+        $stmt->bindValue(4, $limit, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
@@ -339,10 +361,13 @@ function get_user_notifications(PDO $pdo, int $userId, string $role, int $limit 
 function get_unread_notif_count(PDO $pdo, int $userId, string $role): int
 {
     try {
-        $sql = "SELECT COUNT(*) FROM notifications 
-                WHERE (target_user_id = ? OR target_role = ?) AND is_read = 0";
+        $sql = "SELECT COUNT(*) FROM notifications n
+                LEFT JOIN notification_user_status nus ON n.id = nus.notification_id AND nus.user_id = ?
+                WHERE (n.target_user_id = ? OR n.target_role = ?) 
+                  AND (nus.is_cleared IS NULL OR nus.is_cleared = 0)
+                  AND (COALESCE(nus.is_read, n.is_read) = 0)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$userId, $role]);
+        $stmt->execute([$userId, $userId, $role]);
         return (int)$stmt->fetchColumn();
     } catch (PDOException $e) {
         return 0;
@@ -355,11 +380,40 @@ function get_unread_notif_count(PDO $pdo, int $userId, string $role): int
 function mark_notifs_as_read(PDO $pdo, int $userId, string $role): bool
 {
     try {
-        $sql = "UPDATE notifications SET is_read = 1 
-                WHERE (target_user_id = ? OR target_role = ?) AND is_read = 0";
+        // Find all notifications targetting this user/role that aren't already marked as read/cleared for this user
+        $sql = "INSERT INTO notification_user_status (user_id, notification_id, is_read)
+                SELECT ?, n.id, 1 
+                FROM notifications n
+                LEFT JOIN notification_user_status nus ON n.id = nus.notification_id AND nus.user_id = ?
+                WHERE (n.target_user_id = ? OR n.target_role = ?)
+                  AND (nus.is_read IS NULL OR nus.is_read = 0)
+                ON DUPLICATE KEY UPDATE is_read = 1";
         $stmt = $pdo->prepare($sql);
-        return $stmt->execute([$userId, $role]);
+        return $stmt->execute([$userId, $userId, $userId, $role]);
     } catch (PDOException $e) {
+        error_log("Mark Notifs Read Error: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Individually clears ALL current visible notifications for a user.
+ */
+function clear_user_notifications(PDO $pdo, int $userId, string $role): bool
+{
+    try {
+        // Mark all visible notifications as cleared
+        $sql = "INSERT INTO notification_user_status (user_id, notification_id, is_cleared, is_read)
+                SELECT ?, n.id, 1, 1 
+                FROM notifications n
+                LEFT JOIN notification_user_status nus ON n.id = nus.notification_id AND nus.user_id = ?
+                WHERE (n.target_user_id = ? OR n.target_role = ?)
+                  AND (nus.is_cleared IS NULL OR nus.is_cleared = 0)
+                ON DUPLICATE KEY UPDATE is_cleared = 1, is_read = 1";
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute([$userId, $userId, $userId, $role]);
+    } catch (PDOException $e) {
+        error_log("Clear Notifs Error: " . $e->getMessage());
         return false;
     }
 }
@@ -371,6 +425,7 @@ function mark_notifs_as_read(PDO $pdo, int $userId, string $role): bool
 function init_notifications_table(PDO $pdo): void
 {
     try {
+        // 1. Initial Notifications Table
         $sql = "CREATE TABLE IF NOT EXISTS notifications (
             id INT AUTO_INCREMENT PRIMARY KEY,
             target_user_id INT NULL,
@@ -388,7 +443,21 @@ function init_notifications_table(PDO $pdo): void
             INDEX (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
         $pdo->exec($sql);
+
+        // 2. Individual Status Table (Support for individual clearing/read status)
+        $sqlStatus = "CREATE TABLE IF NOT EXISTS notification_user_status (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            notification_id INT NOT NULL,
+            is_read TINYINT(1) DEFAULT 0,
+            is_cleared TINYINT(1) DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY (user_id, notification_id),
+            INDEX (is_cleared)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+        $pdo->exec($sqlStatus);
+
     } catch (PDOException $e) {
-        error_log("Init Notifications Table Error: " . $e->getMessage());
+        error_log("Init Notifications Tables Error: " . $e->getMessage());
     }
 }

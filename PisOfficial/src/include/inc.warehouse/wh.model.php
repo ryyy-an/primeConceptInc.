@@ -22,9 +22,11 @@ function get_pending_warehouse_requests(PDO $pdo, int $limit = 5): array
                 JOIN order_items oi ON o.id = oi.order_id
                 LEFT JOIN users u ON o.created_by = u.id
                 LEFT JOIN customers c ON o.customer_id = c.id
-                WHERE LOWER(o.status) IN ('success', 'ongoing') AND (oi.get_from = 'WH' OR oi.get_from = 'Warehouse')
+                WHERE LOWER(o.status) IN ('success', 'ongoing') 
+                  AND LOWER(o.wh_status) = 'to release'
+                  AND (oi.get_from = 'WH' OR oi.get_from = 'Warehouse')
                 GROUP BY o.id
-                ORDER BY o.created_at ASC
+                ORDER BY o.created_at DESC, o.id DESC
                 LIMIT :limit";
 
         $stmt = $pdo->prepare($sql);
@@ -45,6 +47,7 @@ function get_warehouse_stock_overview(PDO $pdo, int $limit = 5): array
     try {
         // We aggregate stock by variant for the overview
         $sql = "SELECT p.name, p.default_image, pv.variant, pv.variant_image, 
+                       pv.min_buildable_qty,
                        SUM(ws.qty_on_hand) as total_qty, 
                        pc.location
                 FROM warehouse_stocks ws
@@ -181,9 +184,10 @@ function get_fulfillment_ready_items(PDO $pdo, ?int $orderId = null): array
                 LEFT JOIN users u ON o.created_by = u.id
                 LEFT JOIN customers c ON o.customer_id = c.id
                 WHERE LOWER(o.status) = 'success' 
+                  AND LOWER(o.wh_status) = 'to release'
                   AND p.is_deleted = 0
                   $filter
-                ORDER BY o.created_at ASC";
+                ORDER BY o.created_at DESC, o.id DESC";
 
         $stmt = $pdo->prepare($sql);
         if ($orderId) {
@@ -341,7 +345,7 @@ function update_warehouse_item_status(PDO $pdo, int $itemId, string $status): bo
 function fulfill_warehouse_order(PDO $pdo, int $orderId): bool
 {
     try {
-        $stmt = $pdo->prepare("UPDATE orders SET wh_status = 'fulfilled', status = 'ready' WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE orders SET wh_status = 'Fulfilled', status = 'Success' WHERE id = ?");
         return $stmt->execute([$orderId]);
     } catch (PDOException $e) {
         error_log("Fulfill WH Order Error: " . $e->getMessage());
@@ -472,23 +476,34 @@ function get_warehouse_dashboard_stats(PDO $pdo, int $userId): array
 function get_warehouse_stock_alerts(PDO $pdo): array
 {
     try {
-        $wh_sql = "SELECT p.name as prod_name, pv.variant as variant_name, COALESCE(pv.variant_image, p.default_image) as img, ws.qty_on_hand, pv.min_buildable_qty
-                   FROM warehouse_stocks ws
-                   JOIN product_variant pv ON ws.variant_id = pv.id
-                   JOIN products p ON pv.prod_id = p.id
-                   WHERE ws.qty_on_hand <= pv.min_buildable_qty";
-        $whAlerts = $pdo->query($wh_sql)->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "SELECT p.name as prod_name, pv.variant as variant_name, 
+                       COALESCE(pv.variant_image, p.default_image) as img, 
+                       ws.qty_on_hand, pv.min_buildable_qty
+                FROM warehouse_stocks ws
+                JOIN product_variant pv ON ws.variant_id = pv.id
+                JOIN products p ON pv.prod_id = p.id
+                WHERE ws.qty_on_hand <= pv.min_buildable_qty
+                ORDER BY ws.qty_on_hand ASC";
+        
+        $alerts = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
-        $sr_sql = "SELECT p.name as prod_name, pv.variant as variant_name, COALESCE(pv.variant_image, p.default_image) as img, ss.qty_on_hand, ss.min_display_qty
-                   FROM showroom_stocks ss
-                   JOIN product_variant pv ON ss.variant_id = pv.id
-                   JOIN products p ON pv.prod_id = p.id
-                   WHERE ss.qty_on_hand <= ss.min_display_qty";
-        $srAlerts = $pdo->query($sr_sql)->fetchAll(PDO::FETCH_ASSOC);
+        $oos = [];
+        $low = [];
 
-        return ['warehouse' => $whAlerts ?: [], 'showroom' => $srAlerts ?: []];
+        foreach ($alerts as $a) {
+            if ((int)$a['qty_on_hand'] === 0) {
+                $oos[] = $a;
+            } else {
+                $low[] = $a;
+            }
+        }
+
+        return [
+            'out_of_stock' => $oos,
+            'low_stock'    => $low
+        ];
     } catch (PDOException $e) {
-        error_log("Alerts Error: " . $e->getMessage());
-        return ['warehouse' => [], 'showroom' => []];
+        error_log("Warehouse Alerts Error: " . $e->getMessage());
+        return ['out_of_stock' => [], 'low_stock' => []];
     }
 }

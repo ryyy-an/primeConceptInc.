@@ -47,10 +47,10 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
 
     <style>
-        /* Global UI Tweaks */
-        html {
+        /* Global UI Tweaks - Removed zoom for native support */
+        /* html {
             zoom: 90%;
-        }
+        } */
 
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
@@ -77,12 +77,12 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
     </style>
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-25">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
     <?php include '../include/loading-splash.php'; ?>
     <?php include '../include/toast.php'; ?>
     <header
-        class="sticky top-0 z-40 flex h-25 items-center justify-between border-b border-gray-200 px-6 bg-white container">
-        <div class="flex container">
+        class="sticky top-0 z-40 flex h-25 items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto">
+        <div class="flex flex-1">
             <a href="../-warehouse/dashboard-page.php" class="flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
@@ -105,7 +105,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
             </div>
 
             <button id="notifButton"
-                class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition">
+                class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -128,8 +128,8 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
         </div>
     </header>
 
-    <section class="px-6 py-4">
-        <div class="grid grid-cols-[repeat(4,300px)] justify-center gap-5">
+    <section class="w-full max-w-7xl mx-auto px-6 py-4">
+        <div class="grid grid-cols-4 justify-center gap-4">
             <!-- Card 1 -->
             <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[150px] p-6">
                 <div class="text-sm uppercase tracking-wide text-gray-500">Available Products</div>
@@ -168,7 +168,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
         </div>
     </section>
 
-    <nav class="px-5 flex justify-center">
+    <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">
         <div class="max-w-7xl w-full">
             <ul class="grid grid-cols-3 bg-gray-100 rounded-3xl h-12 shadow-sm px-5 items-center gap-2">
                 <li>
@@ -208,8 +208,8 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
         </div>
     </nav>
 
-    <section class="flex flex-center w-full">
-        <div class="border border-gray-300 rounded-2xl p-12 gap w-[1250px]">
+    <section class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
+        <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full">
             <h2 class="text-2xl font-semibold mb-2">Orders Ready for Fulfillment</h2>
             <p class="text-gray-500">Process approved orders by picking products from inventory</p>
 

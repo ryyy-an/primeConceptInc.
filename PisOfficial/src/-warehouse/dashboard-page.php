@@ -38,20 +38,41 @@ if (isset($_SESSION['user_id'])) {
     <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
 
     <style>
-        /* Shrink entire UI by 10% */
-        html {
-            zoom: 90%;
+        /* Attention Shake Animation */
+        @keyframes attention-shake {
+            0% { transform: scale(1) rotate(0deg); }
+            10% { transform: scale(1.1) rotate(-10deg); }
+            20% { transform: scale(1.1) rotate(10deg); }
+            30% { transform: scale(1.1) rotate(-10deg); }
+            40% { transform: scale(1.1) rotate(10deg); }
+            50% { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1) rotate(0deg); }
         }
+        .animate-attention {
+            animation: attention-shake 2s infinite ease-in-out;
+        }
+        /* Custom Ping Animation for reliability */
+        @keyframes custom-ping {
+            0% { transform: scale(0.8); opacity: 1; }
+            80%, 100% { transform: scale(2.5); opacity: 0; }
+        }
+        .animate-custom-ping {
+            animation: custom-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        /* Shrink entire UI by 10% - Removed for native zoom support */
+        /* html {
+            zoom: 90%;
+        } */
     </style>
 
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-[100px]">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
     <?php include '../include/loading-splash.php'; ?>
     <header
-        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white container">
+        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto">
 
-        <div class="flex container">
+        <div class="flex flex-1">
             <a href="../-warehouse/dashboard-page.php" class="flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
@@ -73,7 +94,7 @@ if (isset($_SESSION['user_id'])) {
             <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
-                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                     <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -97,15 +118,8 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </header>
 
-    <!-- Smart Stock Alerts -->
+    <!-- Warehouse Dashboard Header Section -->
     <?php
-    // Fetch Stock Alerts
-    $alerts = get_warehouse_stock_alerts($pdo);
-    $whAlerts = $alerts['warehouse'];
-    $srAlerts = $alerts['showroom'];
-    $hasAlerts = count($whAlerts) > 0 || count($srAlerts) > 0;
-
-    // Fetch Dashboard Stats & Warehouse Data
     $stats = get_warehouse_dashboard_stats($pdo, (int)$userId);
     $totalProducts = $stats['total_products'];
     $userTransactions = $stats['user_transactions'];
@@ -115,106 +129,15 @@ if (isset($_SESSION['user_id'])) {
     $whRequests = get_pending_warehouse_requests($pdo);
     $whStockOverview = get_warehouse_stock_overview($pdo);
     $whHealth = get_warehouse_health_stats($pdo);
+
+    // Fetch alerts for top-level card badges
+    $alerts = get_warehouse_stock_alerts($pdo);
+    $oosCount = count($alerts['out_of_stock']);
+    $lowCount = count($alerts['low_stock']);
     ?>
 
-    <section class="flex flex-center w-full">
-        <?php if ($hasAlerts): ?>
-            <div class="gap w-[1250px]">
-                <?php if (count($whAlerts) > 0): ?>
-                    <!-- Warehouse Alert -->
-                    <div class="w-full bg-yellow-50 border border-red-300 rounded-xl shadow-md p-6 flex flex-col gap-4">
-                        <div class="flex flex-row gap-3">
-                            <div
-                                class="flex items-center justify-center bg-yellow-100 text-yellow-700 rounded-full w-12 h-12 text-xl font-bold">
-                                ⚠️
-                            </div>
-                            <div>
-                                <h2 class="text-lg font-semibold text-yellow-800">Smart Stock Alert - Warehouse</h2>
-                                <p class="text-sm text-yellow-700"><?= count($whAlerts) ?> warehouse
-                                    product<?= count($whAlerts) > 1 ? 's need' : ' needs' ?> immediate restocking (on/below
-                                    buildable limit)</p>
-                            </div>
-                        </div>
-
-                        <div class="flex p-4 flex-wrap gap-4">
-                            <?php foreach ($whAlerts as $alert):
-                                $imgFile = rawurlencode(trim($alert['img'] ?? 'default-placeholder.png'));
-                                $imgPath = "../../public/assets/img/furnitures/" . $imgFile;
-                            ?>
-                                <div class="flex items-center gap-4 border p-2 card-style bg-white w-fit pr-4 h-[84px]">
-                                    <!-- Product Image -->
-                                    <div
-                                        class="w-16 h-16 bg-white border border-gray-300 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                        <img src="<?= htmlspecialchars($imgPath) ?>" alt="<?= htmlspecialchars($alert['prod_name']) ?>"
-                                            class="object-contain h-full w-full" />
-                                    </div>
-                                    <!-- Product Info -->
-                                    <div class="flex flex-col justify-center">
-                                        <h3 class="text-md font-semibold text-gray-800 line-clamp-1"
-                                            title="<?= htmlspecialchars($alert['prod_name'] . ' - ' . $alert['variant_name']) ?>">
-                                            <?= htmlspecialchars($alert['prod_name']) ?> <span
-                                                class="font-normal text-sm text-gray-500">(<?= htmlspecialchars($alert['variant_name']) ?>)</span>
-                                        </h3>
-                                        <p class="text-sm text-red-600 font-semibold mt-1">Only <?= (int) $alert['qty_on_hand'] ?>
-                                            unit<?= $alert['qty_on_hand'] == 1 ? '' : 's' ?> left</p>
-                                        <p class="text-xs text-gray-500">Min Buildable: <?= (int) $alert['min_buildable_qty'] ?></p>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (count($srAlerts) > 0): ?>
-                    <!-- Showroom Alert -->
-                    <div class="w-full bg-yellow-50 border border-red-300 rounded-xl shadow-md p-6 flex flex-col gap-4">
-                        <div class="flex flex-row gap-3">
-                            <div
-                                class="flex items-center justify-center bg-yellow-100 text-yellow-700 rounded-full w-12 h-12 text-xl font-bold">
-                                ⚠️
-                            </div>
-                            <div>
-                                <h2 class="text-lg font-semibold text-yellow-800">Smart Stock Alert - Showroom</h2>
-                                <p class="text-sm text-yellow-700"><?= count($srAlerts) ?> showroom
-                                    product<?= count($srAlerts) > 1 ? 's need' : ' needs' ?> immediate restocking (on/below display
-                                    limit)</p>
-                            </div>
-                        </div>
-
-                        <div class="flex p-4 flex-wrap gap-4">
-                            <?php foreach ($srAlerts as $alert):
-                                $imgFile = rawurlencode(trim($alert['img'] ?? 'default-placeholder.png'));
-                                $imgPath = "../../public/assets/img/furnitures/" . $imgFile;
-                            ?>
-                                <div class="flex items-center gap-4 border p-2 card-style bg-white w-fit pr-4 h-[84px]">
-                                    <!-- Product Image -->
-                                    <div
-                                        class="w-16 h-16 bg-white border border-gray-300 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                        <img src="<?= htmlspecialchars($imgPath) ?>" alt="<?= htmlspecialchars($alert['prod_name']) ?>"
-                                            class="object-contain h-full w-full" />
-                                    </div>
-                                    <!-- Product Info -->
-                                    <div class="flex flex-col justify-center">
-                                        <h3 class="text-md font-semibold text-gray-800 line-clamp-1"
-                                            title="<?= htmlspecialchars($alert['prod_name'] . ' - ' . $alert['variant_name']) ?>">
-                                            <?= htmlspecialchars($alert['prod_name']) ?> <span
-                                                class="font-normal text-sm text-gray-500">(<?= htmlspecialchars($alert['variant_name']) ?>)</span>
-                                        </h3>
-                                        <p class="text-sm text-red-600 font-semibold mt-1">Only <?= (int) $alert['qty_on_hand'] ?>
-                                            unit<?= $alert['qty_on_hand'] == 1 ? '' : 's' ?> left</p>
-                                        <p class="text-xs text-gray-500">Min Display: <?= (int) $alert['min_display_qty'] ?></p>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-        <?php endif; ?>
-    </section>
-
-    <section class="px-6 py-4">
-        <div class="grid grid-cols-[repeat(4,300px)] justify-center gap-5">
+    <section class="w-full max-w-7xl mx-auto px-6 py-4">
+        <div class="grid grid-cols-4 justify-center gap-4">
             <!-- Card 1 -->
             <a href="inventory.php"
                 class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[150px] p-6 hover:border-red-500 hover:shadow-lg transition-all group">
@@ -249,7 +172,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </section>
 
-    <nav class="px-5 flex justify-center">
+    <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">
         <div class="max-w-7xl w-full">
             <ul class="grid grid-cols-3 bg-gray-100 rounded-3xl h-12 shadow-sm px-5 items-center gap-2">
 
@@ -305,8 +228,8 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </nav>
 
-    <section class="flex flex-center w-full">
-        <div class="border border-gray-300 rounded-2xl p-12 gap w-[1250px]">
+    <section class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
+        <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full bg-gray-50">
             <h2 class="text-2xl font-semibold mb-2">Warehouse Overview</h2>
             <p class="text-gray-600">Monitor fulfillment queue, inventory levels, and warehouse operations.</p>
 
@@ -366,21 +289,40 @@ if (isset($_SESSION['user_id'])) {
                 </div>
 
                 <div data-slot="card"
-                    class="card-style flex flex-col rounded-xl border border-gray-200 h-[400px] bg-white overflow-hidden">
+                    class="card-style flex flex-col rounded-xl border border-gray-200 h-[400px] bg-white relative" style="overflow: visible !important;">
+                    
+                    <!-- Floating Notification Warning Icon (Upper Right) -->
+                    <?php if ($oosCount > 0 || $lowCount > 0): ?>
+                        <div class="absolute -top-2 -right-2 z-50">
+                            <!-- Outer pulsing ring (Custom Animation) -->
+                            <div class="absolute inset-0 rounded-full <?= $oosCount > 0 ? 'bg-red-500' : 'bg-amber-500' ?> animate-custom-ping opacity-75"></div>
+                            <!-- Main solid circle with Warning Icon -->
+                            <div class="relative flex items-center justify-center size-6 <?= $oosCount > 0 ? 'bg-red-600' : 'bg-amber-500' ?> text-white rounded-full shadow-lg border-2 border-white ring-1 ring-black/5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                    <path d="M12 9v4"/>
+                                    <path d="M12 17h.01"/>
+                                </svg>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="px-6 pt-6 pb-4">
-                        <h4 class="font-semibold flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="text-gray-700">
-                                <path
-                                    d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z">
-                                </path>
-                                <path d="M12 22V12"></path>
-                                <polyline points="3.29 7 12 12 20.71 7"></polyline>
-                                <path d="m7.5 4.27 9 5.15"></path>
-                            </svg>
-                            Inventory Status
-                        </h4>
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-semibold flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="text-gray-700">
+                                    <path
+                                        d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z">
+                                    </path>
+                                    <path d="M12 22V12"></path>
+                                    <polyline points="3.29 7 12 12 20.71 7"></polyline>
+                                    <path d="m7.5 4.27 9 5.15"></path>
+                                </svg>
+                                Inventory Status
+                            </h4>
+                        </div>
                         <p class="text-xs text-gray-500 mt-1">Current warehouse inventory levels</p>
                     </div>
                     <div class="px-6 pb-6 overflow-y-auto flex-1">
@@ -392,23 +334,36 @@ if (isset($_SESSION['user_id'])) {
                                     $img = !empty($stock['variant_image']) ? $stock['variant_image'] : $stock['default_image'];
                                     $encodedImg = rawurlencode(trim($img ?? 'default-placeholder.png'));
                                     $imgPath = "../../public/assets/img/furnitures/" . $encodedImg;
-                                    $isLow = (int) $stock['total_qty'] <= 5;
+                                    
+                                    $qty = (int)$stock['total_qty'];
+                                    $min = (int)$stock['min_buildable_qty'];
+                                    
+                                    $statusClass = "bg-white border-gray-300 text-slate-700";
+                                    $statusText = $qty;
+                                    
+                                    if ($qty === 0) {
+                                        $statusClass = "bg-red-600 border-red-600 text-white font-black";
+                                        $statusText = "OUT";
+                                    } elseif ($qty <= $min) {
+                                        $statusClass = "bg-amber-100 border-amber-300 text-amber-700 font-bold";
+                                        $statusText = "LOW ($qty)";
+                                    }
                                 ?>
                                     <div
-                                        class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:border-red-300 transition-all">
+                                        class="flex items-center gap-3 p-3 bg-gray-50/50 border border-gray-100 rounded-xl hover:bg-white hover:border-red-100 transition-all group">
                                         <div class="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 shrink-0">
                                             <img src="<?= htmlspecialchars($imgPath) ?>" alt="Product"
-                                                class="w-full h-full object-cover"
+                                                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                                 onerror="this.src='../../public/assets/img/favIcon.png'">
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <p class="font-medium text-sm truncate"><?= htmlspecialchars($stock['name']) ?></p>
-                                            <p class="text-[10px] text-gray-500"><?= htmlspecialchars($stock['variant']) ?> •
+                                            <p class="font-bold text-[13px] text-slate-800 truncate"><?= htmlspecialchars($stock['name']) ?></p>
+                                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter truncate"><?= htmlspecialchars($stock['variant']) ?> •
                                                 Loc: <?= htmlspecialchars($stock['location'] ?? 'N/A') ?></p>
                                         </div>
                                         <span
-                                            class="px-2 py-0.5 text-xs font-semibold border rounded <?= $isLow ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white border-gray-300' ?>">
-                                            <?= (int) $stock['total_qty'] ?>
+                                            class="px-2 py-0.5 text-[9px] uppercase tracking-tighter border rounded-md <?= $statusClass ?>">
+                                            <?= $statusText ?>
                                         </span>
                                     </div>
                                 <?php endforeach; ?>

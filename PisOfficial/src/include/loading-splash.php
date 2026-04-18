@@ -32,40 +32,36 @@ $_SESSION['login_success_splash'] = false;
     }
 </style>
 
-<div id="loading-splash" class="fixed inset-0 flex flex-col items-center justify-center">
-    <div class="flex flex-col items-center translate-y-[15%]">
-        <div class="relative w-32 h-32 flex items-center justify-center">
-            <!-- Official Prime Concept Logo -->
+<div id="loading-splash" class="fixed inset-0 flex flex-col items-center justify-center bg-white shadow-2xl">
+    <div class="flex flex-col items-center">
+        <!-- Logo Section -->
+        <div class="relative w-32 h-32 flex items-center justify-center mb-8">
             <div id="prime-logo-container" class="w-full h-full flex items-center justify-center relative z-10">
                 <img src="../../public/assets/img/favIcon.png"
                     alt="Prime Concept"
-                    class="w-20 h-20 object-contain animate-logo-pulse brightness-110 drop-shadow-2xl">
+                    class="w-24 h-24 object-contain animate-logo-pulse drop-shadow-xl">
             </div>
-
-            <!-- Pulse Ring -->
-            <div class="absolute inset-0 rounded-full border-4 border-red-500/10 animate-ping"></div>
         </div>
 
-        <div class="mt-4 text-center min-w-[300px]">
-            <h2 class="text-xl font-semibold text-gray-800 uppercase overflow-hidden h-8">
-                <span id="loading-text" class="inline-block transition-transform duration-500 translate-y-full">Synchronizing...</span>
+        <!-- Text Section: SYNCHRONIZING PRIME -->
+        <div class="text-center mb-4">
+            <h2 class="text-xl font-medium text-slate-800 uppercase tracking-[0.15em] antialiased">
+                <span id="loading-text" class="inline-block">Synchronizing Prime</span>
             </h2>
-            <div class="w-40 h-1 bg-gray-100 rounded-full mt-2 mx-auto overflow-hidden">
-                <div class="h-full bg-red-600 animate-loading-bar"></div>
-            </div>
+        </div>
+
+        <!-- Progress Bar Section -->
+        <div class="w-48 h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+            <div class="h-full bg-red-600 animate-loading-bar rounded-full shadow-lg shadow-red-500/20"></div>
         </div>
     </div>
 </div>
 
 <?php
 $role = $_SESSION['role'] ?? 'staff';
-if ($role === 'admin') {
-    $roleMsg = "Initializing Admin";
-} elseif ($role === 'showroom') {
-    $roleMsg = "Preparing Showroom Catalog";
-} else {
-    $roleMsg = "Readying Warehouse Inventory";
-}
+$roleMsg = "Readying Account Modules";
+if ($role === 'admin') $roleMsg = "Initializing Admin Terminal";
+elseif ($role === 'showroom') $roleMsg = "Syncing Showroom Database";
 ?>
 
 <script>
@@ -73,35 +69,34 @@ if ($role === 'admin') {
         const text = document.getElementById('loading-text');
         const splash = document.getElementById('loading-splash');
         
-        // Match the sequence requested: Synchronizing -> Preparing Role
-        const statusMessages = ["Synchronizing Prime", "<?= $roleMsg ?>", "Optimizing Inventory", "Finalizing Modules"];
+        // Sequence for professional feel
+        const statusMessages = ["Synchronizing Prime", "<?= $roleMsg ?>", "Optimizing Modules", "Finalizing Interface"];
         let index = 0;
 
         function cycleText() {
             if (!text) return;
             
-            // Slide down existing text
-            text.style.transform = 'translateY(100%)';
-            
+            // Subtle Fade effect for text transitions
+            text.style.opacity = '0';
             setTimeout(() => {
                 index = (index + 1) % statusMessages.length;
                 text.innerText = statusMessages[index];
-                // Slide up new text
-                text.style.transform = 'translateY(0)';
-            }, 500);
+                text.style.opacity = '1';
+            }, 600);
         }
 
-        // Start cycling every 2 seconds for visibility
-        const interval = setInterval(cycleText, 2000);
+        // Cycle slower for premium feel
+        const interval = setInterval(cycleText, 2500);
         
-        // Set initial text and state
+        // Text initial style
         if(text) {
+            text.style.transition = 'opacity 0.6s ease-in-out';
             text.innerText = statusMessages[0];
-            setTimeout(() => { text.style.transform = 'translateY(0)'; }, 50);
+            text.style.opacity = '1';
         }
 
         window.addEventListener('load', () => {
-            // Keep it visible for at least 3 seconds so they can see the sequence
+            // Allow user to see the splash for a short moment
             setTimeout(() => {
                 clearInterval(interval);
                 if (splash) {
@@ -112,4 +107,4 @@ if ($role === 'admin') {
             }, 3500);
         });
     })();
-</script>
+</script>

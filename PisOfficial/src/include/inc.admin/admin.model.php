@@ -35,14 +35,14 @@ function get_user_summary_stats(PDO $pdo): array
     ];
 }
 
-// Kunin ang lahat ng unique categories
+// Get all unique categories
 function get_unique_categories($pdo)
 {
     $stmt = $pdo->query("SELECT DISTINCT category FROM products WHERE is_deleted = 0 AND category IS NOT NULL AND category != '' ORDER BY category ASC");
     return $stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 
-// Kunin ang lahat ng existing components para sa suggestion list
+// Get all existing components for the selection list
 function get_all_components($pdo)
 {
     $stmt = $pdo->query("SELECT component_name FROM components ORDER BY component_name ASC");
@@ -265,7 +265,7 @@ function process_admin_pos_sale(PDO $pdo, array $data): array
 
         // 2. Insert Order
         // For Admin POS, it is automatically 'Approved'
-        $orderStatus = 'Approved';
+        $orderStatus = 'Success';
         $whStatus = 'To Release';
 
         $totalAmount = (float)($data['totalAmount'] ?? 0);
@@ -726,7 +726,7 @@ function record_manual_collection(PDO $pdo, int $orderId, float $amount, string 
 }
 
 /**
- * Legacy compatibility functions
+ * Compatibility functions for legacy support
  */
 function get_pending_government_orders(PDO $pdo): array { return get_pending_receivables($pdo, 'Government'); }
 function get_total_government_outstanding(PDO $pdo): float { return get_receivables_summary($pdo)['total']; }
@@ -825,7 +825,7 @@ function get_admin_order_stats(PDO $pdo): array
     }
 }
 
-function get_sales_report_data(PDO $pdo, ?string $start = null, ?string $end = null, ?string $status = null, ?string $plan = null): array
+function get_sales_report_data(PDO $pdo, ?string $start = null, ?string $end = null, ?string $status = null, ?string $plan = null, ?string $client_type = null): array
 {
     try {
         $params = [];
@@ -861,6 +861,10 @@ function get_sales_report_data(PDO $pdo, ?string $start = null, ?string $end = n
         if ($plan && $plan !== 'All') {
             $sql .= " AND t.payment_type = ?";
             $params[] = $plan;
+        }
+        if ($client_type && $client_type !== 'All') {
+            $sql .= " AND COALESCE(c.client_type, 'Private') = ?";
+            $params[] = $client_type;
         }
 
         $sql .= " ORDER BY t.transaction_date DESC";
@@ -900,7 +904,7 @@ function get_all_orders_data(PDO $pdo, ?string $status = null): array
             $params[] = $status;
         }
 
-        $sql .= " ORDER BY o.created_at DESC";
+        $sql .= " ORDER BY o.created_at DESC, o.id DESC";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1169,6 +1173,105 @@ function get_revenue_stats(PDO $pdo): array
 }
 
 /**
+ * Fetches the most recent stock logs for the Showroom (SR).
+ */
+function get_sr_stock_logs(PDO $pdo, int $limit = 3, ?string $fromDate = null, ?string $toDate = null): array
+{
+    try {
+        $whereClauses = [];
+        if ($fromDate) {
+            $whereClauses[] = "DATE(sl.log_date) >= :from_date";
+        }
+        if ($toDate) {
+            $whereClauses[] = "DATE(sl.log_date) <= :to_date";
+        }
+        
+        $whereClause = "";
+        if (!empty($whereClauses)) {
+            $whereClause = "WHERE " . implode(" AND ", $whereClauses);
+        }
+
+        $sql = "SELECT 
+                    sl.qty,
+                    sl.log_date,
+                    p.name as product_name,
+                    p.code as prod_code,
+                    pv.variant as variant_name
+                FROM showroom_logs sl
+                LEFT JOIN product_variant pv ON sl.variant_id = pv.id
+                LEFT JOIN products p ON pv.prod_id = p.id
+                $whereClause
+                ORDER BY sl.log_date DESC, sl.log_id DESC
+                LIMIT :limit";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        if ($fromDate) {
+            $stmt->bindValue(':from_date', $fromDate, PDO::PARAM_STR);
+        }
+        if ($toDate) {
+            $stmt->bindValue(':to_date', $toDate, PDO::PARAM_STR);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        error_log("Get SR Stock Logs Error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Fetches the most recent stock logs for the Warehouse (WH).
+ */
+function get_wh_stock_logs(PDO $pdo, int $limit = 3, ?string $fromDate = null, ?string $toDate = null): array
+{
+    try {
+        $whereClauses = [];
+        if ($fromDate) {
+            $whereClauses[] = "DATE(wl.log_date) >= :from_date";
+        }
+        if ($toDate) {
+            $whereClauses[] = "DATE(wl.log_date) <= :to_date";
+        }
+
+        $whereClause = "";
+        if (!empty($whereClauses)) {
+            $whereClause = "WHERE " . implode(" AND ", $whereClauses);
+        }
+
+        $sql = "SELECT 
+                    wl.qty,
+                    wl.log_date,
+                    COALESCE(p_new.name, p_old.name) as product_name,
+                    COALESCE(p_new.code, p_old.code) as prod_code,
+                    COALESCE(pv_new.variant, pv_old.variant) as variant_name
+                FROM warehouse_logs wl
+                LEFT JOIN products p_new ON wl.prod_id = p_new.id
+                LEFT JOIN product_variant pv_new ON wl.variant_id = pv_new.id
+                LEFT JOIN warehouse_stocks ws ON wl.comp_id = ws.id AND wl.prod_id IS NULL
+                LEFT JOIN products p_old ON ws.prod_id = p_old.id
+                LEFT JOIN product_variant pv_old ON ws.variant_id = pv_old.id
+                $whereClause
+                ORDER BY wl.log_date DESC, wl.log_id DESC
+                LIMIT :limit";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        if ($fromDate) {
+            $stmt->bindValue(':from_date', $fromDate, PDO::PARAM_STR);
+        }
+        if ($toDate) {
+            $stmt->bindValue(':to_date', $toDate, PDO::PARAM_STR);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        error_log("Get WH Stock Logs Error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
  * Status summary for the Sales Order Status table breakdown
  * Groups by Source (Admin/POS vs Showroom) and Order/WH Status
  */
@@ -1213,6 +1316,8 @@ function get_pending_order_requests(PDO $pdo, int $limit = 5, bool $onlyForRevie
                 LEFT JOIN users u ON o.created_by = u.id
                 $whereClause
                 ORDER BY 
+                    o.created_at DESC, 
+                    o.id DESC,
                     CASE o.status 
                         WHEN 'For Review' THEN 1 
                         WHEN 'Pending' THEN 1 
@@ -1220,8 +1325,7 @@ function get_pending_order_requests(PDO $pdo, int $limit = 5, bool $onlyForRevie
                         WHEN 'Rejected' THEN 3 
                         WHEN 'Cancelled' THEN 4 
                         ELSE 5 
-                    END ASC,
-                    o.created_at DESC
+                    END ASC
                 LIMIT " . (int)$limit;
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1424,6 +1528,100 @@ function run_database_migration(PDO $pdo): array
         return ['success' => true, 'message' => 'Migration successful. Database has been reset.'];
     } catch (Exception $e) {
         return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
+/**
+ * Fetches a complete list of all products and variants with their respective stock levels
+ * for the Full System Report.
+ */
+function get_full_inventory_report_data(PDO $pdo): array
+{
+    try {
+        $sql = "SELECT 
+                    p.code, p.name as prod_name, p.category, p.price,
+                    pv.variant as variant_name,
+                    COALESCE((SELECT ss.qty_on_hand FROM showroom_stocks ss WHERE ss.variant_id = pv.id LIMIT 1), 0) as sr_qty,
+                    COALESCE((SELECT FLOOR(MIN(ws.qty_on_hand / pc.qty_needed)) 
+                              FROM warehouse_stocks ws 
+                              JOIN product_components pc ON ws.product_comp_id = pc.id 
+                              WHERE ws.variant_id = pv.id), 0) as wh_qty
+                FROM products p
+                JOIN product_variant pv ON p.id = pv.prod_id
+                WHERE p.is_deleted = 0 AND pv.is_deleted = 0
+                ORDER BY p.category ASC, p.name ASC, pv.variant ASC";
+        $stmt = $pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Get Full Inventory Report Error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Fetches transaction records for the comprehensive system report section.
+ */
+function get_report_transactions(PDO $pdo, int $limit = 50, string $from = null, string $to = null): array
+{
+    try {
+        $params = [];
+        $sql = "SELECT 
+                    t.id as trans_id,
+                    t.transaction_date,
+                    t.amount,
+                    t.payment_type,
+                    t.status as trans_status,
+                    COALESCE(c.name, o.temp_customer_name) as customer_name,
+                    COALESCE(c.client_type, 'Private / Individual') as client_type
+                FROM transactions t
+                JOIN orders o ON t.order_id = o.id
+                LEFT JOIN customers c ON o.customer_id = c.id";
+
+        $conditions = [];
+        if(!empty($from)) {
+            $conditions[] = "t.transaction_date >= ?";
+            $params[] = $from . ' 00:00:00';
+        }
+        if(!empty($to)) {
+            $conditions[] = "t.transaction_date <= ?";
+            $params[] = $to . ' 23:59:59';
+        }
+
+        if(!empty($conditions)) {
+            $sql .= " WHERE " . implode(" AND ", $conditions);
+        }
+
+        $sql .= " ORDER BY t.transaction_date DESC LIMIT " . (int)$limit;
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Report Transactions Error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Fetches a list of customers with aggregated order statistics.
+ */
+function get_report_customers(PDO $pdo, int $limit = 100): array
+{
+    try {
+        $sql = "SELECT 
+                    c.id, c.name, c.contact_no, c.client_type, c.gov_branch,
+                    COUNT(o.id) as total_orders,
+                    SUM(o.total_ammount) as total_spend
+                FROM customers c
+                LEFT JOIN orders o ON c.id = o.customer_id AND o.status != 'Cancelled'
+                GROUP BY c.id
+                ORDER BY total_spend DESC, c.name ASC
+                LIMIT " . (int)$limit;
+        $stmt = $pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Report Customers Error: " . $e->getMessage());
+        return [];
     }
 }
 

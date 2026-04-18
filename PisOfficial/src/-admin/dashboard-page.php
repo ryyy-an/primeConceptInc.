@@ -72,20 +72,20 @@ if (isset($_SESSION['user_id'])) {
             font-family: 'Outfit', sans-serif;
         }
 
-        /* Shrink entire UI by 10% */
-        html {
+        /* Shrink entire UI by 10% - Removed for native zoom support */
+        /* html {
             zoom: 90%;
-        }
+        } */
     </style>
 
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-[100px]">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
     <?php include '../include/loading-splash.php'; ?>
     <header
-        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white container">
+        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto px-4 md:px-8">
 
-        <div class="flex container">
+        <div class="flex flex-1">
             <a href="../-admin/dashboard-page.php" class=" flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
@@ -106,7 +106,7 @@ if (isset($_SESSION['user_id'])) {
             <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
-                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                     <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -115,6 +115,14 @@ if (isset($_SESSION['user_id'])) {
                 </button>
             </div>
             <?php include '../include/sidebar-notif.php'; ?>
+
+            <!-- Reports Shortcut -->
+            <a href="../-admin/rep-generation.php" title="View Reports"
+                class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95 group">
+                <svg class="size-5 text-red-500 group-hover:scale-110 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+            </a>
 
 
             <!-- Settings -->
@@ -140,7 +148,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </header>
 
-    <section class="px-6 py-4">
+    <section class="px-6 py-4 w-full max-w-7xl mx-auto">
         <?php
         render_admin_stats_cards([
             [
@@ -171,7 +179,7 @@ if (isset($_SESSION['user_id'])) {
         ?>
     </section>
 
-    <nav class="px-5 flex justify-center">
+    <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">
         <div class="max-w-7xl w-full">
             <ul class="grid grid-cols-4 bg-gray-100 rounded-3xl h-12 shadow-sm px-5 items-center gap-2">
 
@@ -251,9 +259,8 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </nav>
 
-    <section class="flex flex-center w-full">
-
-        <div class="border border-gray-300 rounded-2xl p-12 w-[1250px] bg-gray-50 mx-auto">
+    <section class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
+        <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full bg-gray-50 mx-auto">
 
             <div class="max-w-[1400px] mx-auto space-y-8">
 

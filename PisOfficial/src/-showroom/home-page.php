@@ -64,20 +64,20 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
 
 
     <style>
-        /* Shrink entire UI by 10% */
-        html {
+        /* Shrink entire UI by 10% - Removed for native zoom support */
+        /* html {
             zoom: 90%;
-        }
+        } */
     </style>
 
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-[100px]">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
     <?php include '../include/loading-splash.php'; ?>
 
     <header
-        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white container">
-        <div class="flex container">
+        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto px-4 md:px-8">
+        <div class="flex flex-1">
             <a href="#" class="flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
@@ -99,7 +99,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
             <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
-                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                     <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -127,7 +127,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
         </div>
     </header>
 
-    <section class="px-6 py-4">
+    <section class="w-full max-w-7xl mx-auto px-4 md:px-6 py-4">
         <div class="grid grid-cols-[repeat(3,400px)] justify-center gap-5">
             <!-- Card 1 -->
             <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
@@ -153,7 +153,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
         </div>
     </section>
 
-    <nav class="px-5 flex justify-center">
+    <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">
         <div class="max-w-7xl w-full">
             <ul class="grid grid-cols-3 bg-gray-100 rounded-3xl h-12 shadow-sm px-5 items-center gap-2">
 
@@ -219,8 +219,8 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
         $totalCartItems = count($cartItems);
         ?>
 
-        <div class="flex flex-center w-full">
-            <div class="flex-center bg-gray-100 rounded-3xl px-1 py-1 gap-5 shadow-sm w-312.5">
+        <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-center bg-gray-100 rounded-3xl px-1 py-1 gap-5 shadow-sm w-full">
                 <!-- Product Catalog Tab -->
                 <button onclick="refreshAndShowTab(0)" id="tabBtn0"
                     class="w-full flex-center h-10 gap-2 px-4 rounded-3xl bg-white border border-gray-300 text-red-600 font-semibold hover:bg-red-100 transition">
@@ -253,8 +253,8 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
         </div>
 
         <!-- Catalog -->
-        <div class="flex flex-center w-full">
-            <div class="border border-gray-300 rounded-2xl p-12 gap w-312.5">
+        <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6 pb-12">
+            <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full bg-white">
 
                 <div id="tabContent0">
                     <h2 class="text-2xl font-semibold mb-2">Product Catalog</h2>

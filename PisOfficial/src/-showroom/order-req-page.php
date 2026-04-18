@@ -63,19 +63,19 @@ if (isset($_SESSION['user_id'])) {
     <?php include '../include/toast.php'; ?>
 
     <style>
-        /* Shrink entire UI by 10% */
-        html {
+        /* Shrink entire UI by 10% - Removed for native zoom support */
+        /* html {
             zoom: 90%;
-        }
+        } */
     </style>
 
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-[100px]">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
     <header
-        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white container">
+        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto px-4 md:px-8">
 
-        <div class="flex container">
+        <div class="flex flex-1">
             <a href="#" class="flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
@@ -97,7 +97,7 @@ if (isset($_SESSION['user_id'])) {
             <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
-                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                     <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -124,7 +124,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </header>
 
-    <section class="px-6 py-4">
+    <section class="max-w-7xl w-full mx-auto px-6 py-4 px-4 md:px-8">
         <div class="grid grid-cols-[repeat(3,400px)] justify-center gap-5">
             <!-- Card 1 -->
             <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
@@ -151,7 +151,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </section>
 
-    <nav class="px-5 flex justify-center">
+    <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">
         <div class="max-w-7xl w-full">
             <ul class="grid grid-cols-3 bg-gray-100 rounded-3xl h-12 shadow-sm px-5 items-center gap-2">
 
@@ -212,8 +212,8 @@ if (isset($_SESSION['user_id'])) {
     </nav>
 
     <!-- Product Request -->
-    <div class="flex flex-center w-full">
-        <div class="border border-gray-300 rounded-2xl p-12 gap w-[1250px]">
+    <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6 pb-12">
+        <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full max-w-7xl bg-white">
 
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
@@ -700,7 +700,7 @@ if (isset($_SESSION['user_id'])) {
                     </div>
                     <h3 class="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tighter">Finalize Sale?</h3>
                     <p class="text-gray-500 mb-8 text-sm leading-relaxed">
-                        This will record the transaction, update the inventory, and generate a receipt. Sigurado ka na ba?
+                        This will record the transaction, update the inventory, and generate a receipt. Are you sure?
                     </p>
                     <div class="flex gap-3">
                         <button type="button" onclick="closeFinalizeConfirmModal()"

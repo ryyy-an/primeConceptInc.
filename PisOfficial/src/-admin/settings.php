@@ -69,19 +69,19 @@ function getInitials($name)
 
 
     <style>
-        /* Shrink entire UI by 10% */
-        html {
+        /* Shrink entire UI by 10% - Removed for native zoom support */
+        /* html {
             zoom: 90%;
-        }
+        } */
     </style>
 
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-[100px]">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
     <header
-        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white container">
+        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto px-4 md:px-8">
 
-        <div class="flex container">
+        <div class="flex flex-1">
             <a href="../-admin/dashboard-page.php" class=" flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
@@ -101,7 +101,7 @@ function getInitials($name)
             <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
-                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                     <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -110,6 +110,14 @@ function getInitials($name)
                 </button>
             </div>
             <?php include '../include/sidebar-notif.php'; ?>
+
+            <!-- Reports Shortcut -->
+            <a href="../-admin/rep-generation.php" title="View Reports"
+                class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95 group">
+                <svg class="size-5 text-red-500 group-hover:scale-110 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+            </a>
 
 
             <!-- Settings -->
@@ -138,77 +146,107 @@ function getInitials($name)
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 flex gap-10 mt-6 container mx-auto">
+    <main class="flex-1 flex gap-10 mt-6 w-full max-w-7xl mx-auto px-6">
 
         <!-- Nav Bars -->
-        <aside class="w-64 flex flex-col gap-2">
-            <h2 class="text-xl font-bold mb-4 px-4 text-gray-900">Settings</h2>
+        <aside class="w-64 flex flex-col gap-6">
+            <div>
+                <h2 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 px-2">System Config</h2>
+                <nav class="flex flex-col gap-2">
+                    <!-- User Accounts -->
+                    <a href="javascript:void(0)" onclick="showSettingSection('userManagement')" id="userManagementLink"
+                        class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group active-setting-link bg-red-600 text-white shadow-lg shadow-red-100">
+                        <div class="size-10 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300 group-hover:bg-white group-hover:shadow-sm group-[.active-setting-link]:bg-white/20 group-[.active-setting-link]:border-transparent group-[.active-setting-link]:shadow-inner">
+                            <svg class="size-5 text-gray-400 group-hover:text-gray-900 group-[.active-setting-link]:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-black uppercase tracking-widest block leading-tight">Users</span>
+                            <span class="text-[9px] text-gray-400 group-[.active-setting-link]:text-red-100 font-bold uppercase tracking-tighter opacity-80 transition-colors">Access Control</span>
+                        </div>
+                    </a>
 
-            <nav class="w-64 flex flex-col gap-2">
-                <!-- User Accounts -->
-                <a href="javascript:void(0)" onclick="showSettingSection('userManagement')" id="userManagementLink"
-                    class="flex items-center gap-3 px-6 py-4 rounded-2xl bg-red-600 text-white shadow-lg shadow-red-100 transition duration-300 group active-setting-link">
-                    <div class="size-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300">
-                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <span class="text-sm font-black uppercase tracking-widest block">User Accounts</span>
-                        <span class="text-[10px] text-red-100 font-medium">Manage System Access</span>
-                    </div>
-                </a>
-
-                <!-- Placeholder for future module -->
-                <!-- Reports & Backups -->
-                <a href="javascript:void(0)" onclick="showSettingSection('reportsBackup')" id="reportsBackupLink"
-                    class="flex items-center gap-3 px-6 py-4 rounded-2xl text-gray-400 hover:bg-gray-50 transition duration-300 group">
-                    <div class="size-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300">
-                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                        </svg>
-                    </div>
-                    <div>
-                        <span class="text-sm font-black uppercase tracking-widest block">System Config</span>
-                        <span class="text-[10px] text-gray-400 font-medium">Reports & Backups</span>
-                    </div>
-                </a>
-            </nav>
+                    <!-- Reports & Backups -->
+                    <a href="javascript:void(0)" onclick="showSettingSection('reportsBackup')" id="reportsBackupLink"
+                        class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group text-gray-400 hover:bg-gray-50 hover:text-gray-900 border border-transparent hover:border-gray-100">
+                        <div class="size-10 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300 group-hover:bg-white group-hover:shadow-sm group-[.active-setting-link]:bg-white/20 group-[.active-setting-link]:border-transparent group-[.active-setting-link]:shadow-inner">
+                            <svg class="size-5 text-gray-400 group-hover:text-gray-900 group-[.active-setting-link]:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-black uppercase tracking-widest block leading-tight">Data</span>
+                            <span class="text-[9px] text-gray-400 group-[.active-setting-link]:text-red-100 font-bold uppercase tracking-tighter opacity-80 transition-colors">Reports & Backup</span>
+                        </div>
+                    </a>
+                </nav>
+            </div>
         </aside>
 
         <div class="flex-1 flex flex-col gap-6">
 
             <!-- Admin Stats Cards -->
-            <div class="grid grid-cols-3 gap-6 mb-4">
-                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Staff</p>
-                    <h2 class="text-3xl font-bold text-gray-900 mt-1"><?= number_format((float)$stats['total_staff']) ?></h2>
-                    <p class="text-[10px] text-gray-400 mt-1 italic">Registered system users.</p>
-                </div>
-                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Now</p>
-                    <div class="flex items-center gap-2 mt-1">
-                        <h2 class="text-3xl font-bold text-gray-900"><?= number_format((float)$stats['active_now']) ?></h2>
-                        <span class="size-2.5 rounded-full bg-green-500 animate-pulse"></span>
+            <div class="grid grid-cols-3 gap-6 mb-2">
+                <!-- Total Staff -->
+                <div class="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <svg class="size-12 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
                     </div>
-                    <p class="text-[10px] text-gray-400 mt-1 italic">Users currently logged in.</p>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Registered</p>
+                    <div class="flex items-baseline gap-2">
+                        <h2 class="text-4xl font-black text-gray-900 tracking-tighter"><?= number_format((float)$stats['total_staff']) ?></h2>
+                        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">Users</span>
+                    </div>
+                    <p class="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-tighter italic">System-wide directory</p>
                 </div>
-                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Admins</p>
-                    <h2 class="text-3xl font-bold text-red-600 mt-1"><?= number_format((float)$stats['total_admins']) ?></h2>
-                    <p class="text-[10px] text-red-400 mt-1 italic">System administrators.</p>
+
+                <!-- Active Now -->
+                <div class="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <svg class="size-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <p class="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Sessions Active</p>
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-4xl font-black text-gray-900 tracking-tighter"><?= number_format((float)$stats['active_now']) ?></h2>
+                        <div class="flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-full border border-green-100">
+                            <span class="size-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                            <span class="text-[10px] font-black text-green-600 uppercase">Live</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-tighter italic">Currently logged in</p>
+                </div>
+
+                <!-- Admins -->
+                <div class="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <svg class="size-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <p class="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Administrative</p>
+                    <div class="flex items-baseline gap-2">
+                        <h2 class="text-4xl font-black text-red-600 tracking-tighter"><?= number_format((float)$stats['total_admins']) ?></h2>
+                        <span class="text-[11px] font-bold text-red-400 uppercase tracking-tighter">Managers</span>
+                    </div>
+                    <p class="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-tighter italic">High-level access</p>
                 </div>
             </div>
 
             <!-- User Managements Section -->
-            <section id="userManagementSection" class="flex flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+            <section id="userManagementSection" class="flex flex-1 bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden flex flex-col">
 
-                <div class="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
-
+                <div class="flex items-center justify-between p-8 border-b border-gray-100 bg-gray-50/30">
                     <div>
-                        <h3 class="text-lg font-bold text-gray-900">User Accounts</h3>
-                        <p class="text-sm text-gray-500">Create, update, or remove staff access to the system.</p>
+                        <h3 class="text-xl font-black text-gray-900 tracking-tight leading-none mb-1 uppercase">User Accounts</h3>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest italic font-medium">Manage system access and staff credentials</p>
                     </div>
+
+                    <!-- System Toast Notification Triggers -->
 
                     <!-- System Toast Notification Triggers -->
                     <?php if (isset($_GET['success']) || isset($_GET['error'])): ?>
@@ -249,94 +287,79 @@ function getInitials($name)
                         </script>
                     <?php endif; ?>
                     <button onclick="window.formHasUnsavedChanges = false; openModal('registrationModal')"
-                        class="card-style flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-md shadow-red-100">
-                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        class="flex items-center gap-2 bg-red-600 hover:bg-gray-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-100 active:scale-95 group">
+                        <svg class="size-4 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
                         </svg>
-                        Add New User
+                        Add New Staff
                     </button>
                 </div>
-
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full text-left border-separate border-spacing-0">
                         <thead>
-                            <tr class="text-xs uppercase tracking-wider text-gray-400 bg-gray-100">
-                                <th class="px-6 py-4 font-semibold">User Info</th>
-                                <th class="px-6 py-4 font-semibold">Role</th>
-                                <th class="px-6 py-4 font-semibold">Status</th>
-                                <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                            <tr class="text-[10px] uppercase tracking-[0.15em] text-gray-400 bg-gray-50/50">
+                                <th class="px-8 py-4 font-black border-b border-gray-100">User Identity</th>
+                                <th class="px-8 py-4 font-black border-b border-gray-100 text-center">System Role</th>
+                                <th class="px-8 py-4 font-black border-b border-gray-100 text-center">Connection</th>
+                                <th class="px-8 py-4 font-black border-b border-gray-100 text-right">Administrative</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
+                        <tbody class="divide-y divide-gray-50">
                             <?php if (empty($allUsers)): ?>
                                 <tr>
-                                    <td colspan="4" class="px-6 py-10 text-center text-gray-400">No user accounts found.
+                                    <td colspan="4" class="px-8 py-12 text-center">
+                                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">No user accounts found</p>
                                     </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($allUsers as $user): ?>
-                                    <tr class="hover:bg-gray-50/80 transition">
-                                        <td class="px-6 py-4">
-                                            <div class="flex items-center gap-3">
-                                                <div
-                                                    class="size-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-sm">
+                                    <tr class="hover:bg-gray-50/40 transition-colors group">
+                                        <td class="px-8 py-3">
+                                            <div class="flex items-center gap-4">
+                                                <div class="size-10 rounded-2xl bg-gray-50 border border-gray-100 text-gray-900 flex items-center justify-center font-black text-[11px] shadow-sm transform group-hover:scale-105 transition-transform">
                                                     <?= getInitials($user['full_name']) ?>
                                                 </div>
                                                 <div>
-                                                    <p class="text-sm font-semibold text-gray-900">
-                                                        <?= htmlspecialchars($user['full_name']) ?></p>
-                                                    <p class="text-xs text-gray-500"><?= htmlspecialchars($user['username']) ?>
-                                                    </p>
+                                                    <p class="text-[13px] font-black text-gray-900 leading-none mb-1 italic"><?= htmlspecialchars($user['full_name']) ?></p>
+                                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">@<?= htmlspecialchars($user['username']) ?></p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center"> <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider
-                            <?= $user['role'] === 'admin' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-amber-50 text-amber-600 border border-amber-100' ?>">
-                                                    <?= htmlspecialchars($user['role']) ?>
-                                                </span>
-                                            </div>
+                                        <td class="px-8 py-3 text-center">
+                                            <span class="inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest
+                                                <?= $user['role'] === 'admin' ? 'bg-red-50 text-red-600 border border-red-100 shadow-sm' : 'bg-gray-50 text-gray-600 border border-gray-100' ?>">
+                                                <?= htmlspecialchars($user['role']) ?>
+                                            </span>
                                         </td>
-                                        <td class="px-6 py-4">
+                                        <td class="px-8 py-3 text-center">
                                             <?php if (isset($user['is_online']) && $user['is_online'] == 1): ?>
-                                                <div class="flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                                                    <span class="size-1.5 rounded-full bg-green-600 animate-pulse"></span>
-                                                    Online
+                                                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50/50 border border-green-100">
+                                                    <span id="status-dot-<?= $user['id'] ?>" class="size-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                                    <span id="status-text-<?= $user['id'] ?>" class="text-[9px] font-black text-green-600 uppercase">Live</span>
                                                 </div>
                                             <?php else: ?>
-                                                <div class="flex items-center gap-1.5 text-xs text-gray-400 font-medium">
-                                                    <span class="size-1.5 rounded-full bg-gray-300"></span>
-                                                    Offline
+                                                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-50/50 border border-gray-100">
+                                                    <span id="status-dot-<?= $user['id'] ?>" class="size-1.5 rounded-full bg-gray-300"></span>
+                                                    <span id="status-text-<?= $user['id'] ?>" class="text-[9px] font-black text-gray-400 uppercase">Off</span>
                                                 </div>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <div class="flex justify-end gap-2">
+                                        <td class="px-8 py-3 text-right">
+                                            <div class="flex justify-end gap-1 transition-opacity duration-300">
                                                 <button onclick="confirmDelete(<?= $user['id'] ?>)"
-                                                    class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                                                    title="Delete User">
-                                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-
+                                                    class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                                    title="Remove Staff">
+                                                    <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                     </svg>
                                                 </button>
-                                                <form action="../include/inc.admin/admin.ctrl.php" method="POST">
-                                                    <button type="button"
-                                                        onclick="openResetModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['full_name']) ?>')"
-                                                        class="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition"
-                                                        title="Reset Password">
-                                                        <svg class="size-5" fill="none" stroke="currentColor"
-                                                            viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                                        </svg>
-                                                    </button>
-                                                </form>
+                                                <button onclick="openResetModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['full_name']) ?>', '<?= htmlspecialchars($user['username']) ?>')"
+                                                    class="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                                                    title="Reset Pwd">
+                                                    <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -345,12 +368,13 @@ function getInitials($name)
                         </tbody>
                     </table>
                 </div>
+
             </section>
 
             <!-- Reports & Backups Section -->
             <section id="reportsBackupSection" class="hidden flex-1 flex-col min-h-[500px] gap-6">
 
-                <div class="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden flex flex-col h-full">
+                <div class="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden flex flex-col h-full">
                     <div class="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
                         <div class="flex items-center gap-4">
                             <div class="size-12 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-100">
@@ -359,61 +383,69 @@ function getInitials($name)
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="text-xl font-black text-gray-900 tracking-tight leading-none mb-1 uppercase">Reports & Backups</h3>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest italic">Generate system reports and manage database files</p>
+                                <h3 class="text-xl font-black text-gray-900 tracking-tight leading-none mb-1 uppercase">System Config</h3>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest italic font-medium tracking-widest">Reports & database file management</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
                         <!-- Left Column: Generate Reports -->
-                        <div>
-                            <div class="border-b border-gray-50 pb-2 mb-4">
-                                <h4 class="text-xs font-black text-red-600 uppercase tracking-tighter">System Reports</h4>
+                        <div class="flex flex-col h-full">
+                            <div class="border-b border-gray-100 pb-3 mb-6">
+                                <h4 class="text-[11px] font-black text-red-600 uppercase tracking-widest">Excel Generation</h4>
                             </div>
-                            
-                            <div class="p-6 rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-4 text-center hover:border-red-200 hover:bg-red-50/20 transition-all group cursor-pointer h-[250px]">
-                                <div class="size-16 bg-gray-50 text-gray-400 group-hover:text-red-500 group-hover:bg-red-100 transition-colors rounded-xl flex items-center justify-center">
-                                    <svg class="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-6-9a3 3 0 116 0 3 3 0 01-6 0zm11 2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 012-2 2 2 0 012-2h10z" /></svg>
+
+                            <div class="p-8 pb-10 rounded-[2rem] border border-gray-100 flex flex-col items-center justify-center gap-6 text-center hover:border-red-100 hover:shadow-xl hover:shadow-red-50/40 transition-all duration-500 group cursor-pointer bg-white h-full">
+                                <div class="size-20 bg-gray-50 text-gray-400 group-hover:text-red-600 group-hover:bg-red-50/50 group-hover:rotate-12 transition-all duration-500 rounded-3xl flex items-center justify-center border border-transparent group-hover:border-red-100">
+                                    <svg class="size-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-6-9a3 3 0 116 0 3 3 0 01-6 0zm11 2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 012-2 2 2 0 012-2h10z" />
+                                    </svg>
                                 </div>
-                                <div>
-                                    <h5 class="font-bold text-gray-800 text-base mb-1">Full System Report</h5>
-                                    <p class="text-xs text-gray-500 mb-5 px-6 leading-relaxed">Generate a comprehensive summary of inventory, staff performance, and complete sales data across all system modules.</p>
-                                    <button class="px-6 py-3 bg-gray-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition active:scale-95 shadow-lg">Generate Report</button>
+                                <div class="max-w-[240px]">
+                                    <h5 class="font-black text-gray-900 tracking-tight text-lg mb-2 italic">Full System Audit</h5>
+                                    <p class="text-[11px] font-medium text-gray-500 mb-8 leading-relaxed">Comprehensive inventory, staff performance, and complete sales data export.</p>
+                                    <a href="rep-generation.php" id="generateFullReportBtn" class="block text-center w-full py-3.5 bg-red-600 hover:bg-gray-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all active:scale-95 shadow-lg shadow-red-100">Generate Audit</a>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Right Column: Backups -->
-                        <div>
-                            <div class="border-b border-gray-50 pb-2 mb-4">
-                                <h4 class="text-xs font-black text-red-600 uppercase tracking-tighter">Data Backup & Recovery</h4>
+                        <div class="flex flex-col gap-6">
+                            <div class="border-b border-gray-100 pb-3">
+                                <h4 class="text-[11px] font-black text-gray-900 uppercase tracking-widest tracking-widest">Database Backup</h4>
                             </div>
-                            <div class="grid gap-4">
-                                <div class="p-5 border border-gray-100 rounded-2xl flex items-center justify-between hover:border-gray-200 transition-all bg-gray-50/50 group h-[117px]">
-                                    <div class="flex items-center gap-4">
-                                        <div class="size-12 bg-white shadow-sm border border-gray-200 rounded-xl flex items-center justify-center text-gray-500 group-hover:text-gray-900 transition-colors">
-                                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                            <div class="flex flex-col gap-4">
+                                <!-- Export -->
+                                <div class="p-6 border border-gray-100 rounded-[2rem] flex items-center justify-between hover:border-gray-200 transition-all bg-gray-50/30 group">
+                                    <div class="flex items-center gap-5">
+                                        <div class="size-14 bg-white shadow-sm border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 group-hover:text-gray-900 transition-colors">
+                                            <svg class="size-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                            </svg>
                                         </div>
                                         <div>
-                                            <h5 class="text-sm font-bold text-gray-800 leading-tight mb-0.5">Save New Backup</h5>
-                                            <p class="text-[10px] text-gray-500 font-medium tracking-tight">Export database state</p>
+                                            <h5 class="text-sm font-black text-gray-900 leading-none mb-1 italic">Snapshot Export</h5>
+                                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Download Current .SQL</p>
                                         </div>
                                     </div>
-                                    <button class="shrink-0 px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:text-black hover:border-gray-300 rounded-xl text-xs font-bold transition shadow-sm active:scale-95">Download .sql</button>
+                                    <button class="shrink-0 px-5 py-2.5 bg-white border-2 border-gray-100 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-black hover:border-gray-900 rounded-xl transition-all active:scale-95">Download</button>
                                 </div>
 
-                                <div class="p-5 border border-gray-100 rounded-2xl flex items-center justify-between hover:border-gray-200 hover:bg-gray-50/50 transition-all bg-white group h-[117px]">
-                                    <div class="flex items-center gap-4">
-                                        <div class="size-12 bg-white flex items-center justify-center text-gray-500 rounded-xl border border-gray-200 group-hover:text-gray-900 transition-colors">
-                                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                <!-- Restore -->
+                                <div class="p-6 border border-gray-100 rounded-[2rem] flex items-center justify-between hover:border-gray-200 transition-all bg-white group shadow-sm">
+                                    <div class="flex items-center gap-5">
+                                        <div class="size-14 bg-gray-50 flex items-center justify-center text-gray-400 rounded-2xl border border-gray-100 group-hover:text-red-600 group-hover:bg-red-50/50 transition-colors">
+                                            <svg class="size-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
                                         </div>
                                         <div>
-                                            <h5 class="text-sm font-bold text-gray-800 leading-tight mb-0.5">Restore Backup</h5>
-                                            <p class="text-[10px] text-gray-500 font-medium tracking-tight">Upload previous version</p>
+                                            <h5 class="text-sm font-black text-gray-900 leading-none mb-1 italic">Rollback Mode</h5>
+                                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter text-red-400">Restore from local file</p>
                                         </div>
                                     </div>
-                                    <button class="shrink-0 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold transition shadow-md active:scale-95 border border-transparent">Select File</button>
+                                    <button class="shrink-0 px-5 py-2.5 bg-gray-900 border-2 border-gray-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black rounded-xl transition-all shadow-lg active:scale-95">Upload File</button>
                                 </div>
                             </div>
                         </div>
@@ -423,174 +455,242 @@ function getInitials($name)
 
 
             <div id="resetModal"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 opacity-0 pointer-events-none transition-all duration-300">
-                <div
-                    class="bg-white w-full max-w-[400px] rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-all duration-300 border border-slate-100">
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 opacity-0 pointer-events-none transition-all duration-300 p-4">
+                <div class="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden transform scale-95 transition-all duration-300 border border-gray-100">
 
-                    <div class="bg-amber-50 border-b border-amber-100 px-6 py-4 flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-amber-900 flex items-center gap-2">
-                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                            </svg>
-                            Manual Password Reset
-                        </h3>
-                        <button onclick="toggleModal('resetModal')" class="text-amber-400 hover:text-amber-600">
+                    <div class="bg-gray-50 border-b border-gray-100 px-8 py-6 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-50">
+                                <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800 tracking-tight leading-none mb-1">Account Recovery</h3>
+                                <p class="text-xs font-medium text-gray-500">Credential & Security Tool</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="closeModalWithCheck('resetModal', 'resetForm')" class="text-gray-400 hover:text-red-600 transition-colors">
                             <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path d="M6 18L18 6M6 6l12 12" stroke-width="2" />
+                                <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" />
                             </svg>
                         </button>
                     </div>
 
-                    <div class="p-6">
-                        <p class="text-sm text-slate-600 mb-4">
-                            Set a new password for <span id="reset_user_display_name"
-                                class="font-bold text-slate-900 underline decoration-amber-300"></span>.
+                    <div class="p-10">
+                        <p class="text-sm text-gray-500 mb-8 px-2 font-medium">
+                            Managing credentials for <span id="reset_user_display_name" class="font-bold text-gray-800 underline decoration-red-400 decoration-2 underline-offset-4"></span>.
                         </p>
 
-                        <form action="../include/inc.admin/admin.ctrl.php" method="POST" class="space-y-4">
+                        <form id="resetForm" action="../include/inc.admin/admin.ctrl.php" method="POST" class="space-y-6" onsubmit="return validateResetForm()" oninput="window.formHasUnsavedChanges = true">
                             <input type="hidden" name="action" value="reset_password">
                             <input type="hidden" name="user_id" id="reset_user_id_input">
 
-                            <div class="space-y-1">
-                                <label class="text-[10px] uppercase font-bold text-slate-400 tracking-widest ml-1">New Password</label>
-                                <div class="relative">
-                                    <input type="password" name="new_password" id="new_password" required placeholder="••••••••"
-                                        class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition font-mono">
-
-                                    <button type="button" onclick="toggleNewPassword()"
-                                        class="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-600 transition-colors focus:outline-none">
-                                        <svg id="newEyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.67 8.5 7.652 6 12 6c4.348 0 8.332 2.5 9.964 5.678.15.287.15.629 0 .916C20.332 15.5 16.348 18 12 18c-4.348 0-8.332-2.5-9.964-5.678Z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-gray-600 uppercase tracking-wider ml-1 leading-none">Access Username</label>
+                                <div class="relative group">
+                                    <input type="text" name="username" id="reset_username_input" readonly
+                                        class="w-full pl-6 pr-14 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-gray-500 outline-none font-medium cursor-not-allowed transition-all focus:ring-2 focus:ring-red-500/20 focus:border-red-400 focus:bg-white focus:text-gray-800">
+                                    <button type="button" onclick="toggleUsernameEdit()" id="editUsernameBtn"
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                        title="Edit Username">
+                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                         </svg>
                                     </button>
                                 </div>
                             </div>
 
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-gray-600 uppercase tracking-wider ml-1 leading-none">Security Key</label>
+                                    <div class="relative">
+                                        <input type="password" name="new_password" id="new_password" required placeholder="••••••••"
+                                            class="w-full pl-6 pr-12 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-red-500/20 focus:border-red-400 outline-none transition-all text-gray-800 font-medium tracking-widest placeholder:text-gray-300">
+                                        <button type="button" onclick="toggleVisibility('new_password', 'newEyeIcon')"
+                                            class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all focus:outline-none">
+                                            <svg id="newEyeIcon" fill="none" class="size-5" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
 
-                            <div class="flex gap-3">
-                                <button type="button" onclick="toggleModal('resetModal')"
-                                    class=" card-style flex-1 px-4 py-2 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition font-medium">
-                                    Cancel
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-gray-600 uppercase tracking-wider ml-1 leading-none">Verify State</label>
+                                    <div class="relative">
+                                        <input type="password" name="confirm_password" id="confirm_password" required placeholder="••••••••"
+                                            class="w-full pl-6 pr-12 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-red-500/20 focus:border-red-400 outline-none transition-all text-gray-800 font-medium tracking-widest placeholder:text-gray-300">
+                                        <button type="button" onclick="toggleVisibility('confirm_password', 'confirmEyeIcon')"
+                                            class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all focus:outline-none">
+                                            <svg id="confirmEyeIcon" fill="none" class="size-5" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-4 pt-6">
+                                <button type="button" onclick="closeModalWithCheck('resetModal', 'resetForm')"
+                                    class="flex-1 px-8 py-4 border-2 border-gray-100 text-gray-500 rounded-2xl hover:border-gray-200 hover:text-gray-900 transition-all font-black uppercase tracking-widest text-[10px] active:scale-95">
+                                    Discard
                                 </button>
                                 <button type="submit"
-                                    class=" card-style flex-1 px-4 py-2 border bg-slate-900 text-white rounded-xl transition font-medium">
-                                    Update Password
+                                    class="flex-1 px-8 py-4 bg-red-600 hover:bg-gray-900 text-white rounded-2xl transition-all font-black uppercase tracking-widest text-[10px] active:scale-95 shadow-lg shadow-red-100">
+                                    Restore Access
                                 </button>
-
-
                             </div>
                         </form>
                     </div>
                 </div>
+
+                <script>
+                    window.toggleUsernameEdit = function() {
+                        const input = document.getElementById('reset_username_input');
+                        const btn = document.getElementById('editUsernameBtn');
+                        
+                        if (input.readOnly) {
+                            input.readOnly = false;
+                            input.classList.remove('cursor-not-allowed', 'text-gray-500', 'bg-gray-50');
+                            input.classList.add('text-gray-900', 'bg-white');
+                            input.focus();
+                            btn.classList.add('bg-red-600', 'text-white', 'shadow-red-200');
+                        } else {
+                            input.readOnly = true;
+                            input.classList.add('cursor-not-allowed', 'text-gray-500', 'bg-gray-50');
+                            input.classList.remove('text-gray-900', 'bg-white');
+                            btn.classList.remove('bg-red-600', 'text-white', 'shadow-red-200');
+                        }
+                    }
+
+                    window.validateResetForm = function() {
+                        const pass = document.getElementById('new_password').value;
+                        const confirm = document.getElementById('confirm_password').value;
+                        
+                        if (pass !== confirm) {
+                            alert("Security keys do not match! Please verify the state.");
+                            return false;
+                        }
+                        return true;
+                    }
+                </script>
             </div>
 
 
             <div id="registrationModal"
-                class="fixed inset-0 z-50 opacity-0 pointer-events-none flex items-center justify-center bg-black/40 p-4 transition-all duration-300">
-                <div
-                    class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-100">
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 opacity-0 pointer-events-none transition-all duration-300 p-4">
+                <div class="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden transform scale-95 transition-all duration-300 border border-gray-100">
 
-                    <div class="bg-slate-50 border-b border-slate-100 px-6 py-4 flex justify-between items-center">
-                        <h3 class="text-lg font-semibold text-slate-800">Register New Staff</h3>
-                        <button type="button" onclick="closeModalWithCheck('registrationModal', 'regForm')"
-                            class="text-slate-400 hover:text-slate-600 transition-colors">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
+                    <div class="bg-gray-50 border-b border-gray-100 px-8 py-6 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-50">
+                                <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800 tracking-tight leading-none mb-1">Staff Registry</h3>
+                                <p class="text-xs font-medium text-gray-500">Create new administrative credentials</p>
+                            </div>
+                        </div>
+                        <button onclick="closeModalWithCheck('registrationModal', 'regForm')" class="text-gray-400 hover:text-red-600 transition-colors">
+                            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" />
                             </svg>
                         </button>
                     </div>
 
-                    <form id="regForm" action="../include/inc.admin/admin.ctrl.php" method="POST" class="p-8 space-y-6"
+                    <form id="regForm" action="../include/inc.admin/admin.ctrl.php" method="POST" class="p-10 space-y-6"
                         oninput="window.formHasUnsavedChanges = true">
                         <input type="hidden" name="action" value="add_user">
 
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="block text-sm font-bold text-slate-700 ml-1">Full Name</label>
-                                <span id="nameStatus" class="text-[10px] font-bold uppercase text-slate-400">Min 3
-                                    chars</span>
-                            </div>
-                            <input type="text" name="full_name" id="regFullName" required
-                                placeholder="e.g. Juan Dela Cruz"
-                                class="w-full px-5 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all bg-slate-50 focus:bg-white text-base font-medium">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-6">
+                        <div class="space-y-6">
+                            <!-- Basic Info -->
                             <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="block text-sm font-bold text-slate-700 ml-1">Username</label>
-                                    <span id="userStatus"
-                                        class="text-[10px] font-bold uppercase text-slate-400">Required</span>
+                                <div class="flex justify-between items-center mb-2 px-1">
+                                    <label class="text-xs font-bold text-gray-600 uppercase tracking-wider ml-1 leading-none">Full Name</label>
+                                    <span id="nameStatus" class="text-[10px] font-bold uppercase text-gray-400">Min 3 chars</span>
                                 </div>
-                                <input type="text" name="username" id="regUsername" required placeholder="j.delacruz01"
-                                    class="w-full px-5 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all bg-slate-50 focus:bg-white text-base font-medium">
+                                <input type="text" name="full_name" id="regFullName" required placeholder="e.g. Juan Dela Cruz"
+                                    class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-medium transition-all focus:ring-2 focus:ring-red-500/20 focus:border-red-400 focus:bg-white text-gray-800 placeholder:text-gray-400 text-sm">
                             </div>
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-2 ml-1">Role</label>
-                                <select name="role"
-                                    class="w-full px-5 py-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all cursor-pointer text-base font-medium">
-                                    <option value="showroom">Showroom</option>
-                                    <option value="warehouse">Warehouse</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                            </div>
-                        </div>
 
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="space-y-2">
-                                <label class="block text-sm font-bold text-slate-700 mb-2 ml-1">Temporary Password</label>
-                                <div class="relative">
-                                    <input type="password" name="password" id="passwordInput" required placeholder="••••••••"
-                                        class="w-full px-5 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all bg-slate-50 focus:bg-white text-base font-medium pr-12">
-                                    <button type="button" onclick="toggleVisibility('passwordInput', 'eyeIcon1')"
-                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-black transition-colors focus:outline-none">
-                                        <svg id="eyeIcon1" fill="none" class="w-5 h-5" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                <div class="mt-2 space-y-1">
-                                    <div class="flex h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div id="strengthBar" class="w-0 transition-all duration-500 ease-out"></div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <div class="flex justify-between items-center mb-2 px-1">
+                                        <label class="text-xs font-bold text-gray-600 uppercase tracking-wider ml-1 leading-none">Access Username</label>
+                                        <span id="userStatus" class="text-[10px] font-bold uppercase text-gray-400">Unique Required</span>
                                     </div>
-                                    <p id="strengthText" class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Enter a password</p>
+                                    <input type="text" name="username" id="regUsername" required placeholder="j.delacruz01"
+                                        class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-medium transition-all focus:ring-2 focus:ring-red-500/20 focus:border-red-400 focus:bg-white text-gray-800 placeholder:text-gray-400 text-sm">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider ml-1 leading-none mb-2">System Role</label>
+                                    <select name="role"
+                                        class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-medium transition-all focus:ring-2 focus:ring-red-500/20 focus:border-red-400 focus:bg-white text-gray-800 appearance-none cursor-pointer">
+                                        <option value="showroom">Showroom</option>
+                                        <option value="warehouse">Warehouse</option>
+                                        <option value="admin">Administrator</option>
+                                    </select>
                                 </div>
                             </div>
 
-                            <div class="space-y-2">
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="block text-sm font-bold text-slate-700 ml-1">Confirm Password</label>
-                                    <span id="matchStatus" class="text-[10px] font-bold uppercase text-slate-400">Not Matched</span>
+                            <!-- Security -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider ml-1 leading-none mb-2">Temporary Password</label>
+                                    <div class="relative">
+                                        <input type="password" name="password" id="passwordInput" required placeholder="••••••••"
+                                            class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-medium text-gray-800 tracking-widest transition-all focus:ring-2 focus:ring-red-500/20 focus:border-red-400 focus:bg-white pr-14 text-sm">
+                                        <button type="button" onclick="toggleVisibility('passwordInput', 'eyeIcon1')"
+                                            class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                                            <svg id="eyeIcon1" fill="none" class="size-5" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="mt-2 px-2">
+                                        <div class="flex h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1.5">
+                                            <div id="strengthBar" class="w-0 transition-all duration-500 ease-out"></div>
+                                        </div>
+                                        <p id="strengthText" class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Security Strength</p>
+                                    </div>
                                 </div>
-                                <div class="relative">
-                                    <input type="password" id="confirmPasswordInput" required placeholder="••••••••"
-                                        class="w-full px-5 py-3.5 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all bg-slate-50 focus:bg-white text-base font-medium pr-12">
-                                    <button type="button" onclick="toggleVisibility('confirmPasswordInput', 'eyeIcon2')"
-                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-black transition-colors focus:outline-none">
-                                        <svg id="eyeIcon2" fill="none" class="w-5 h-5" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                <p class="text-[11px] text-slate-500 italic mt-2">Notice: Match the password above.</p>
-                            </div>
-                        </div>
 
-                        <div class="pt-6 flex gap-4">
-                            <button type="button"
-                                onclick="closeModalWithCheck('registrationModal', 'regForm')"
-                                class=" card-style flex-1 px-6 py-4 border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-100 transition font-bold uppercase tracking-widest text-xs">
-                                Cancel
-                            </button>
-                            <button type="submit" id="submitBtn" disabled
-                                class=" card-style flex-1 px-6 py-4 bg-red-500 hover:bg-red-700 text-white rounded-2xl cursor-not-allowed transition font-bold uppercase tracking-widest text-xs">
-                                Create Account
-                            </button>
+                                <div>
+                                    <div class="flex justify-between items-center mb-2 px-1">
+                                        <label class="text-xs font-bold text-gray-600 uppercase tracking-wider ml-1 leading-none">Verify State</label>
+                                        <span id="matchStatus" class="text-[10px] font-bold uppercase text-gray-400">Not Matched</span>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="password" id="confirmPasswordInput" required placeholder="••••••••"
+                                            class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-medium text-gray-800 tracking-widest transition-all focus:ring-2 focus:ring-red-500/20 focus:border-red-400 focus:bg-white pr-14 text-sm">
+                                        <button type="button" onclick="toggleVisibility('confirmPasswordInput', 'eyeIcon2')"
+                                            class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                                            <svg id="eyeIcon2" fill="none" class="size-5" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-6 flex gap-4">
+                                <button type="button" onclick="closeModalWithCheck('registrationModal', 'regForm')"
+                                    class="flex-1 px-8 py-4 border-2 border-gray-100 text-gray-500 rounded-2xl hover:border-gray-200 hover:text-gray-900 transition-all font-black uppercase tracking-widest text-[10px] active:scale-95">
+                                    Discard
+                                </button>
+                                <button type="submit" id="submitBtn" disabled
+                                    class="flex-1 px-8 py-4 bg-red-600 hover:bg-gray-900 text-white rounded-2xl cursor-not-allowed transition-all font-black uppercase tracking-widest text-[10px] active:scale-95 shadow-lg shadow-red-100">
+                                    Finalize Entry
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -634,8 +734,8 @@ function getInitials($name)
             <?php include '../include/toast.php'; ?>
 
             <!-- Discard Changes Modal -->
-            <div id="discardModal"
-                class="fixed inset-0 z-[1000] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+            <div id="discardModal" style="z-index: 9999;"
+                class="fixed inset-0 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
                 <div class="absolute inset-0 bg-black/50"></div>
 
                 <div class="relative bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden transform transition-all p-8 text-center border border-gray-100">
@@ -647,16 +747,21 @@ function getInitials($name)
                         </svg>
                     </div>
                     <h3 class="text-xl font-black text-gray-900 tracking-tight mb-2">Unsaved Changes</h3>
-                    <p class="text-sm font-medium text-gray-500 mb-8 leading-relaxed">Mayroon kang mga sinimulang ilagay. Sigurado ka ba na gusto mong i-discard ang mga changes na ito?</p>
+                    <p class="text-sm font-medium text-gray-500 mb-8 leading-relaxed">You have unsaved changes. Are you sure you want to discard them?</p>
                     <div class="flex gap-3">
                         <button type="button" onclick="closeModal('discardModal')"
                             class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Keep Editing</button>
-                        <button type="button" id="confirmDiscardBtn"
+                        <button type="button" id="confirmDiscardBtn" onclick="confirmDiscardAction()"
                             class="flex-1 py-4 bg-red-500 rounded-2xl font-black text-white hover:bg-gray-900 shadow-lg shadow-red-100 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
                     </div>
                 </div>
             </div>
 
+            <script>
+                document.getElementById('generateFullReportBtn')?.addEventListener('click', () => {
+                    window.location.href = '../include/reports.ctrl.php?action=generate_full_report';
+                });
+            </script>
 </body>
 
 </html>

@@ -34,7 +34,8 @@ if (isset($_SESSION['user_id'])) {
     $topProducts = get_top_performing_products($pdo, 5, 'this_month');
     $categoryData = get_category_distribution($pdo);
     $revenueStats = get_revenue_stats($pdo);
-    $orderSummary = get_order_status_summary($pdo);
+    $srLogs       = get_sr_stock_logs($pdo, 3);
+    $whLogs       = get_wh_stock_logs($pdo, 3);
     $pendingRequests = get_pending_order_requests($pdo, 5);
 } else {
     header("Location: ../../public/index.php");
@@ -60,19 +61,19 @@ if (isset($_SESSION['user_id'])) {
 
 
     <style>
-        /* Shrink entire UI by 10% */
-        html {
+        /* Shrink entire UI by 10% - Removed for native zoom support */
+        /* html {
             zoom: 90%;
-        }
+        } */
     </style>
 
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-[100px]">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
     <header
-        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white container">
+        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto px-4 md:px-8">
 
-        <div class="flex container">
+        <div class="flex flex-1">
             <a href="../-admin/dashboard-page.php" class=" flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
@@ -93,7 +94,7 @@ if (isset($_SESSION['user_id'])) {
             <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
-                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                     <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -102,6 +103,14 @@ if (isset($_SESSION['user_id'])) {
                 </button>
             </div>
             <?php include '../include/sidebar-notif.php'; ?>
+
+            <!-- Reports Shortcut -->
+            <a href="../-admin/rep-generation.php" title="View Reports"
+                class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95 group">
+                <svg class="size-5 text-red-500 group-hover:scale-110 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+            </a>
 
             <!-- Settings -->
             <a href="../-admin/settings.php"
@@ -126,7 +135,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </header>
 
-    <section class="px-6 py-4">
+    <section class="w-full max-w-7xl mx-auto px-4 md:px-6 py-4">
         <?php
         render_admin_stats_cards([
             [
@@ -145,12 +154,18 @@ if (isset($_SESSION['user_id'])) {
                 'subtext' => 'Awaiting Review',
                 'isCritical' => true,
                 'animate' => true
+            ],
+            [
+                'label' => 'Total Sales Revenue',
+                'value' => '₱' . number_format((float)$revenueStats['total'], 2),
+                'subtext' => 'Performance: ₱' . number_format((float)$revenueStats['monthly'], 2) . ' this month',
+                'indicator' => '<span class="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>'
             ]
-        ]);
+        ], 4, 300);
         ?>
     </section>
 
-    <nav class="px-5 flex justify-center">
+    <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">
         <div class="max-w-7xl w-full">
             <ul class="grid grid-cols-4 bg-gray-100 rounded-3xl h-12 shadow-sm px-5 items-center gap-2">
 
@@ -202,7 +217,7 @@ if (isset($_SESSION['user_id'])) {
                         class="flex items-center justify-center gap-2 h-10 px-4 text-red-600 font-semibold border-b-2 border-red-600">
                         <svg class="w-5 h-5 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none"
                             viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025  
                                 4.242 0 1.172 1.025 1.172 2.687 0 
                                 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 
                                 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 
@@ -231,8 +246,8 @@ if (isset($_SESSION['user_id'])) {
     </nav>
 
     <!-- Reports and analytics Main Section -->
-    <div class="flex justify-center w-full">
-        <div class="border border-gray-300 rounded-2xl p-12 w-full max-w-312.5 bg-white">
+    <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6 pb-12">
+        <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full bg-white">
 
             <div>
                 <h2 class="text-2xl font-semibold mb-2">Reports and Analytics</h2>
@@ -319,51 +334,38 @@ if (isset($_SESSION['user_id'])) {
                             </div>
                         </div>
 
-                        <!-- Filters Container -->
-                        <div class="flex flex-wrap items-center gap-4">
-                            <!-- Date Range -->
-                            <div class="flex items-center gap-3 bg-white border border-gray-200 rounded-2xl p-1.5 shadow-sm">
-                                <div class="flex flex-col px-3">
-                                    <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Start Date</span>
-                                    <input type="date" id="reportStartDate" onchange="fetchOrdersReport()" 
-                                        class="text-[11px] font-bold text-gray-800 outline-none bg-transparent">
-                                </div>
-                                <div class="w-px h-8 bg-gray-100"></div>
-                                <div class="flex flex-col px-3">
-                                    <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">End Date</span>
-                                    <input type="date" id="reportEndDate" onchange="fetchOrdersReport()" 
-                                        class="text-[11px] font-bold text-gray-800 outline-none bg-transparent">
+                        <!-- Transaction History Filter Bar (Exact SR Design Match) -->
+                        <div class="flex flex-wrap items-end gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">From</label>
+                                <input type="date" id="reportStartDate" onchange="fetchOrdersReport()" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
+                            </div>
+
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">To</label>
+                                <input type="date" id="reportEndDate" onchange="fetchOrdersReport()" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
+                            </div>
+
+                            <div class="flex flex-col gap-1 min-w-[200px]">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Filter</label>
+                                <div class="relative group">
+                                    <select id="combinedTxnFilter" onchange="fetchOrdersReport()" class="w-full h-10 appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-widest text-gray-700 outline-none focus:border-red-500 transition-all cursor-pointer">
+                                        <option value="All">All Clients</option>
+                                        <option value="Government">Government</option>
+                                        <option value="Private">Private</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 group-hover:text-red-500 transition-colors">
+                                        <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path d="M19 9l-7 7-7-7" stroke-width="3" />
+                                        </svg>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Status Filter -->
-                            <div class="relative min-w-44 group">
-                                <select id="txnStatusFilter" onchange="fetchOrdersReport()"
-                                    class="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-widest text-gray-700 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-50 transition-all cursor-pointer shadow-sm">
-                                    <option value="All">All Status</option>
-                                    <option value="Success">Success</option>
-                                    <option value="Ongoing">Ongoing</option>
-                                </select>
-                                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400 group-hover:text-red-500 transition-colors">
-                                    <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path d="M19 9l-7 7-7-7" stroke-width="3" />
-                                    </svg>
-                                </div>
-                            </div>
-
-                            <!-- Payment Type Filter -->
-                            <div class="relative min-w-44 group">
-                                <select id="txnPlanFilter" onchange="fetchOrdersReport()"
-                                    class="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-black uppercase tracking-widest text-gray-700 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-50 transition-all cursor-pointer shadow-sm">
-                                    <option value="All">All Plans</option>
-                                    <option value="Full">Full Payment</option>
-                                    <option value="Installment">Installment</option>
-                                </select>
-                                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400 group-hover:text-red-500 transition-colors">
-                                    <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path d="M19 9l-7 7-7-7" stroke-width="3" />
-                                    </svg>
-                                </div>
+                            <div class="flex gap-2">
+                                <a href="javascript:void(0)" onclick="resetAdminFilters()" class="h-10 px-6 bg-red-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95 flex items-center shadow-lg shadow-red-100">
+                                    Reset
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -396,50 +398,95 @@ if (isset($_SESSION['user_id'])) {
             </div>
 
             <div class="flex flex-col lg:flex-row gap-6 w-full mt-6">
-                <!-- Total Revenue (35% Width) -->
-                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between" style="width: 35%;">
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-6">
-                        <h3 class="font-bold text-gray-700 uppercase text-sm tracking-widest text-red-600">Total Sales Revenue</h3>
+                 <!-- Showroom (SR) Logs Card -->
+                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col flex-1">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
+                        <h3 class="font-bold text-gray-700 uppercase text-[10px] tracking-[0.2em] flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Showroom (SR) Activity
+                        </h3>
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Recent 3 Logs</span>
                     </div>
-                    <div class="text-center py-4">
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Year To Date (Overall)</p>
-                        <p class="text-3xl font-black text-red-600">₱<?= number_format($revenueStats['total'], 2) ?></p>
-                        <div class="w-full border-t border-dashed border-gray-200 my-6"></div>
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">This Month Performance</p>
-                        <p class="text-3xl font-black text-red-500">₱<?= number_format($revenueStats['monthly'], 2) ?></p>
-                    </div>
-                </div>
 
-                <!-- Sales Order Status (65% Width) -->
-                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm" style="width: 65%;">
-                    <h3 class="font-bold text-gray-700 uppercase text-sm tracking-widest border-b border-gray-100 pb-3 mb-4">Sales Order Status</h3>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
+                        <table class="w-full text-left text-xs border-collapse">
                             <thead>
-                                <tr class="text-gray-400 font-bold border-b border-gray-50">
-                                    <th class="py-4 w-1/3">Source</th>
-                                    <th class="py-4 text-center w-1/6">Confirmed</th>
-                                    <th class="py-4 text-center w-1/6">Partial</th>
-                                    <th class="py-4 text-center w-1/6">Shipped</th>
-                                    <th class="py-4 text-center w-1/6">Delivered</th>
+                                <tr class="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                                    <th class="pb-2 w-[45%]">Item / Variant</th>
+                                    <th class="pb-2 text-center w-[20%]">Prod Code</th>
+                                    <th class="pb-2 text-center w-[15%]">Qty</th>
+                                    <th class="pb-2 text-right w-[20%]">Time</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-50">
-                                <?php if (!empty($orderSummary)): ?>
-                                    <?php foreach ($orderSummary as $row): ?>
-                                        <tr class="text-gray-600 font-medium hover:bg-slate-50 transition">
-                                            <td class="py-4 font-bold text-gray-800">
-                                                <?= $row['source_role'] === 'admin' ? 'Showroom POS' : 'Online / Showroom' ?>
+                                <?php if (!empty($srLogs)): ?>
+                                    <?php foreach ($srLogs as $log): ?>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="py-2.5">
+                                                <span class="font-bold text-gray-800 text-sm line-clamp-1"><?= htmlspecialchars($log['product_name']) ?></span>
+                                                <span class="text-[9px] text-gray-400 font-medium uppercase tracking-tighter"><?= htmlspecialchars($log['variant_name'] ?: 'Standard') ?></span>
                                             </td>
-                                            <td class="py-4 text-center font-bold text-blue-600"><?= (int)$row['approved'] ?></td>
-                                            <td class="py-4 text-center font-bold text-orange-400"><?= (int)$row['partial'] ?></td>
-                                            <td class="py-4 text-center font-bold text-blue-400"><?= (int)$row['shipped'] ?></td>
-                                            <td class="py-4 text-center font-bold text-green-500"><?= (int)$row['delivered'] ?></td>
+                                            <td class="py-2.5 text-center">
+                                                <span class="text-[9px] font-bold text-gray-800 uppercase tracking-[0.1em] px-2 py-1 bg-gray-100/80 rounded border border-gray-200"><?= htmlspecialchars($log['prod_code'] ?? 'N/A') ?></span>
+                                            </td>
+                                            <td class="py-2.5 text-center font-black <?= (int)$log['qty'] < 0 ? 'text-red-500' : 'text-green-500' ?>">
+                                                <?= ($log['qty'] > 0 ? '+' : '') . (int)$log['qty'] ?>
+                                            </td>
+                                            <td class="py-2.5 text-right whitespace-nowrap text-gray-400 text-[10px] italic">
+                                                <?= date('M d, H:i', strtotime($log['log_date'])) ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="5" class="py-8 text-center text-gray-400 italic">No order status data recorded</td>
+                                        <td colspan="3" class="py-6 text-center text-gray-300 italic">No recent SR activity</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Warehouse (WH) Logs Card -->
+                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col flex-1">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
+                        <h3 class="font-bold text-gray-700 uppercase text-[10px] tracking-[0.2em] flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Warehouse (WH) Activity
+                        </h3>
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Recent 3 Logs</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                                    <th class="pb-2 w-[45%]">Item / Variant</th>
+                                    <th class="pb-2 text-center w-[20%]">Prod Code</th>
+                                    <th class="pb-2 text-center w-[15%]">Qty</th>
+                                    <th class="pb-2 text-right w-[20%]">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                <?php if (!empty($whLogs)): ?>
+                                    <?php foreach ($whLogs as $log): ?>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="py-2.5">
+                                                <span class="font-bold text-gray-800 text-sm line-clamp-1"><?= htmlspecialchars($log['product_name']) ?></span>
+                                                <span class="text-[9px] text-gray-400 font-medium uppercase tracking-tighter"><?= htmlspecialchars($log['variant_name'] ?: 'Standard') ?></span>
+                                            </td>
+                                            <td class="py-2.5 text-center">
+                                                <span class="text-[9px] font-bold text-gray-800 uppercase tracking-[0.1em] px-2 py-1 bg-gray-100/80 rounded border border-gray-200"><?= htmlspecialchars($log['prod_code'] ?? 'N/A') ?></span>
+                                            </td>
+                                            <td class="py-2.5 text-center font-black <?= (int)$log['qty'] < 0 ? 'text-red-500' : 'text-green-500' ?>">
+                                                <?= ($log['qty'] > 0 ? '+' : '') . (int)$log['qty'] ?>
+                                            </td>
+                                            <td class="py-2.5 text-right whitespace-nowrap text-gray-400 text-[10px] italic">
+                                                <?= date('M d, H:i', strtotime($log['log_date'])) ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="3" class="py-6 text-center text-gray-300 italic">No recent WH activity</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -619,16 +666,22 @@ if (isset($_SESSION['user_id'])) {
                 fetchOrdersReport();
             };
 
+            window.resetAdminFilters = function() {
+                document.getElementById('reportStartDate').value = '';
+                document.getElementById('reportEndDate').value = '';
+                document.getElementById('combinedTxnFilter').value = 'All';
+                fetchOrdersReport();
+            };
+
             window.fetchOrdersReport = function() {
                 const content = document.getElementById('ordersReportContent');
                 const start = document.getElementById('reportStartDate').value;
                 const end = document.getElementById('reportEndDate').value;
-                const status = document.getElementById('txnStatusFilter')?.value || 'All';
-                const plan = document.getElementById('txnPlanFilter')?.value || 'All';
-                
+                const client = document.getElementById('combinedTxnFilter')?.value || 'All';
+
                 content.innerHTML = `<tr><td colspan="8" class="py-20 text-center"><div class="flex flex-col items-center gap-2"><div class="size-8 border-4 border-gray-100 border-t-red-600 rounded-full animate-spin"></div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading transactions...</p></div></td></tr>`;
 
-                fetch(`../include/inc.admin/admin.ctrl.php?action=get_report_sales&status=${status}&plan=${plan}&start=${start}&end=${end}`)
+                fetch(`../include/inc.admin/admin.ctrl.php?action=get_report_sales&client=${client}&start=${start}&end=${end}`)
                     .then(res => res.json())
                     .then(response => {
                         if (response.success) {
@@ -907,7 +960,7 @@ if (isset($_SESSION['user_id'])) {
                         .then(res => {
                             if (res.success && res.data) {
                                 if (res.data.length === 0) {
-                                    container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic uppercase">Walang data sa period na ito</div>`;
+                                    container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic uppercase">No data for this period</div>`;
                                     return;
                                 }
                                 container.innerHTML = res.data.map(tp => {

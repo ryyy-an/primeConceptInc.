@@ -47,19 +47,19 @@ $pendingSR = $stats['pending_sr'];
     <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
 
     <style>
-        /* Shrink entire UI by 10% */
-        html {
+        /* Shrink entire UI by 10% - Removed for native zoom support */
+        /* html {
             zoom: 90%;
-        }
+        } */
     </style>
 
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-[100px]">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
     <header
-        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white container">
+        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto">
 
-        <div class="flex container">
+        <div class="flex flex-1">
             <a href="../-warehouse/dashboard-page.php" class="flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
@@ -81,7 +81,7 @@ $pendingSR = $stats['pending_sr'];
             </div>
 
             <button id="notifButton"
-                class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition">
+                class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -104,8 +104,8 @@ $pendingSR = $stats['pending_sr'];
         </div>
     </header>
 
-    <section class="px-6 py-4">
-        <div class="grid grid-cols-[repeat(4,300px)] justify-center gap-5">
+    <section class="w-full max-w-7xl mx-auto px-6 py-4">
+        <div class="grid grid-cols-4 justify-center gap-4">
             <!-- Card 1 -->
             <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[150px] p-6">
                 <div class="text-sm uppercase tracking-wide text-gray-500">Available Products</div>
@@ -193,8 +193,8 @@ $pendingSR = $stats['pending_sr'];
     </nav>
 
 
-    <section class="flex flex-center w-full">
-        <div class="border border-gray-300 rounded-2xl p-12 gap w-[1250px]">
+    <section class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
+        <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full">
             <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
                 <div>
                     <h2 class="text-2xl font-semibold mb-2">Warehouse Inventory Overview</h2>
@@ -231,15 +231,26 @@ $pendingSR = $stats['pending_sr'];
                             data-code="<?= htmlspecialchars($item['code']) ?>" data-wh="<?= $item['total_wh'] ?>"
                             data-sr="<?= $item['total_sr'] ?>">
 
+                            <?php
+                            $anyOOS = false;
+                            $anyLow = false;
+                            foreach ($item['variants'] as $v) {
+                                if ($v['wh'] === 0) $anyOOS = true;
+                                elseif ($v['wh'] <= $v['buildable']) $anyLow = true;
+                            }
+                            ?>
                             <div class="relative">
-                                <div class="absolute inset-x-0 top-0 flex justify-between items-start z-10 pointer-events-none">
-                                    <?php if ((int) $item['total_wh'] <= 5): ?>
+                                <div class="absolute inset-x-0 top-0 flex justify-between items-start z-10 pointer-events-none p-2">
+                                    <?php if ($anyOOS): ?>
                                         <span
-                                            class="bg-red-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm pointer-events-auto">
+                                            class="bg-red-600 text-white text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-tighter shadow-xl shadow-red-500/20 pointer-events-auto">
+                                            Out of Stock
+                                        </span>
+                                    <?php elseif ($anyLow): ?>
+                                        <span
+                                            class="bg-amber-500 text-white text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-tighter shadow-xl shadow-amber-500/20 pointer-events-auto">
                                             Low Stock
                                         </span>
-                                    <?php else: ?>
-                                        <div></div>
                                     <?php endif; ?>
                                 </div>
 
@@ -285,12 +296,19 @@ $pendingSR = $stats['pending_sr'];
                                     <h3
                                         class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-50 pb-1">
                                         Inventory Per Variant</h3>
-                                    <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                                        <?php foreach ($item['variants'] as $v): ?>
+                                    <div class="flex flex-wrap gap-2 pt-1">
+                                        <?php foreach ($item['variants'] as $v): 
+                                            $vQty = (int)$v['wh'];
+                                            $vMin = (int)$v['buildable'];
+                                            $dotClass = "bg-green-500";
+                                            if ($vQty === 0) $dotClass = "bg-red-600 animate-pulse";
+                                            elseif ($vQty <= $vMin) $dotClass = "bg-amber-500";
+                                        ?>
                                             <div
-                                                class="shrink-0 w-15 bg-gray-50 p-2 rounded-lg border border-gray-100 hover:bg-white transition-colors">
-                                                <p class="text-[9px] font-bold text-gray-600 truncate">
-                                                    <?= htmlspecialchars($v['name']) ?>: <?= $v['wh'] ?>
+                                                class="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-100 hover:border-gray-200 transition-colors">
+                                                <div class="size-1.5 rounded-full <?= $dotClass ?>"></div>
+                                                <p class="text-[9px] font-black text-slate-600 truncate uppercase tracking-tighter">
+                                                    <?= htmlspecialchars($v['name']) ?>: <span class="text-slate-900"><?= $vQty ?></span>
                                                 </p>
                                             </div>
                                         <?php endforeach; ?>

@@ -133,20 +133,16 @@ let isMatchValid = false;
  * Enables/Disables the Create Account button
  */
 function validateForm() {
+  if (!submitBtn) return;
+  
   if (isUsernameValid && isNameValid && isPasswordValid && isMatchValid) {
     submitBtn.disabled = false;
-    if (submitBtn.classList.contains("bg-red-200")) {
-      submitBtn.classList.replace("bg-red-200", "bg-red-600");
-    }
-    submitBtn.classList.remove("cursor-not-allowed");
-    submitBtn.classList.add("shadow-lg", "shadow-red-100");
+    submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    submitBtn.classList.add("shadow-lg", "shadow-red-100", "hover:bg-gray-900");
   } else {
     submitBtn.disabled = true;
-    if (submitBtn.classList.contains("bg-red-600")) {
-      submitBtn.classList.replace("bg-red-600", "bg-red-200");
-    }
-    submitBtn.classList.add("cursor-not-allowed");
-    submitBtn.classList.remove("shadow-lg", "shadow-red-100");
+    submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+    submitBtn.classList.remove("shadow-lg", "shadow-red-100", "hover:bg-gray-900");
   }
 }
 
@@ -158,13 +154,19 @@ window.toggleModal = function (modalId) {
   if (!modal) return;
   const container = modal.querySelector("div");
 
-  if (modal.classList.contains("opacity-0")) {
+  const isHidden = modal.classList.contains("opacity-0") || modal.classList.contains("pointer-events-none");
+
+  if (isHidden) {
+    // Opening
     modal.classList.remove("opacity-0", "pointer-events-none");
+    modal.classList.add("opacity-100", "pointer-events-auto");
     if (container) {
       container.classList.remove("scale-95");
       container.classList.add("scale-100");
     }
   } else {
+    // Closing
+    modal.classList.remove("opacity-100", "pointer-events-auto");
     modal.classList.add("opacity-0", "pointer-events-none");
     if (container) {
       container.classList.remove("scale-100");
@@ -172,6 +174,48 @@ window.toggleModal = function (modalId) {
     }
   }
 };
+
+/**
+ * MODAL CLOSE WITH UNSAVED CHANGES CHECK
+ */
+window.formHasUnsavedChanges = false;
+let pendingModalToClose = null;
+let pendingFormToReset = null;
+
+window.closeModalWithCheck = function(modalId, formId) {
+    if (window.formHasUnsavedChanges) {
+        pendingModalToClose = modalId;
+        pendingFormToReset = formId;
+        toggleModal('discardModal');
+    } else {
+        closeModalForce(modalId, formId);
+    }
+}
+
+window.closeModalForce = function(modalId, formId) {
+    try {
+        if (formId) {
+            const form = document.getElementById(formId);
+            if (form) form.reset();
+        }
+    } catch (e) {
+        console.error("Reset error intercepted:", e);
+    } finally {
+        window.formHasUnsavedChanges = false;
+        toggleModal(modalId);
+    }
+}
+
+window.closeModal = function(modalId) {
+    toggleModal(modalId);
+}
+
+window.confirmDiscardAction = function() {
+    toggleModal('discardModal');
+    if (pendingModalToClose) {
+        closeModalForce(pendingModalToClose, pendingFormToReset);
+    }
+}
 
 /**
  * PASSWORD VISIBILITY TOGGLE (Registration)
@@ -233,16 +277,30 @@ window.confirmDelete = function (userId) {
   toggleModal("deleteModal");
 };
 
-window.openResetModal = function (userId, fullName) {
+window.openResetModal = function (userId, fullName, username) {
   const idInput = document.getElementById("reset_user_id_input");
   const nameLabel = document.getElementById("reset_user_display_name");
+  const usernameInput = document.getElementById("reset_username_input");
+
   if (idInput) idInput.value = userId;
   if (nameLabel) nameLabel.innerText = fullName;
+  if (usernameInput) {
+    usernameInput.value = username;
+    usernameInput.readOnly = true;
+    usernameInput.classList.add("cursor-not-allowed", "text-gray-500", "bg-gray-50");
+    usernameInput.classList.remove("text-gray-900", "bg-white");
+  }
 
   const passInput = document.querySelector(
     '#resetModal input[name="new_password"]',
   );
+  const confirmInput = document.getElementById("confirm_password");
   if (passInput) passInput.value = "";
+  if (confirmInput) confirmInput.value = "";
+
+  // Reset Edit Button if exists
+  const editBtn = document.getElementById("editUsernameBtn");
+  if (editBtn) editBtn.classList.remove("bg-amber-600", "text-white");
 
   toggleModal("resetModal");
 };
@@ -259,12 +317,17 @@ function fetchOnlineStatus() {
         const text = document.getElementById(`status-text-${user.id}`);
 
         if (dot && text) {
+          const container = dot.parentElement;
           if (user.is_online == 1) {
-            dot.className = "size-2 rounded-full bg-green-500 animate-pulse";
-            text.innerText = "Online";
+            if (container) container.className = "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50/50 border border-green-100";
+            dot.className = "size-1.5 rounded-full bg-green-500 animate-pulse";
+            text.className = "text-[9px] font-black text-green-600 uppercase";
+            text.innerText = "Live";
           } else {
-            dot.className = "size-2 rounded-full bg-gray-300";
-            text.innerText = "Offline";
+            if (container) container.className = "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-50/50 border border-gray-100";
+            dot.className = "size-1.5 rounded-full bg-gray-300";
+            text.className = "text-[9px] font-black text-gray-400 uppercase";
+            text.innerText = "Off";
           }
         }
       });

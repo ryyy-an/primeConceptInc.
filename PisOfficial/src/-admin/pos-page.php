@@ -46,19 +46,19 @@ if (isset($_SESSION['user_id'])) {
 
 
     <style>
-        /* Shrink entire UI by 10% */
-        html {
+        /* Shrink entire UI by 10% - Removed for native zoom support */
+        /* html {
             zoom: 90%;
-        }
+        } */
     </style>
 
 </head>
 
-<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-25">
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-4 md:px-8">
     <header
-        class="sticky top-0 z-40 flex h-25 items-center justify-between border-b border-gray-200 px-6 bg-white container">
+        class="sticky top-0 z-40 flex h-25 items-center justify-between border-b border-gray-200 px-6 bg-white w-full max-w-7xl mx-auto px-4 md:px-8">
 
-        <div class="flex container">
+        <div class="flex flex-1">
             <a href="../-admin/dashboard-page.php" class=" flex items-center gap-4">
                 <div class="h-full w-20">
                     <img src="../../public/assets/img/favIcon.png" alt="Prime Concept Logo"
@@ -80,7 +80,7 @@ if (isset($_SESSION['user_id'])) {
             <!-- Notifications (Icon Only) -->
             <div class="relative inline-block">
                 <button id="notifButton"
-                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    class="relative overflow-visible flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
                     <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -89,6 +89,14 @@ if (isset($_SESSION['user_id'])) {
                 </button>
             </div>
             <?php include '../include/sidebar-notif.php'; ?>
+
+            <!-- Reports Shortcut -->
+            <a href="../-admin/rep-generation.php" title="View Reports"
+                class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95 group">
+                <svg class="size-5 text-red-500 group-hover:scale-110 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+            </a>
 
             <!-- Settings -->
             <a href="../-admin/settings.php"
@@ -113,7 +121,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </header>
 
-    <section class="px-6 py-4">
+    <section class="w-full max-w-7xl mx-auto px-4 md:px-8 py-4">
         <?php
         render_admin_stats_cards([
             [
@@ -137,7 +145,7 @@ if (isset($_SESSION['user_id'])) {
         ?>
     </section>
 
-    <nav class="px-5 flex justify-center">
+    <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">
         <div class="max-w-7xl w-full">
             <ul class="grid grid-cols-4 bg-gray-100 rounded-3xl h-12 shadow-sm px-5 items-center gap-2">
 
@@ -183,8 +191,8 @@ if (isset($_SESSION['user_id'])) {
                         class="flex items-center justify-center gap-2 h-10 px-4 text-gray-700 font-medium hover:text-red-600 transition">
                         <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none"
                             viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 
-                                4.242 0 1.172 1.025 1.172 2.687 0 
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025  
+                                4.242 0 1.172 1.025 1.172 2.687 0  
                                 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 
                                 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 
                                 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
@@ -220,8 +228,8 @@ if (isset($_SESSION['user_id'])) {
         $totalCartItems = count($cartItems);
         ?>
 
-        <div class="flex flex-center w-full">
-            <div class="flex-center bg-gray-100 rounded-3xl px-1 py-1 gap-5 shadow-sm w-312.5">
+        <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-center bg-gray-100 rounded-3xl px-1 py-1 gap-5 shadow-sm w-full">
                 <!-- Product Catalog Tab -->
                 <button onclick="refreshAndShowTab(0)" id="tabBtn0"
                     class="w-full flex-center h-10 gap-2 px-4 rounded-3xl bg-white border border-gray-300 text-red-600 font-semibold hover:bg-red-100 transition">
@@ -289,8 +297,8 @@ if (isset($_SESSION['user_id'])) {
 
 
         <!-- Catalog -->
-        <div class="flex flex-center w-full">
-            <div class="border border-gray-300 rounded-2xl p-12 gap w-312.5">
+        <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6 pb-12">
+            <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full bg-white">
 
                 <div id="tabContent0">
                     <h2 class="text-2xl font-semibold mb-2">Product Catalog</h2>
@@ -1223,7 +1231,7 @@ if (isset($_SESSION['user_id'])) {
                 </svg>
             </div>
             <h3 class="text-xl font-black text-gray-900 tracking-tight mb-2">Unsaved Changes</h3>
-            <p class="text-sm font-medium text-gray-500 mb-8 leading-relaxed">Mayroon kang mga sinimulang ilagay. Sigurado ka ba na gusto mong i-discard ang mga changes na ito?</p>
+            <p class="text-sm font-medium text-gray-500 mb-8 leading-relaxed">You have unsaved changes. Are you sure you want to discard them?</p>
             <div class="flex gap-3">
                 <button type="button" onclick="closeModal('discardModal')"
                     class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Keep Editing</button>

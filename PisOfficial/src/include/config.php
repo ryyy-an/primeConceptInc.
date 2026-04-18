@@ -2,10 +2,10 @@
 if (session_status() === PHP_SESSION_NONE) {
     // Only set these if no session has started yet
     ini_set('session.use_only_cookies', 1);
-    ini_set('session.use_strict_mode', 1);
+    ini_set('session.gc_maxlifetime', 86400); // 1 Day on the server
 
     session_set_cookie_params([
-        'lifetime' => 1800,
+        'lifetime' => 86400, // 1 Day on the browser
         'path' => '/',
         'secure' => true,
         'httponly' => true,

@@ -182,7 +182,7 @@ function process_showroom_finalize_order(PDO $pdo, array $data): array
                     ->execute([$vId, $prodId, "Showroom Sale (Finalized Request #$orderId)", -$neededQty]);
             } else {
                 // B. Warehouse Stock Locking & Validation (Recipe Based)
-                $stmtRecipe = $pdo->prepare("SELECT pc.id, pc.comp_id, pc.qty_needed 
+                $stmtRecipe = $pdo->prepare("SELECT pc.id, pc.qty_needed 
                                            FROM product_components pc 
                                            JOIN product_variant pv ON pc.prod_id = pv.prod_id 
                                            WHERE pv.id = ? AND pc.is_deleted = 0");

@@ -31,4 +31,32 @@ window.showToast = function(message, type = 'success') {
         if (overlay) overlay.classList.add('hidden');
     });
 };
+
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.has('success')) {
+        let msg = urlParams.get('success');
+        let displayMsg = "Operation successful";
+        if (msg === 'user_added') displayMsg = "Admin Account Generated Effectively!";
+        if (msg === 'user_deleted') displayMsg = "Account Successfully Revoked!";
+        if (msg === 'password_reset') displayMsg = "Security Key Successfully Reverified!";
+        if (msg === 'migration_complete') displayMsg = "Database Safely Reseeded!";
+        
+        showToast(displayMsg, 'success');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    if (urlParams.has('error')) {
+        let err = urlParams.get('error');
+        let displayErr = "An error occurred";
+        if (err === 'exists') displayErr = "Conflict: Record already exists!";
+        if (err === 'self_delete') displayErr = "Cannot delete your own active session!";
+        if (err === 'numeric_name') displayErr = "Failure: Full Name cannot contain numbers!";
+        if (err === 'invalid_input') displayErr = "Invalid parameters provided.";
+        
+        showToast(displayErr, 'error');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
 </script>

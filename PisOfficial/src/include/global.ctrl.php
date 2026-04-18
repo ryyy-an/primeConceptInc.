@@ -6,6 +6,9 @@ require_once 'config.php';
 require_once 'dbh.inc.php';
 require_once 'global.model.php';
 
+/** @var PDO $pdo */
+init_notifications_table($pdo);
+
 /**
  * Helper to standard JSON response.
  */
@@ -214,4 +217,17 @@ if ($action === 'mark_notifs_read') {
 
     mark_notifs_as_read($pdo, $userId, $role);
     sendJsonResponse(['success' => true]);
+}
+/**
+ * Clear All Notifications for the current user
+ */
+if ($action === 'clear_all_notifs') {
+    $userId = (int)($_SESSION['user_id'] ?? 0);
+    $role = $_SESSION['role'] ?? '';
+    if (!$userId || !$role) {
+        sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+    }
+
+    $success = clear_user_notifications($pdo, $userId, $role);
+    sendJsonResponse(['success' => $success]);
 }

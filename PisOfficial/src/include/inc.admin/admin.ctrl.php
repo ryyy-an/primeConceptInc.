@@ -31,7 +31,7 @@ $action = $_REQUEST['action'] ?? '';
 
 /**
  * --- SECTION A: AJAX / JSON ACTIONS ---
- * Ginagamit para sa data fetching at status updates (Walang page reload)
+ * Used for data fetching and status updates (No page reload)
  */
 
 // Fetch items for a specific request modal
@@ -99,8 +99,9 @@ if ($action === 'get_report_sales') {
     $end    = $_GET['end'] ?? null;
     $status = $_GET['status'] ?? 'All';
     $plan   = $_GET['plan'] ?? 'All';
+    $client = $_GET['client'] ?? 'All';
 
-    $data = get_sales_report_data($pdo, $start, $end, $status, $plan);
+    $data = get_sales_report_data($pdo, $start, $end, $status, $plan, $client);
     sendJsonResponse([
         'success' => true,
         'data' => $data
@@ -205,7 +206,7 @@ if ($action === 'get_table_schema') {
 
 /**
  * --- SECTION B: FORM ACTIONS (USER MANAGEMENT) ---
- * Ginagamit para sa mga forms na nag-re-redirect sa settings.php
+ * Used for forms that redirect to settings.php
  */
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !empty($action)) {

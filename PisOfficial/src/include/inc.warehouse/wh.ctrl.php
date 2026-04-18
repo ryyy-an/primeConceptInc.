@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once "../../include/config.php";
 require_once "../../include/dbh.inc.php";
 require_once "../../include/inc.warehouse/wh.model.php";
+require_once "../../include/global.model.php";
 
 header('Content-Type: application/json');
 
@@ -71,8 +72,8 @@ try {
                 if ($orderInfo && $orderInfo['created_by']) {
                     $creatorId = (int)$orderInfo['created_by'];
                     $whUserId = (int)$_SESSION['user_id'];
-                    $msg = "Order #$orderId has been fulfilled by Warehouse and is ready.";
-                    create_notification($pdo, $whUserId, 'Order Ready', $msg, 'result', $creatorId);
+                    $msg = "Order #$orderId has been fulfilled by the Warehouse.";
+                    create_notification($pdo, $whUserId, 'Order Fulfilled', $msg, 'result', $creatorId);
                 }
             }
             echo json_encode(['success' => $success]);
