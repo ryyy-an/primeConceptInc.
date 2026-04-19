@@ -268,10 +268,6 @@ async function updateItemStatus(newStatus) {
         const data = await response.json();
         if (data.success) {
             product.wh_item_status = newStatus;
-            if (typeof showToast === 'function') {
-                const msg = newStatus === 'ready' ? 'Product marked as ready' : 'Staging cancelled';
-                showToast(msg, 'success');
-            }
             selectProduct(selectedProductIndex);
         } else {
             if (typeof showToast === 'function') showToast(data.message || 'Verification failed', 'error');
@@ -299,6 +295,10 @@ function updateFulfillmentProgress() {
 
 async function fulfillOrderHandler() {
     if (!currentOrder) return;
+
+    // Disable all mouse interactions while processing
+    document.body.style.pointerEvents = 'none';
+
     try {
         const formData = new FormData();
         formData.append('action', 'fulfill_order');
@@ -310,21 +310,24 @@ async function fulfillOrderHandler() {
         });
         const data = await response.json();
         if (data.success) {
-            // Close the modal first
+            // Close the modal first, then re-enable mouse after transition
             closeFulfillmentModal();
 
             setTimeout(() => {
+                document.body.style.pointerEvents = '';
                 if (typeof showToast === 'function') {
                     showToast('Order fulfilled successfully', 'success');
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
                     window.location.reload();
                 }
-            }, 300); // Wait for modal transition
+            }, 350); // Wait for modal close transition (300ms) + buffer
         } else {
+            document.body.style.pointerEvents = '';
             if (typeof showToast === 'function') showToast(data.message || 'Fulfillment failed', 'error');
         }
     } catch (err) {
+        document.body.style.pointerEvents = '';
         console.error(err);
     }
 }

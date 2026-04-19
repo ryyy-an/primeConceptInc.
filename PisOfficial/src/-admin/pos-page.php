@@ -44,8 +44,8 @@ if (isset($_SESSION['user_id'])) {
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js?v=1.4.5" defer></script>
-    <script src="../../public/assets/js/order.js?v=1.4.5" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.4.7" defer></script>
+    <script src="../../public/assets/js/order.js?v=1.4.7" defer></script>
 
 
     <style>
@@ -1179,11 +1179,11 @@ if (isset($_SESSION['user_id'])) {
             </div>
             <div class="flex gap-3">
                 <button data-modal-close="customConfirmModal"
-                    class="flex-1 inline-flex justify-center rounded-xl border border-gray-200 shadow-sm px-4 py-3.5 bg-white text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-all uppercase tracking-widest text-[10px]">
+                    class="w-full inline-flex justify-center rounded-xl border border-gray-200 shadow-sm px-4 py-3.5 bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                     Cancel
                 </button>
                 <button id="customConfirmBtn"
-                    class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3.5 bg-red-600 text-sm font-bold text-white hover:bg-red-700 transition-all uppercase tracking-widest text-[10px]">
+                    class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3.5 bg-gray-900 text-sm font-bold text-white hover:bg-black transition-colors">
                     Proceed
                 </button>
             </div>

@@ -469,7 +469,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
     </div>
 
     <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
-    <script src="../../public/assets/js/warehouse-fulfillment.js" defer></script>
+    <script src="../../public/assets/js/warehouse-fulfillment.js?v=1.3" defer></script>
     <?php include '../include/logout-modal.php'; ?>
 </body>
 

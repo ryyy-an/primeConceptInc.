@@ -23,6 +23,34 @@ function sendJsonResponse(array $data, int $statusCode = 200)
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 /**
+ * Get Cart Count
+ */
+if ($action === 'get_cart_count') {
+    $userId = $_SESSION['user_id'] ?? null;
+    if (!$userId) {
+        sendJsonResponse(['success' => false, 'count' => 0]);
+    }
+    
+    try {
+        $stmt = $pdo->prepare("SELECT SUM(qty) as count FROM cart WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $count = (int)$stmt->fetchColumn();
+        // Fallback: If they want count of distinct items instead of sum of quantity:
+        // $stmt = $pdo->prepare("SELECT COUNT(*) FROM cart WHERE user_id = ?");
+        
+        // Wait! Let's check how $totalCartItems is calculated in home-page.php.
+        // It does: count($cartItems) which means it's the number of distinct rows, NOT the sum of quantities!
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM cart WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $count = (int)$stmt->fetchColumn();
+        
+        sendJsonResponse(['success' => true, 'count' => $count]);
+    } catch (PDOException $e) {
+        sendJsonResponse(['success' => false, 'count' => 0]);
+    }
+}
+
+/**
  * Add To Cart
  */
 if ($action === 'add_to_cart') {
@@ -38,14 +66,26 @@ if ($action === 'add_to_cart') {
         sendJsonResponse(['success' => false, 'message' => 'Invalid parameters']);
     }
 
-    $success = add_to_cart($pdo, (int)$userId, $variantId, $qty, $source);
-    if ($success) {
+    $result = add_to_cart($pdo, (int)$userId, $variantId, $qty, $source);
+    if ($result['success']) {
         sendJsonResponse(['success' => true]);
     } else {
-        sendJsonResponse([
-            'success' => false, 
-            'message' => 'Cannot add item. You already have some in your cart, and adding more would exceed the available stock.'
-        ]);
+        $reason = $result['reason'] ?? 'unknown';
+        if ($reason === 'no_stock') {
+            $msg = 'No available stock for this item from the selected source.';
+        } elseif ($reason === 'exceeds_stock') {
+            $available = $result['available'] ?? 0;
+            $inCart    = $result['in_cart'] ?? 0;
+            $remaining = max(0, $available - $inCart);
+            if ($inCart > 0) {
+                $msg = "You already have {$inCart} of this item in your cart. Only {$remaining} more can be added (available: {$available}).";
+            } else {
+                $msg = "Cannot add {$qty} item(s). Only {$available} available in stock.";
+            }
+        } else {
+            $msg = 'Failed to add item to cart. Please try again.';
+        }
+        sendJsonResponse(['success' => false, 'message' => $msg]);
     }
 }
 

@@ -40,6 +40,30 @@ window.closeAlertAndResetSpinners = function () {
   }
 };
 
+window.updateCartBadgeCount = async function () {
+    try {
+        const url = (typeof window.CART_ENDPOINT !== 'undefined' ? window.CART_ENDPOINT : '../include/global.ctrl.php') + "?action=get_cart_count";
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.success) {
+            const badges = document.querySelectorAll('.cart-badge');
+            badges.forEach(b => {
+                b.innerText = data.count;
+                if (data.count > 0) {
+                    b.classList.remove('hidden');
+                    b.classList.add('flex');
+                } else {
+                    b.classList.remove('flex');
+                    b.classList.add('hidden');
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Failed to update badge", err);
+    }
+};
+
 window.showCustomConfirm = function (
   message,
   onConfirm,
@@ -58,7 +82,7 @@ window.showCustomConfirm = function (
     btn.innerText = btnText;
 
     // Set the button classes
-    btn.className = `flex-1 py-4 rounded-2xl font-black text-white hover:bg-gray-900 shadow-lg active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em] ${btnColorClass}`;
+    btn.className = `w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3.5 text-sm font-bold text-white hover:bg-gray-900 active:scale-95 transition-all duration-300 ${btnColorClass}`;
 
     // Clear old listeners by cloning
     const newBtn = btn.cloneNode(true);

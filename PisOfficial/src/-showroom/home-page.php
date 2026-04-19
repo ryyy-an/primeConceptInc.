@@ -63,7 +63,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
     <link rel="shortcut icon" href="../../public/assets/img/favIcon.png?v=2" type="image/x-icon">
     <link rel="apple-touch-icon" href="../../public/assets/img/favIcon.png?v=2">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js?v=1.4.5" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.4.7" defer></script>
     <script src="../../public/assets/js/order.js?v=1.4.5" defer></script>
     <?php include '../include/toast.php'; ?>
 

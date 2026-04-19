@@ -175,7 +175,7 @@ function get_effective_available_stock(PDO $pdo, int $variantId, string $source)
             $sqlComp = "SELECT pc.id as comp_row_id, pc.comp_id, pc.qty_needed, ws.qty_on_hand
                         FROM product_components pc
                         JOIN product_variant pv ON pc.prod_id = pv.prod_id
-                        JOIN warehouse_stocks ws ON pc.id = ws.product_comp_id
+                        JOIN warehouse_stocks ws ON pc.id = ws.product_comp_id AND ws.variant_id = pv.id
                         WHERE pv.id = ? AND pc.is_deleted = 0";
             $stmtComp = $pdo->prepare($sqlComp);
             $stmtComp->execute([$variantId]);
@@ -222,10 +222,14 @@ function get_effective_available_stock(PDO $pdo, int $variantId, string $source)
     }
 }
 
-function add_to_cart(PDO $pdo, int $userId, int $variantId, int $qty, string $source): bool
+function add_to_cart(PDO $pdo, int $userId, int $variantId, int $qty, string $source): array
 {
     try {
         $availableStock = get_effective_available_stock($pdo, $variantId, $source);
+
+        if ($availableStock <= 0) {
+            return ['success' => false, 'reason' => 'no_stock', 'available' => 0];
+        }
 
         $stmt = $pdo->prepare("SELECT id, qty FROM cart WHERE user_id = ? AND variant_id = ? AND source = ?");
         $stmt->execute([$userId, $variantId, $source]);
@@ -235,19 +239,21 @@ function add_to_cart(PDO $pdo, int $userId, int $variantId, int $qty, string $so
         $totalPotentialQty = $currentCartQty + $qty;
 
         if ($totalPotentialQty > $availableStock) {
-            return false;
+            return ['success' => false, 'reason' => 'exceeds_stock', 'available' => $availableStock, 'in_cart' => $currentCartQty];
         }
 
         if ($existing) {
             $updateStmt = $pdo->prepare("UPDATE cart SET qty = ? WHERE id = ?");
-            return $updateStmt->execute([$totalPotentialQty, $existing['id']]);
+            $ok = $updateStmt->execute([$totalPotentialQty, $existing['id']]);
         } else {
             $insertStmt = $pdo->prepare("INSERT INTO cart (user_id, variant_id, qty, source) VALUES (?, ?, ?, ?)");
-            return $insertStmt->execute([$userId, $variantId, $qty, $source]);
+            $ok = $insertStmt->execute([$userId, $variantId, $qty, $source]);
         }
+
+        return ['success' => $ok];
     } catch (PDOException $e) {
         error_log("Add to Cart Error: " . $e->getMessage());
-        return false;
+        return ['success' => false, 'reason' => 'db_error'];
     }
 }
 
