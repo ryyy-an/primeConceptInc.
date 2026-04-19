@@ -31,6 +31,9 @@ RUN npm install
 # 7. Copy the rest of the application
 COPY PisOfficial/ .
 
+# 7.5 Create a backup of images to populate Volume on startup
+RUN cp -r public/assets/img/furnitures /var/www/html/img_backup
+
 # 8. Build Tailwind CSS
 RUN npm run build
 
