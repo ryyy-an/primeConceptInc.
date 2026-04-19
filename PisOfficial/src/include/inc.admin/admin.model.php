@@ -12,7 +12,7 @@ function get_all_users(PDO $pdo): array
                 ORDER BY full_name ASC";
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Fetch Users Error: " . $e->getMessage());
         return [];
     }
@@ -583,7 +583,7 @@ function get_dashboard_low_stock(PDO $pdo): array
                 LIMIT 5";
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Dashboard Low Stock Error: " . $e->getMessage());
         return [];
     }
@@ -618,7 +618,7 @@ function get_pending_receivables(PDO $pdo): array
         
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Receivables Error: " . $e->getMessage());
         return [];
     }
@@ -648,7 +648,7 @@ function get_receivables_summary(PDO $pdo): array
             'count' => (int)($res['pending_accounts'] ?? 0),
             'total' => (float)($res['total_outstanding'] ?? 0)
         ];
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         return ['count' => 0, 'total' => 0.0];
     }
 }
@@ -718,7 +718,7 @@ function record_manual_collection(PDO $pdo, int $orderId, float $amount, string 
         }
 
         return true;
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         $pdo->rollBack();
         error_log("Record Collection Error: " . $e->getMessage());
         return false;
@@ -767,7 +767,7 @@ function update_order_status(PDO $pdo, int $orderId, string $status, float $disc
         }
 
         return true;
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         error_log("Update Order Status Error: " . $e->getMessage());
         return false;
@@ -819,7 +819,7 @@ function get_admin_order_stats(PDO $pdo): array
             'wh_pending_count' => (int)$whPending,
             'sr_pending_count' => (int)$srPending
         ];
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Admin Stats Error: " . $e->getMessage());
         return [];
     }
@@ -871,7 +871,7 @@ function get_sales_report_data(PDO $pdo, ?string $start = null, ?string $end = n
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Sales Report Error: " . $e->getMessage());
         return [];
     }
@@ -908,7 +908,7 @@ function get_all_orders_data(PDO $pdo, ?string $status = null): array
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get All Orders Report Error: " . $e->getMessage());
         return [];
     }
@@ -930,7 +930,7 @@ function get_dashboard_sales_trend(PDO $pdo): array
                 ORDER BY sort_key ASC";
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Sales Trend Error: " . $e->getMessage());
         return [];
     }
@@ -957,7 +957,7 @@ function get_dashboard_inventory_analytics(PDO $pdo): array
                 LIMIT 5";
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Inventory Analytics Error: " . $e->getMessage());
         return [];
     }
@@ -975,7 +975,7 @@ function get_recent_orders(PDO $pdo, int $limit = 5): array
                 LIMIT " . (int)$limit;
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Recent Orders Error: " . $e->getMessage());
         return [];
     }
@@ -1018,7 +1018,7 @@ function get_monthly_sales_trend(PDO $pdo, ?string $start = null, ?string $end =
             return [['month_name' => date('M Y'), 'revenue' => 0]];
         }
         return $data;
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Sales Trend Error: " . $e->getMessage());
         return [];
     }
@@ -1056,7 +1056,7 @@ function get_inventory_health_stats(PDO $pdo): array
             'out_of_stock' => (int)($res['out_of_stock'] ?? 0),
             'total_variants' => (int)($res['total_variants'] ?? 0)
         ];
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Health Stats Error: " . $e->getMessage());
         return ['healthy' => 0, 'low_stock' => 0, 'out_of_stock' => 0, 'total_variants' => 0];
     }
@@ -1097,7 +1097,7 @@ function get_top_performing_products(PDO $pdo, int $limit = 5, string $period = 
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Top Products Error: " . $e->getMessage());
         return [];
     }
@@ -1112,7 +1112,7 @@ function get_category_distribution(PDO $pdo): array
         $sql = "SELECT category, COUNT(*) as count FROM products WHERE is_deleted = 0 GROUP BY category ORDER BY count DESC";
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Category Dist Error: " . $e->getMessage());
         return [];
     }
@@ -1141,7 +1141,7 @@ function get_monthly_stock_in_stats(PDO $pdo): array
             'qty_ordered' => $qty,
             'total_cost' => $cost
         ];
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         return ['qty_ordered' => 0, 'total_cost' => 0];
     }
 }
@@ -1166,7 +1166,7 @@ function get_revenue_stats(PDO $pdo): array
             'total' => $total,
             'monthly' => $monthly
         ];
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Revenue Stats Error: " . $e->getMessage());
         return ['total' => 0.0, 'monthly' => 0.0];
     }
@@ -1214,7 +1214,7 @@ function get_sr_stock_logs(PDO $pdo, int $limit = 3, ?string $fromDate = null, ?
         }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get SR Stock Logs Error: " . $e->getMessage());
         return [];
     }
@@ -1265,7 +1265,7 @@ function get_wh_stock_logs(PDO $pdo, int $limit = 3, ?string $fromDate = null, ?
         }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get WH Stock Logs Error: " . $e->getMessage());
         return [];
     }
@@ -1289,7 +1289,7 @@ function get_order_status_summary(PDO $pdo): array
                 GROUP BY u.role";
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Order Status Summary Error: " . $e->getMessage());
         return [];
     }
@@ -1329,7 +1329,7 @@ function get_pending_order_requests(PDO $pdo, int $limit = 5, bool $onlyForRevie
                 LIMIT " . (int)$limit;
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Pending Requests Error: " . $e->getMessage());
         return [];
     }
@@ -1354,7 +1354,7 @@ function get_order_items_report(PDO $pdo, int $orderId): array
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$orderId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Order Items Report Error: " . $e->getMessage());
         return [];
     }
@@ -1394,7 +1394,7 @@ function get_order_summary_by_id(PDO $pdo, int $orderId): ?array
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$orderId]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Order Summary Error: " . $e->getMessage());
         return null;
     }
@@ -1413,7 +1413,7 @@ function get_payment_schedule_by_trans_id(PDO $pdo, int $transId): array
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$transId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Payment Schedule Error: " . $e->getMessage());
         return [];
     }
@@ -1453,7 +1453,7 @@ function get_global_order_history(PDO $pdo, int $limit = 10, string $search = ''
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Global History Error: " . $e->getMessage());
         return [];
     }
@@ -1486,7 +1486,7 @@ function get_system_diagnostic_data(PDO $pdo): array
             'db_version' => $dbVersion,
             'status' => 'Operational'
         ];
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Diagnostics Error: " . $e->getMessage());
         return [];
     }
@@ -1501,7 +1501,7 @@ function get_table_schema(PDO $pdo, string $tableName): array
     try {
         $stmt = $pdo->query("DESCRIBE `$tableName` ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         return [];
     }
 }
@@ -1603,7 +1603,7 @@ function get_full_inventory_report_data(PDO $pdo): array
                 ORDER BY p.category ASC, p.name ASC, pv.variant ASC";
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Get Full Inventory Report Error: " . $e->getMessage());
         return [];
     }
@@ -1647,7 +1647,7 @@ function get_report_transactions(PDO $pdo, int $limit = 50, string $from = null,
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Report Transactions Error: " . $e->getMessage());
         return [];
     }
@@ -1670,7 +1670,7 @@ function get_report_customers(PDO $pdo, int $limit = 100): array
                 LIMIT " . (int)$limit;
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         error_log("Report Customers Error: " . $e->getMessage());
         return [];
     }
