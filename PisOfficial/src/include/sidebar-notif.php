@@ -43,6 +43,23 @@
     </div>
 </div>
 
+<div id="clearNotifModal" style="z-index: 9999;" class="fixed inset-0 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+    <div class="relative bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden transform transition-all p-8 text-center border border-gray-100">
+        <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-red-50/50">
+            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+        </div>
+        <h3 class="text-xl font-black text-gray-900 tracking-tight mb-2">Clear Alerts?</h3>
+        <p class="text-sm font-medium text-gray-500 mb-8 leading-relaxed">This will permanently remove all notifications from your history. This action <span class="text-red-600 font-bold">cannot be undone</span>.</p>
+        <div class="flex gap-3">
+            <button type="button" onclick="toggleClearModal(false)" class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Keep Alerts</button>
+            <button type="button" onclick="executeClearNotifs()" class="flex-1 py-4 bg-red-500 rounded-2xl font-black text-white hover:bg-gray-900 shadow-lg shadow-red-100 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Clear All</button>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const btn = document.getElementById('notifButton');
@@ -61,7 +78,7 @@
             setTimeout(() => overlay.classList.add('opacity-100'), 10);
             sidebar.style.transform = 'translateX(0)';
             document.body.style.overflow = 'hidden';
-            
+
             // Just refresh list, mark as read happens on CLOSE
             fetchNotifications();
         }
@@ -85,15 +102,32 @@
                 });
         };
 
+        window.toggleClearModal = function(show) {
+            const modal = document.getElementById('clearNotifModal');
+            const container = modal.querySelector('div');
+            if (show) {
+                modal.classList.remove('pointer-events-none', 'opacity-0');
+                if (container) container.classList.remove('scale-95');
+                if (container) container.classList.add('scale-100');
+            } else {
+                modal.classList.add('pointer-events-none', 'opacity-0');
+                if (container) container.classList.remove('scale-100');
+                if (container) container.classList.add('scale-95');
+            }
+        };
+
         window.clearAllNotifs = function() {
-            if (!confirm("Are you sure you want to clear all notifications? This cannot be undone.")) return;
-            
+            toggleClearModal(true);
+        };
+
+        window.executeClearNotifs = function() {
             fetch(`${ctrlPath}?action=clear_all_notifs`)
                 .then(res => res.json())
                 .then(res => {
                     if (res.success) {
                         renderNotifications([]); // Instant UI feedback
                         updateBadge(0);
+                        toggleClearModal(false);
                     }
                 });
         };
@@ -109,14 +143,14 @@
                 .then(res => {
                     if (res && res.success) {
                         const notifs = res.notifications || [];
-                        
+
                         // Check for new notifications to show toast
                         if (isPolling && notifs.length > 0) {
                             const newNotifs = notifs.filter(n => parseInt(n.id) > lastSeenNotifId && n.is_read == '0');
                             newNotifs.forEach(n => {
                                 if (window.showToast) {
                                     // Use the message content for the toast
-                                    const shortMsg = n.message.split('\n')[1] || n.message.split('\n')[0]; 
+                                    const shortMsg = n.message.split('\n')[1] || n.message.split('\n')[0];
                                     window.showToast(shortMsg, 'success');
                                 }
                             });
@@ -151,10 +185,19 @@
             list.innerHTML = notifs.map(n => {
                 let colorClass = 'bg-blue-500';
                 let tagClass = 'bg-blue-100 text-blue-600';
-                
-                if (n.type === 'low_stock') { colorClass = 'bg-red-500'; tagClass = 'bg-red-100 text-red-600'; }
-                if (n.type === 'result') { colorClass = 'bg-green-500'; tagClass = 'bg-green-100 text-green-600'; }
-                if (n.type === 'fulfillment') { colorClass = 'bg-orange-500'; tagClass = 'bg-orange-100 text-orange-600'; }
+
+                if (n.type === 'low_stock') {
+                    colorClass = 'bg-red-500';
+                    tagClass = 'bg-red-100 text-red-600';
+                }
+                if (n.type === 'result') {
+                    colorClass = 'bg-green-500';
+                    tagClass = 'bg-green-100 text-green-600';
+                }
+                if (n.type === 'fulfillment') {
+                    colorClass = 'bg-orange-500';
+                    tagClass = 'bg-orange-100 text-orange-600';
+                }
 
                 const time = timeAgo(new Date(n.created_at));
 
@@ -214,10 +257,15 @@
             return "Just now";
         }
 
-        if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); showSidebar(); });
+        if (btn) btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSidebar();
+        });
         closeBtn.addEventListener('click', hideSidebar);
         overlay.addEventListener('click', hideSidebar);
-        document.addEventListener('keydown', (e) => { if (e.key === "Escape") hideSidebar(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") hideSidebar();
+        });
 
         // Initial full fetch on load
         fetchNotifications(false);
@@ -225,6 +273,6 @@
         // Responsive 3s poll for real-time responsiveness
         setInterval(() => {
             fetchNotifications(true);
-        }, 3000); 
+        }, 3000);
     });
 </script>

@@ -154,8 +154,8 @@ function getInitials($name)
                 <h2 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 px-2">System Config</h2>
                 <nav class="flex flex-col gap-2">
                     <!-- User Accounts -->
-                    <a href="javascript:void(0)" onclick="showSettingSection('userManagement')" id="userManagementLink"
-                        class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group active-setting-link bg-red-600 text-white shadow-lg shadow-red-100">
+                    <a href="javascript:void(0)" onclick="showSettingSection('userManagement', 'userManagementLink')" id="userManagementLink"
+                        class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group text-gray-400 hover:bg-gray-50 hover:text-gray-900 border border-transparent hover:border-gray-100">
                         <div class="size-10 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300 group-hover:bg-white group-hover:shadow-sm group-[.active-setting-link]:bg-white/20 group-[.active-setting-link]:border-transparent group-[.active-setting-link]:shadow-inner">
                             <svg class="size-5 text-gray-400 group-hover:text-gray-900 group-[.active-setting-link]:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -168,7 +168,7 @@ function getInitials($name)
                     </a>
 
                     <!-- Reports & Backups -->
-                    <a href="javascript:void(0)" onclick="showSettingSection('reportsBackup')" id="reportsBackupLink"
+                    <a href="javascript:void(0)" onclick="showSettingSection('reportsBackup', 'reportsBackupLink')" id="reportsBackupLink"
                         class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group text-gray-400 hover:bg-gray-50 hover:text-gray-900 border border-transparent hover:border-gray-100">
                         <div class="size-10 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300 group-hover:bg-white group-hover:shadow-sm group-[.active-setting-link]:bg-white/20 group-[.active-setting-link]:border-transparent group-[.active-setting-link]:shadow-inner">
                             <svg class="size-5 text-gray-400 group-hover:text-gray-900 group-[.active-setting-link]:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,7 +238,7 @@ function getInitials($name)
             </div>
 
             <!-- User Managements Section -->
-            <section id="userManagementSection" class="flex flex-1 bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden flex flex-col">
+            <section id="userManagementSection" class="flex flex-1 bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden flex-col hidden">
 
                 <div class="flex items-center justify-between p-8 border-b border-gray-100 bg-gray-50/30">
                     <div>
@@ -413,7 +413,8 @@ function getInitials($name)
                         <!-- Right Column: Backups -->
                         <div class="flex flex-col gap-6">
                             <div class="border-b border-gray-100 pb-3">
-                                <h4 class="text-[11px] font-black text-gray-900 uppercase tracking-widest tracking-widest">Database Backup</h4>
+                                <h4 class="text-[11px] font-black text-gray-900 uppercase tracking-widest leading-none mb-1">Database Actions</h4>
+                                <p class="text-[9px] font-bold text-gray-400 uppercase">System-wide maintenance tools</p>
                             </div>
                             <div class="flex flex-col gap-4">
                                 <!-- Export -->
@@ -432,20 +433,23 @@ function getInitials($name)
                                     <button class="shrink-0 px-5 py-2.5 bg-white border-2 border-gray-100 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-black hover:border-gray-900 rounded-xl transition-all active:scale-95">Download</button>
                                 </div>
 
-                                <!-- Restore -->
-                                <div class="p-6 border border-gray-100 rounded-[2rem] flex items-center justify-between hover:border-gray-200 transition-all bg-white group shadow-sm">
+                                <!-- Factory Reset -->
+                                <div class="p-6 border border-red-100 rounded-[2rem] flex items-center justify-between bg-red-50/20 group hover:border-red-200 transition-all">
                                     <div class="flex items-center gap-5">
-                                        <div class="size-14 bg-gray-50 flex items-center justify-center text-gray-400 rounded-2xl border border-gray-100 group-hover:text-red-600 group-hover:bg-red-50/50 transition-colors">
+                                        <div class="size-14 bg-white flex items-center justify-center text-red-400 rounded-2xl border border-red-100 group-hover:text-red-600 transition-colors">
                                             <svg class="size-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                         </div>
                                         <div>
-                                            <h5 class="text-sm font-black text-gray-900 leading-none mb-1 italic">Rollback Mode</h5>
-                                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter text-red-400">Restore from local file</p>
+                                            <h5 class="text-sm font-black text-gray-900 leading-none mb-1 italic">Factory Reset</h5>
+                                            <p class="text-[10px] font-bold text-red-400 uppercase tracking-tighter">Wipe all data except users</p>
                                         </div>
                                     </div>
-                                    <button class="shrink-0 px-5 py-2.5 bg-gray-900 border-2 border-gray-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black rounded-xl transition-all shadow-lg active:scale-95">Upload File</button>
+                                    <form id="factoryResetForm" action="../include/inc.admin/admin.ctrl.php" method="POST" onsubmit="return handleFactoryResetSubmit(event)">
+                                        <input type="hidden" name="action" value="factory_reset">
+                                        <button type="submit" class="shrink-0 px-5 py-2.5 bg-red-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-700 rounded-xl transition-all shadow-md active:scale-95">Execute Reset</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -757,10 +761,75 @@ function getInitials($name)
                 </div>
             </div>
 
+            <!-- Factory Reset Multi-Step Modal -->
+            <div id="factoryResetModal" style="z-index: 9999;" class="fixed inset-0 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+                <div class="absolute inset-0 bg-black/50"></div>
+                <div class="relative bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden transform transition-all p-8 text-center border border-gray-100">
+                    
+                    <!-- Step 1: Warning -->
+                    <div id="resetStep1" class="text-center">
+                        <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-red-50/50">
+                            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-black text-gray-900 tracking-tight mb-2">Critical Warning</h3>
+                        <p class="text-sm font-medium text-gray-500 mb-8 leading-relaxed">This will permanently wipe <span class="text-red-600 font-bold">Products, Stocks, Orders, and Customers</span>. This process <span class="text-red-600 underline">cannot be undone</span>.</p>
+                        <div class="flex gap-3">
+                            <button type="button" onclick="closeModal('factoryResetModal')" class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Abort Reset</button>
+                            <button type="button" onclick="goToResetStep(2)" class="flex-1 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-gray-200 group active:scale-95 transition-all duration-300 flex items-center justify-center gap-2">
+                                NEXT STEP
+                                <svg class="size-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Final Confirmation -->
+                    <div id="resetStep2" class="text-center hidden">
+                        <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-red-50/50 relative overflow-hidden">
+                            <div class="absolute inset-0 bg-red-600 animate-pulse opacity-10"></div>
+                            <svg class="w-8 h-8 text-red-600 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-black text-gray-900 tracking-tight mb-2">Final Check</h3>
+                        <p class="text-sm font-medium text-red-600 mb-8 leading-relaxed">History will be <span class="underline">lost forever</span>. Once executed, there is no going back.</p>
+                        <div class="flex gap-3">
+                            <button type="button" onclick="goToResetStep(1)" class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Go Back</button>
+                            <button type="button" onclick="executeFinalReset()" class="flex-1 py-4 bg-red-500 rounded-2xl font-black text-white hover:bg-gray-900 shadow-lg shadow-red-100 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Execute Wipe</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <script>
-                document.getElementById('generateFullReportBtn')?.addEventListener('click', () => {
-                    window.location.href = '../include/reports.ctrl.php?action=generate_full_report';
-                });
+                window.handleFactoryResetSubmit = function(e) {
+                    e.preventDefault();
+                    goToResetStep(1);
+                    openModal('factoryResetModal');
+                    return false;
+                };
+
+                window.goToResetStep = function(step) {
+                    const s1 = document.getElementById('resetStep1');
+                    const s2 = document.getElementById('resetStep2');
+                    if (step === 1) {
+                        s1.classList.remove('hidden');
+                        s2.classList.add('hidden');
+                    } else {
+                        s1.classList.add('hidden');
+                        s2.classList.remove('hidden');
+                    }
+                };
+
+                window.executeFinalReset = function() {
+                    document.getElementById('factoryResetForm').submit();
+                };
+
+                function confirmFactoryReset() {
+                    // Deprecated - using factoryResetModal instead
+                    return false;
+                }
             </script>
 </body>
 

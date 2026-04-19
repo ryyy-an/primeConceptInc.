@@ -19,6 +19,7 @@ if (isset($_SESSION['user_id'])) {
     // Fetch total cart items for notification badge
     require_once '../include/global.model.php';
     require_once '../include/inc.showroom/sr.model.php';
+    require_once '../include/inc.admin/admin.view.php';
 
     $cartItemsCount = count(get_cart_items($pdo, $userId));
     $totalCartItems = $cartItemsCount;
@@ -41,16 +42,20 @@ if (isset($_SESSION['user_id'])) {
     $total_pages = max(1, (int)ceil($total_records / $limit));
     $transactions = fetch_sr_transaction_history($pdo, $userId, $filters, $limit, $offset);
 
-    // Fetch counts for the stats cards
-    $totalProducts = (int)$pdo->query("SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0")->fetchColumn();
+    // --- OPTIMIZED STATS FETCHING (User-Specific) ---
+    $statsQuery = $pdo->prepare("
+        SELECT 
+            (SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0) as total_products,
+            (SELECT COUNT(*) FROM transactions t JOIN orders o ON t.order_id = o.id WHERE o.created_by = :uid1) as total_transactions,
+            (SELECT COUNT(*) FROM orders WHERE created_by = :uid2 AND status IN ('For Review', 'Pending', 'Approved')) as pending_requests
+    ");
+    $statsQuery->execute([':uid1' => $userId, ':uid2' => $userId]);
+    $stats = $statsQuery->fetch(PDO::FETCH_ASSOC);
 
-    $totalTransactions = $pdo->prepare("SELECT COUNT(*) FROM transactions t JOIN orders o ON t.order_id = o.id WHERE o.created_by = ?");
-    $totalTransactions->execute([$userId]);
-    $totalTransactionsCount = (int)$totalTransactions->fetchColumn();
-
-    $pendingRequests = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE created_by = ? AND status IN ('For Review', 'Pending', 'Approved')");
-    $pendingRequests->execute([$userId]);
-    $pendingRequestsCount = (int)$pendingRequests->fetchColumn();
+    $totalProducts = (int)($stats['total_products'] ?? 0);
+    $totalTransactionsCount = (int)($stats['total_transactions'] ?? 0);
+    $pendingRequestsCount = (int)($stats['pending_requests'] ?? 0);
+    // --- END OPTIMIZATION ---
 } else {
     header("Location: ../../public/index.php");
     exit;
@@ -121,25 +126,27 @@ if (isset($_SESSION['user_id'])) {
     </header>
 
     <section class="max-w-7xl w-full mx-auto px-6 py-4 px-4 md:px-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 justify-center gap-5">
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Available Products</div>
-                <div class="text-4xl font-bold text-gray-800"><?= number_format((float)$totalProducts) ?></div>
-                <div class="text-sm text-gray-600">Total products in the catalog.</div>
-            </div>
-
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Total Transactions</div>
-                <div class="text-4xl font-bold text-gray-800"><?= number_format((float)$totalTransactionsCount) ?></div>
-                <div class="text-sm text-gray-600">Total completed transactions recorded.</div>
-            </div>
-
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Pending Request</div>
-                <div class="text-4xl font-bold text-red-600"><?= number_format((float)$pendingRequestsCount) ?></div>
-                <div class="text-sm text-gray-600">Current pending order requests.</div>
-            </div>
-        </div>
+        <?php
+        render_admin_stats_cards([
+            [
+                'label'   => 'Available Products',
+                'value'   => $totalProducts,
+                'subtext' => 'Total products in the catalog.'
+            ],
+            [
+                'label'   => 'Total Transactions',
+                'value'   => $totalTransactionsCount,
+                'subtext' => 'Total completed transactions recorded.'
+            ],
+            [
+                'label'      => 'Pending Request',
+                'value'      => $pendingRequestsCount,
+                'subtext'    => 'Current pending order requests.',
+                'isCritical' => true,
+                'animate'    => $pendingRequestsCount > 0
+            ]
+        ], 3);
+        ?>
     </section>
 
     <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">

@@ -7,6 +7,7 @@ require_once "../include/dbh.inc.php";
 require_once "../include/global.model.php";
 require_once "../include/inc.showroom/sr.model.php";
 require_once "../include/inc.warehouse/wh.model.php";
+require_once "../include/inc.admin/admin.view.php";
 
 /** @var PDO $pdo */
 if (!isset($pdo) || !($pdo instanceof PDO)) {
@@ -124,36 +125,35 @@ $logs = get_warehouse_logs($pdo, $filters, $limit, $offset);
         </div>
     </header>
 
-    <section class="w-full max-w-7xl mx-auto px-6 py-4">
-        <div class="grid grid-cols-4 justify-center gap-4">
-            <!-- Card 1 -->
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[150px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Available Products</div>
-                <div class="text-4xl font-bold text-gray-800"><?= (int) $totalProducts ?></div>
-                <div class="text-sm text-gray-600">Total base furniture items.</div>
-            </div>
-
-            <!-- Card 2 -->
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[150px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Your Transactions</div>
-                <div class="text-4xl font-bold text-gray-800"><?= (int) $userTransactions ?></div>
-                <div class="text-sm text-gray-600">Total orders you processed.</div>
-            </div>
-
-            <!-- Card 3 -->
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[150px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Pending Warehouse</div>
-                <div class="text-4xl font-bold text-red-600"><?= (int) $pendingWH ?></div>
-                <div class="text-sm text-gray-600">Current pending WH requests.</div>
-            </div>
-
-            <!-- Card 4 -->
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[150px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Pending Showroom</div>
-                <div class="text-4xl font-bold text-red-600"><?= (int) $pendingSR ?></div>
-                <div class="text-sm text-gray-600">Current pending SR requests.</div>
-            </div>
-        </div>
+    <section class="max-w-7xl w-full mx-auto px-6 py-4">
+        <?php
+        render_admin_stats_cards([
+            [
+                'label'   => 'Available Products',
+                'value'   => $totalProducts,
+                'subtext' => 'Total base furniture items.'
+            ],
+            [
+                'label'   => 'Your Transactions',
+                'value'   => $userTransactions,
+                'subtext' => 'Total orders you processed.'
+            ],
+            [
+                'label'      => 'Pending Warehouse',
+                'value'      => $pendingWH,
+                'subtext'    => 'Current pending WH requests.',
+                'isCritical' => true,
+                'animate'    => $pendingWH > 0
+            ],
+            [
+                'label'      => 'Pending Showroom',
+                'value'      => $pendingSR,
+                'subtext'    => 'Current pending SR requests.',
+                'isCritical' => true,
+                'animate'    => $pendingSR > 0
+            ]
+        ], 4);
+        ?>
     </section>
 
     <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">

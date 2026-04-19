@@ -1532,6 +1532,57 @@ function run_database_migration(PDO $pdo): array
 }
 
 /**
+ * Performs a deep factory reset by wiping all system data except for the users table.
+ */
+function factory_reset_except_users(PDO $pdo): array
+{
+    try {
+        $pdo->beginTransaction();
+
+        // 1. Disable integrity checks temporarily
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+
+        // 2. List of tables to completely empty
+        $tables = [
+            'payment_tracker',
+            'transactions',
+            'order_items',
+            'orders',
+            'cart',
+            'notifications',
+            'showroom_logs',
+            'warehouse_logs',
+            'warehouse_stocks',
+            'showroom_stocks',
+            'product_components',
+            'product_variant',
+            'products',
+            'components',
+            'customers'
+        ];
+
+        foreach ($tables as $table) {
+            $pdo->exec("TRUNCATE TABLE `$table` ");
+        }
+
+        // 3. Re-enable integrity checks
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+
+        $pdo->commit();
+
+        return [
+            'success' => true, 
+            'message' => 'Factory Reset complete. All data wiped while user accounts were preserved.'
+        ];
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ['success' => false, 'message' => 'Factory Reset failed: ' . $e->getMessage()];
+    }
+}
+
+/**
  * Fetches a complete list of all products and variants with their respective stock levels
  * for the Full System Report.
  */

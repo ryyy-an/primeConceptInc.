@@ -25,6 +25,9 @@ if (isset($_SESSION['user_id'])) {
     $totalProducts = $stats['total_products'];
     $totalTransactionsCount = $stats['total_transactions'];
     $pendingRequestsCount = $stats['pending_requests'];
+
+    $revenueStats = get_revenue_stats($pdo);
+    $totalRevenue = $revenueStats['total'];
 } else {
     // Not logged in → redirect
     header("Location: ../../public/index.php");
@@ -125,9 +128,14 @@ if (isset($_SESSION['user_id'])) {
         <?php
         render_admin_stats_cards([
             [
+                'label'   => 'Total Sales Revenue',
+                'value'   => '₱' . number_format($totalRevenue, 2),
+                'subtext' => 'Lifetime system-wide earnings.'
+            ],
+            [
                 'label'   => 'Available Products',
                 'value'   => $totalProducts,
-                'subtext' => 'Total products in the system.'
+                'subtext' => 'Total products in system.'
             ],
             [
                 'label'   => 'Total Transactions',
@@ -137,11 +145,11 @@ if (isset($_SESSION['user_id'])) {
             [
                 'label'      => 'Pending Request',
                 'value'      => $pendingRequestsCount,
-                'subtext'    => 'Current pending order request.',
+                'subtext'    => 'Current pending order requests.',
                 'isCritical' => true,
                 'animate'    => true
             ]
-        ]);
+        ], 4);
         ?>
     </section>
 

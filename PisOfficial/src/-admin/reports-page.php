@@ -139,6 +139,12 @@ if (isset($_SESSION['user_id'])) {
         <?php
         render_admin_stats_cards([
             [
+                'label' => 'Total Sales Revenue',
+                'value' => '₱' . number_format((float)$revenueStats['total'], 2),
+                'subtext' => 'Performance: ₱' . number_format((float)$revenueStats['monthly'], 2) . ' this month',
+                'indicator' => '<span class="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>'
+            ],
+            [
                 'label' => 'Available Products',
                 'value' => $totalProducts,
                 'subtext' => 'Current inventory count.'
@@ -154,14 +160,9 @@ if (isset($_SESSION['user_id'])) {
                 'subtext' => 'Awaiting Review',
                 'isCritical' => true,
                 'animate' => true
-            ],
-            [
-                'label' => 'Total Sales Revenue',
-                'value' => '₱' . number_format((float)$revenueStats['total'], 2),
-                'subtext' => 'Performance: ₱' . number_format((float)$revenueStats['monthly'], 2) . ' this month',
-                'indicator' => '<span class="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>'
             ]
-        ], 4, 300);
+
+        ], 4);
         ?>
     </section>
 
@@ -398,7 +399,7 @@ if (isset($_SESSION['user_id'])) {
             </div>
 
             <div class="flex flex-col lg:flex-row gap-6 w-full mt-6">
-                 <!-- Showroom (SR) Logs Card -->
+                <!-- Showroom (SR) Logs Card -->
                 <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col flex-1">
                     <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
                         <h3 class="font-bold text-gray-700 uppercase text-[10px] tracking-[0.2em] flex items-center gap-2">
@@ -581,149 +582,149 @@ if (isset($_SESSION['user_id'])) {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. Health Chart (Doughnut)
-            const healthCtx = document.getElementById('healthChart').getContext('2d');
-            new Chart(healthCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Healthy', 'Low', 'Out'],
-                    datasets: [{
-                        data: [
-                            <?= $stockHealth['healthy'] ?>,
-                            <?= $stockHealth['low_stock'] ?>,
-                            <?= $stockHealth['out_of_stock'] ?>
-                        ],
-                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+                // 1. Health Chart (Doughnut)
+                const healthCtx = document.getElementById('healthChart').getContext('2d');
+                new Chart(healthCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Healthy', 'Low', 'Out'],
+                        datasets: [{
+                            data: [
+                                <?= $stockHealth['healthy'] ?>,
+                                <?= $stockHealth['low_stock'] ?>,
+                                <?= $stockHealth['out_of_stock'] ?>
+                            ],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
                     },
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-
-            // 2. Sales Chart (Line)
-            const salesCtx = document.getElementById('salesChart').getContext('2d');
-            window.salesChart = new Chart(salesCtx, {
-                type: 'line',
-                data: {
-                    labels: [<?= "'" . implode("','", array_column($salesTrend, 'month_name')) . "'" ?>],
-                    datasets: [{
-                        label: 'Revenue',
-                        data: [<?= implode(",", array_column($salesTrend, 'revenue')) ?>],
-                        borderColor: '#dc2626',
-                        backgroundColor: 'rgba(220, 38, 38, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#dc2626'
-                    }]
-                },
-                options: {
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: '#f3f4f6'
-                            },
-                            ticks: {
-                                callback: value => '₱' + value.toLocaleString()
-                            }
-                        },
-                        x: {
-                            grid: {
+                    options: {
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
                                 display: false
                             }
-                        }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+
+                // 2. Sales Chart (Line)
+                const salesCtx = document.getElementById('salesChart').getContext('2d');
+                window.salesChart = new Chart(salesCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [<?= "'" . implode("','", array_column($salesTrend, 'month_name')) . "'" ?>],
+                        datasets: [{
+                            label: 'Revenue',
+                            data: [<?= implode(",", array_column($salesTrend, 'revenue')) ?>],
+                            borderColor: '#dc2626',
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#dc2626'
+                        }]
                     },
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
+                    options: {
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#f3f4f6'
+                                },
+                                ticks: {
+                                    callback: value => '₱' + value.toLocaleString()
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
 
-            // --- ORDERS REPORT PROGRESSIVE LOGIC ---
-            let allOrdersData = [];
-            let currentStatus = 'All';
-            let displayLimit = 3;
-            let paginationThreshold = 5;
-            let currentPage = 1;
+                // --- ORDERS REPORT PROGRESSIVE LOGIC ---
+                let allOrdersData = [];
+                let currentStatus = 'All';
+                let displayLimit = 3;
+                let paginationThreshold = 5;
+                let currentPage = 1;
 
-            window.changeOrderStatusFilter = function(status) {
-                fetchOrdersReport();
-            };
+                window.changeOrderStatusFilter = function(status) {
+                    fetchOrdersReport();
+                };
 
-            window.resetAdminFilters = function() {
-                document.getElementById('reportStartDate').value = '';
-                document.getElementById('reportEndDate').value = '';
-                document.getElementById('combinedTxnFilter').value = 'All';
-                fetchOrdersReport();
-            };
+                window.resetAdminFilters = function() {
+                    document.getElementById('reportStartDate').value = '';
+                    document.getElementById('reportEndDate').value = '';
+                    document.getElementById('combinedTxnFilter').value = 'All';
+                    fetchOrdersReport();
+                };
 
-            window.fetchOrdersReport = function() {
-                const content = document.getElementById('ordersReportContent');
-                const start = document.getElementById('reportStartDate').value;
-                const end = document.getElementById('reportEndDate').value;
-                const client = document.getElementById('combinedTxnFilter')?.value || 'All';
-
-                content.innerHTML = `<tr><td colspan="8" class="py-20 text-center"><div class="flex flex-col items-center gap-2"><div class="size-8 border-4 border-gray-100 border-t-red-600 rounded-full animate-spin"></div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading transactions...</p></div></td></tr>`;
-
-                fetch(`../include/inc.admin/admin.ctrl.php?action=get_report_sales&client=${client}&start=${start}&end=${end}`)
-                    .then(res => res.json())
-                    .then(response => {
-                        if (response.success) {
-                            allOrdersData = response.data;
-                            renderOrdersTable();
-                        }
-                    });
-
-                if (typeof updateSalesTrendChart === 'function') updateSalesTrendChart();
-                window.renderOrdersTable = function() {
+                window.fetchOrdersReport = function() {
                     const content = document.getElementById('ordersReportContent');
-                    const footer = document.getElementById('orderTableFooter');
+                    const start = document.getElementById('reportStartDate').value;
+                    const end = document.getElementById('reportEndDate').value;
+                    const client = document.getElementById('combinedTxnFilter')?.value || 'All';
 
-                    if (allOrdersData.length === 0) {
-                        content.innerHTML = `<tr><td colspan="7" class="py-20 text-center"><p class="text-[11px] font-black text-gray-300 uppercase tracking-widest">No transaction records found</p></td></tr>`;
-                        footer.innerHTML = '';
-                        return;
-                    }
+                    content.innerHTML = `<tr><td colspan="8" class="py-20 text-center"><div class="flex flex-col items-center gap-2"><div class="size-8 border-4 border-gray-100 border-t-red-600 rounded-full animate-spin"></div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading transactions...</p></div></td></tr>`;
 
-                    // Determine display range
-                    let dataToShow = [];
-                    let total = allOrdersData.length;
+                    fetch(`../include/inc.admin/admin.ctrl.php?action=get_report_sales&client=${client}&start=${start}&end=${end}`)
+                        .then(res => res.json())
+                        .then(response => {
+                            if (response.success) {
+                                allOrdersData = response.data;
+                                renderOrdersTable();
+                            }
+                        });
 
-                    if (total > paginationThreshold && displayLimit === paginationThreshold) {
-                        let start = (currentPage - 1) * paginationThreshold;
-                        let end = start + paginationThreshold;
-                        dataToShow = allOrdersData.slice(start, end);
-                    } else {
-                        dataToShow = allOrdersData.slice(0, displayLimit);
-                    }
+                    if (typeof updateSalesTrendChart === 'function') updateSalesTrendChart();
+                    window.renderOrdersTable = function() {
+                            const content = document.getElementById('ordersReportContent');
+                            const footer = document.getElementById('orderTableFooter');
 
-                    // Render Table
-                    content.innerHTML = dataToShow.map(row => {
-                        const statusColors = {
-                            'Approved': 'bg-green-100 text-green-700',
-                            'Rejected': 'bg-red-100 text-red-700',
-                            'Cancelled': 'bg-gray-100 text-gray-600',
-                            'For Review': 'bg-amber-100 text-amber-700'
-                        };
-                        const color = statusColors[row.order_status] || 'bg-blue-100 text-blue-700';
+                            if (allOrdersData.length === 0) {
+                                content.innerHTML = `<tr><td colspan="7" class="py-20 text-center"><p class="text-[11px] font-black text-gray-300 uppercase tracking-widest">No transaction records found</p></td></tr>`;
+                                footer.innerHTML = '';
+                                return;
+                            }
 
-                        return `
+                            // Determine display range
+                            let dataToShow = [];
+                            let total = allOrdersData.length;
+
+                            if (total > paginationThreshold && displayLimit === paginationThreshold) {
+                                let start = (currentPage - 1) * paginationThreshold;
+                                let end = start + paginationThreshold;
+                                dataToShow = allOrdersData.slice(start, end);
+                            } else {
+                                dataToShow = allOrdersData.slice(0, displayLimit);
+                            }
+
+                            // Render Table
+                            content.innerHTML = dataToShow.map(row => {
+                                const statusColors = {
+                                    'Approved': 'bg-green-100 text-green-700',
+                                    'Rejected': 'bg-red-100 text-red-700',
+                                    'Cancelled': 'bg-gray-100 text-gray-600',
+                                    'For Review': 'bg-amber-100 text-amber-700'
+                                };
+                                const color = statusColors[row.order_status] || 'bg-blue-100 text-blue-700';
+
+                                return `
                         <tr class="hover:bg-red-50/30 transition group">
                             <td class="px-8 py-5">
                                 <p class="font-mono text-[11px] text-gray-400 font-bold tracking-tighter leading-none mb-1">#TXN-${row.trans_id.toString().padStart(5, '0')}</p>
@@ -757,33 +758,59 @@ if (isset($_SESSION['user_id'])) {
                                         'FAILED':   'bg-red-50 text-red-600 border-red-200',
                                     };
                                     const cls = colors[s] || 'bg-gray-50 text-gray-600 border-gray-200';
-                                    return `<span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${cls}">${row.trans_status}</span>`;
-                                })()}
-                            </td>
-                            <td class="px-8 py-5 text-center">
-                                <button onclick="viewOrderDetails(${row.order_id})" class="size-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition shadow-sm border border-gray-100" title="View Parent Order Details">
-                                    <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                </button>
-                            </td>
-                        </tr>
+                                    return ` < span class = "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${cls}" > $ {
+                                    row.trans_status
+                                } < /span>`;
+                            })()
+                        } <
+                        /td> <
+                        td class = "px-8 py-5 text-center" >
+                        <
+                        button onclick = "viewOrderDetails(${row.order_id})"
+                    class = "size-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition shadow-sm border border-gray-100"
+                    title = "View Parent Order Details" >
+                        <
+                        svg class = "size-4"
+                    fill = "none"
+                    stroke = "currentColor"
+                    viewBox = "0 0 24 24" > < path stroke - linecap = "round"
+                    stroke - linejoin = "round"
+                    stroke - width = "2"
+                    d = "M15 12a3 3 0 11-6 0 3 3 0 016 0z" / > < path stroke - linecap = "round"
+                    stroke - linejoin = "round"
+                    stroke - width = "2"
+                    d = "M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" / > < /svg> <
+                        /button> <
+                        /td> <
+                        /tr>
                     `;
                     }).join('');
 
                     // Same footer logic...
                     if (total > 3 && displayLimit === 3) {
-                        footer.innerHTML = `
-                        <button onclick="expandOrderTable()" class="flex items-center gap-2 text-[10px] font-black text-gray-900 uppercase tracking-widest hover:text-red-600 transition group">
-                            Show All (${total})
-                            <svg class="size-4 group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="3" /></svg>
-                        </button>
+                        footer.innerHTML = ` <
+                    button onclick = "expandOrderTable()"
+                    class = "flex items-center gap-2 text-[10px] font-black text-gray-900 uppercase tracking-widest hover:text-red-600 transition group" >
+                    Show All($ {
+                            total
+                        }) <
+                        svg class = "size-4 group-hover:translate-y-0.5 transition"
+                    fill = "none"
+                    stroke = "currentColor"
+                    viewBox = "0 0 24 24" > < path d = "M19 9l-7 7-7-7"
+                    stroke - width = "3" / > < /svg> <
+                        /button>
                     `;
                     } else if (displayLimit === paginationThreshold) {
                         let totalPages = Math.ceil(total / paginationThreshold);
                         let pagesHtml = '';
                         for (let i = 1; i <= totalPages; i++) {
-                            pagesHtml += `<button onclick="goToOrderPage(${i})" class="size-8 rounded-lg text-xs font-black transition ${currentPage === i ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-100'}">${i}</button>`;
-                        }
-                        footer.innerHTML = `
+                            pagesHtml += ` < button onclick = "goToOrderPage(${i})"
+                    class = "size-8 rounded-lg text-xs font-black transition ${currentPage === i ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-100'}" > $ {
+                        i
+                    } < /button>`;
+                }
+                footer.innerHTML = `
                         <div class="flex flex-col items-center gap-4">
                             <button onclick="showLessOrders()" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-600 transition group flex items-center gap-2">
                                 <svg class="size-4 group-hover:-translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" stroke-width="3" /></svg>
@@ -791,38 +818,38 @@ if (isset($_SESSION['user_id'])) {
                             </button>
                             <div class="flex items-center gap-2">${pagesHtml}</div>
                         </div>`;
-                    } else {
+            } else {
 
-                        footer.innerHTML = '';
-                    }
-                };
+                footer.innerHTML = '';
+            }
+        };
 
-                window.viewOrderDetails = function(orderId) {
-                    const modal = document.getElementById('txnDetailModal');
-                    const content = document.getElementById('modalItemsContent');
-                    const summaryHeader = document.getElementById('modalSummaryHeader');
-                    const financialHeader = document.getElementById('modalFinancialHeader');
-                    const scheduleContent = document.getElementById('modalScheduleContent');
-                    const scheduleWrapper = document.getElementById('modalScheduleWrapper');
-                    const title = document.getElementById('modalTxnId');
-                    const totalDisplay = document.getElementById('modalTotalAmount');
+        window.viewOrderDetails = function(orderId) {
+            const modal = document.getElementById('txnDetailModal');
+            const content = document.getElementById('modalItemsContent');
+            const summaryHeader = document.getElementById('modalSummaryHeader');
+            const financialHeader = document.getElementById('modalFinancialHeader');
+            const scheduleContent = document.getElementById('modalScheduleContent');
+            const scheduleWrapper = document.getElementById('modalScheduleWrapper');
+            const title = document.getElementById('modalTxnId');
+            const totalDisplay = document.getElementById('modalTotalAmount');
 
-                    title.innerText = `Order #ORD-${orderId.toString().padStart(5, '0')}`;
-                    summaryHeader.innerHTML = '<div class="col-span-full py-4 animate-pulse bg-gray-50 rounded-xl"></div>';
-                    financialHeader.innerHTML = '<div class="col-span-full py-4 animate-pulse bg-gray-50 rounded-xl"></div>';
-                    content.innerHTML = `<tr><td colspan="4" class="py-10 text-center"><div class="animate-spin size-6 border-4 border-gray-100 border-t-red-600 rounded-full mx-auto mb-2"></div><p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Fetching data...</p></td></tr>`;
-                    
-                    scheduleWrapper.classList.add('hidden');
-                    modal.classList.remove('hidden');
+            title.innerText = `Order #ORD-${orderId.toString().padStart(5, '0')}`;
+            summaryHeader.innerHTML = '<div class="col-span-full py-4 animate-pulse bg-gray-50 rounded-xl"></div>';
+            financialHeader.innerHTML = '<div class="col-span-full py-4 animate-pulse bg-gray-50 rounded-xl"></div>';
+            content.innerHTML = `<tr><td colspan="4" class="py-10 text-center"><div class="animate-spin size-6 border-4 border-gray-100 border-t-red-600 rounded-full mx-auto mb-2"></div><p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Fetching data...</p></td></tr>`;
 
-                    fetch(`../include/inc.admin/admin.ctrl.php?action=get_order_details&order_id=${orderId}`)
-                        .then(res => res.json())
-                        .then(response => {
-                            if (response.success && response.summary) {
-                                const s = response.summary;
+            scheduleWrapper.classList.add('hidden');
+            modal.classList.remove('hidden');
 
-                                // 1. Summary Badges
-                                summaryHeader.innerHTML = `
+            fetch(`../include/inc.admin/admin.ctrl.php?action=get_order_details&order_id=${orderId}`)
+                .then(res => res.json())
+                .then(response => {
+                    if (response.success && response.summary) {
+                        const s = response.summary;
+
+                        // 1. Summary Badges
+                        summaryHeader.innerHTML = `
                                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
                                         <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Customer</p>
                                         <p class="text-xs font-black text-gray-900">${s.customer_name}</p>
@@ -845,10 +872,10 @@ if (isset($_SESSION['user_id'])) {
                                     </div>
                                 `;
 
-                                // 2. Financial Overview
-                                const totalPaid = (response.schedule || []).reduce((acc, row) => acc + (row.status === 'Paid' ? parseFloat(row.amount_paid) : 0), 0) || parseFloat(s.total) - parseFloat(s.balance);
-                                
-                                financialHeader.innerHTML = `
+                        // 2. Financial Overview
+                        const totalPaid = (response.schedule || []).reduce((acc, row) => acc + (row.status === 'Paid' ? parseFloat(row.amount_paid) : 0), 0) || parseFloat(s.total) - parseFloat(s.balance);
+
+                        financialHeader.innerHTML = `
                                     <div>
                                         <p class="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Principal</p>
                                         <p class="text-lg font-black text-red-600 leading-none">₱${parseFloat(s.total).toLocaleString()}</p>
@@ -871,11 +898,11 @@ if (isset($_SESSION['user_id'])) {
                                     </div>
                                 `;
 
-                                // 3. Items
-                                let itemsHtml = '';
-                                response.items.forEach(item => {
-                                    const subtotal = item.quantity * item.price;
-                                    itemsHtml += `
+                        // 3. Items
+                        let itemsHtml = '';
+                        response.items.forEach(item => {
+                            const subtotal = item.quantity * item.price;
+                            itemsHtml += `
                                         <tr class="text-[11px] font-bold">
                                             <td class="px-5 py-4">
                                                 <p class="text-gray-900 uppercase tracking-tighter">${item.prod_name}</p>
@@ -886,17 +913,17 @@ if (isset($_SESSION['user_id'])) {
                                             <td class="px-5 py-4 text-right text-gray-900 font-black">₱${subtotal.toLocaleString()}</td>
                                         </tr>
                                     `;
-                                });
-                                content.innerHTML = itemsHtml;
-                                totalDisplay.innerText = `₱${parseFloat(s.total_with_interest || s.total).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                        });
+                        content.innerHTML = itemsHtml;
+                        totalDisplay.innerText = `₱${parseFloat(s.total_with_interest || s.total).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
-                                // 4. Schedule (if Installment)
-                                if (s.payment_type === 'Installment' && response.schedule && response.schedule.length > 0) {
-                                    scheduleWrapper.classList.remove('hidden');
-                                    let scheduleHtml = '';
-                                    response.schedule.forEach(row => {
-                                        const statusCls = row.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
-                                        scheduleHtml += `
+                        // 4. Schedule (if Installment)
+                        if (s.payment_type === 'Installment' && response.schedule && response.schedule.length > 0) {
+                            scheduleWrapper.classList.remove('hidden');
+                            let scheduleHtml = '';
+                            response.schedule.forEach(row => {
+                                const statusCls = row.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
+                                scheduleHtml += `
                                             <tr class="text-[10px] font-bold">
                                                 <td class="px-5 py-3">
                                                     <span class="px-2 py-0.5 rounded-full uppercase tracking-widest text-[8px] font-black ${statusCls}">${row.status}</span>
@@ -906,67 +933,67 @@ if (isset($_SESSION['user_id'])) {
                                                 <td class="px-5 py-3 text-right text-gray-400 uppercase tracking-tighter">${row.remarks || '---'}</td>
                                             </tr>
                                         `;
-                                    });
-                                    scheduleContent.innerHTML = scheduleHtml;
-                                }
-                            }
-                        });
-                };
+                            });
+                            scheduleContent.innerHTML = scheduleHtml;
+                        }
+                    }
+                });
+        };
 
-                window.closeTxnModal = function() {
-                    document.getElementById('txnDetailModal').classList.add('hidden');
-                };
+        window.closeTxnModal = function() {
+            document.getElementById('txnDetailModal').classList.add('hidden');
+        };
 
-                window.expandOrderTable = function() {
-                    displayLimit = paginationThreshold;
-                    renderOrdersTable();
-                };
+        window.expandOrderTable = function() {
+            displayLimit = paginationThreshold;
+            renderOrdersTable();
+        };
 
-                window.showLessOrders = function() {
-                    displayLimit = 3;
-                    currentPage = 1;
-                    renderOrdersTable();
-                };
+        window.showLessOrders = function() {
+            displayLimit = 3;
+            currentPage = 1;
+            renderOrdersTable();
+        };
 
-                window.goToOrderPage = function(page) {
-                    currentPage = page;
-                    renderOrdersTable();
-                };
+        window.goToOrderPage = function(page) {
+            currentPage = page;
+            renderOrdersTable();
+        };
 
-                window.updateSalesTrendChart = function() {
-                    const start = document.getElementById('reportStartDate').value;
-                    const end = document.getElementById('reportEndDate').value;
-                    
-                    fetch(`../include/inc.admin/admin.ctrl.php?action=get_revenue_trend&start=${start}&end=${end}`)
-                        .then(res => res.json())
-                        .then(res => {
-                            if (res.success && window.salesChart) {
-                                window.salesChart.data.labels = res.labels;
-                                window.salesChart.data.datasets[0].data = res.data;
-                                window.salesChart.update();
-                            }
-                        });
-                };
+        window.updateSalesTrendChart = function() {
+            const start = document.getElementById('reportStartDate').value;
+            const end = document.getElementById('reportEndDate').value;
 
-                window.fetchTopProducts = function() {
-                    const period = document.getElementById('topProductsFilter').value;
-                    const container = document.getElementById('topProductsContainer');
-                    
-                    // Loading state
-                    container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic">Updating...</div>`;
-                    
-                    fetch(`../include/inc.admin/admin.ctrl.php?action=get_top_products&period=${period}`)
-                        .then(res => res.json())
-                        .then(res => {
-                            if (res.success && res.data) {
-                                if (res.data.length === 0) {
-                                    container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic uppercase">No data for this period</div>`;
-                                    return;
-                                }
-                                container.innerHTML = res.data.map(tp => {
-                                    const img = tp.variant_image || tp.default_image || 'default-placeholder.png';
-                                    const path = "../../public/assets/img/furnitures/" + encodeURIComponent(img.trim());
-                                    return `
+            fetch(`../include/inc.admin/admin.ctrl.php?action=get_revenue_trend&start=${start}&end=${end}`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success && window.salesChart) {
+                        window.salesChart.data.labels = res.labels;
+                        window.salesChart.data.datasets[0].data = res.data;
+                        window.salesChart.update();
+                    }
+                });
+        };
+
+        window.fetchTopProducts = function() {
+            const period = document.getElementById('topProductsFilter').value;
+            const container = document.getElementById('topProductsContainer');
+
+            // Loading state
+            container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic">Updating...</div>`;
+
+            fetch(`../include/inc.admin/admin.ctrl.php?action=get_top_products&period=${period}`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success && res.data) {
+                        if (res.data.length === 0) {
+                            container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic uppercase">No data for this period</div>`;
+                            return;
+                        }
+                        container.innerHTML = res.data.map(tp => {
+                            const img = tp.variant_image || tp.default_image || 'default-placeholder.png';
+                            const path = "../../public/assets/img/furnitures/" + encodeURIComponent(img.trim());
+                            return `
                                         <div class="group animate-in zoom-in duration-300">
                                             <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gray-50 rounded-lg mb-3 flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-red-300 transition shadow-sm">
                                                 <img src="${path}" alt="${tp.name}" class="object-contain h-full w-full">
@@ -975,14 +1002,14 @@ if (isset($_SESSION['user_id'])) {
                                             <p class="text-xs font-black text-blue-600 mt-1">${parseInt(tp.total_sold)} <span class="text-[9px] text-gray-400 uppercase">Sold</span></p>
                                         </div>
                                     `;
-                                }).join('');
-                            }
-                        });
-                };
-            };
+                        }).join('');
+                    }
+                });
+        };
+        };
 
-            // Initial Load
-            fetchOrdersReport();
+        // Initial Load
+        fetchOrdersReport();
         });
     </script>
     <style>

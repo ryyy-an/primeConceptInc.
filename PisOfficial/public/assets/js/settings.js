@@ -6,12 +6,9 @@
  * UI TOGGLE: Settings Sidebar
  * Handles visibility of different settings sections
  */
-window.showSettingSection = function (section) {
+window.showSettingSection = function (sectionId, linkId) {
   const userSec = document.getElementById("userManagementSection");
   const reportsBackupSec = document.getElementById("reportsBackupSection");
-
-  const userLink = document.getElementById("userManagementLink");
-  const reportsBackupLink = document.getElementById("reportsBackupLink");
 
   const activeClasses = [
     "bg-red-600",
@@ -23,13 +20,18 @@ window.showSettingSection = function (section) {
   const inactiveClasses = [
     "text-gray-400",
     "hover:bg-gray-50",
+    "hover:text-gray-900",
     "bg-transparent",
+    "border-transparent",
+    "hover:border-gray-100",
   ];
 
-  // Hide all
-  [userSec, reportsBackupSec].forEach(
-    (s) => s && s.classList.add("hidden"),
-  );
+  // Hide all sections
+  [userSec, reportsBackupSec].forEach((s) => s && s.classList.add("hidden"));
+
+  // Deactivate all links
+  const userLink = document.getElementById("userManagementLink");
+  const reportsBackupLink = document.getElementById("reportsBackupLink");
   [userLink, reportsBackupLink].forEach((l) => {
     if (l) {
       l.classList.remove(...activeClasses);
@@ -37,15 +39,32 @@ window.showSettingSection = function (section) {
     }
   });
 
-  if (section === "userManagement") {
-    userSec.classList.remove("hidden");
-    userLink.classList.remove(...inactiveClasses);
-    userLink.classList.add(...activeClasses);
-  } else if (section === "reportsBackup") {
-    reportsBackupSec.classList.remove("hidden");
-    reportsBackupLink.classList.remove(...inactiveClasses);
-    reportsBackupLink.classList.add(...activeClasses);
+  // Activate target
+  if (sectionId === "userManagement" || sectionId === "userManagementSection") {
+    if (userSec) userSec.classList.remove("hidden");
+    if (userLink) {
+      userLink.classList.remove(...inactiveClasses);
+      userLink.classList.add(...activeClasses);
+    }
+    localStorage.setItem("settings_active_section", "userManagementSection");
+    localStorage.setItem("settings_active_link", "userManagementLink");
+  } else if (
+    sectionId === "reportsBackup" ||
+    sectionId === "reportsBackupSection"
+  ) {
+    if (reportsBackupSec) reportsBackupSec.classList.remove("hidden");
+    if (reportsBackupLink) {
+      reportsBackupLink.classList.remove(...inactiveClasses);
+      reportsBackupLink.classList.add(...activeClasses);
+    }
+    localStorage.setItem("settings_active_section", "reportsBackupSection");
+    localStorage.setItem("settings_active_link", "reportsBackupLink");
   }
+
+  // Update URL Sync
+  const url = new URL(window.location);
+  url.searchParams.set("section", sectionId);
+  window.history.replaceState({}, "", url);
 };
 
 /**
@@ -341,6 +360,24 @@ document.addEventListener("DOMContentLoaded", () => {
   if (confirmPasswordInput)
     confirmPasswordInput.addEventListener("input", checkMatch);
   if (passwordInput) passwordInput.addEventListener("input", checkMatch);
+  
+  // Tab Persistence - Robust Restoration Logic
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlSection = urlParams.get('section');
+  const savedSection = localStorage.getItem('settings_active_section');
+  const savedLink = localStorage.getItem('settings_active_link');
+  
+  if (urlSection) {
+      if (urlSection === 'reportsBackup' || urlSection === 'reportsBackupSection') {
+          window.showSettingSection('reportsBackup', 'reportsBackupLink');
+      } else {
+          window.showSettingSection('userManagement', 'userManagementLink');
+      }
+  } else if (savedSection && savedLink) {
+      window.showSettingSection(savedSection, savedLink);
+  } else {
+      window.showSettingSection('userManagement', 'userManagementLink');
+  }
 
   // Full Name Validation
   if (nameInput) {

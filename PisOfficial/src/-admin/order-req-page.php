@@ -23,6 +23,9 @@ if (isset($_SESSION['user_id'])) {
     $totalTransactionsCount = $stats['total_transactions'];
     $pendingRequestsCount = $stats['pending_requests'];
 
+    $revenueStats = get_revenue_stats($pdo);
+    $totalRevenue = $revenueStats['total'];
+
 
     // Fetch total cart items for Admin POS badge
     $cartItems = get_cart_items($pdo, $userId);
@@ -129,23 +132,28 @@ if (isset($_SESSION['user_id'])) {
         <?php
         render_admin_stats_cards([
             [
+                'label'   => 'Total Sales Revenue',
+                'value'   => '₱' . number_format($totalRevenue, 2),
+                'subtext' => 'Lifetime system-wide earnings.'
+            ],
+            [
                 'label'   => 'Available Products',
                 'value'   => $totalProducts,
-                'subtext' => 'Total products in the system.'
+                'subtext' => 'Total products in system.'
             ],
             [
                 'label'   => 'Total Transactions',
                 'value'   => $totalTransactionsCount,
-                'subtext' => 'All recorded transactions.'
+                'subtext' => 'All recorded system sales.'
             ],
             [
-                'label'      => 'Pending Requests',
+                'label'      => 'Pending Request',
                 'value'      => $pendingRequestsCount,
-                'subtext'    => 'Awaiting your review.',
+                'subtext'    => 'Current pending order requests.',
                 'isCritical' => true,
                 'animate'    => true
             ]
-        ]);
+        ], 4);
         ?>
     </section>
 

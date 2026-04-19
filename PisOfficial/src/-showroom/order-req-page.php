@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once '../include/config.php';
 require_once '../include/dbh.inc.php';
 require_once '../include/inc.showroom/sr.model.php';
+require_once '../include/inc.admin/admin.view.php';
 
 /** @var PDO $pdo */
 if (!isset($pdo) || !($pdo instanceof PDO)) {
@@ -32,7 +33,7 @@ if (isset($_SESSION['user_id'])) {
         SELECT 
             (SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0) as total_products,
             (SELECT COUNT(*) FROM transactions t JOIN orders o ON t.order_id = o.id WHERE o.created_by = :uid1) as total_transactions,
-            (SELECT COUNT(*) FROM orders WHERE created_by = :uid2 AND status IN ('For Review', 'Approved')) as pending_requests
+            (SELECT COUNT(*) FROM orders WHERE created_by = :uid2 AND status IN ('For Review', 'Pending', 'Approved')) as pending_requests
     ");
     $statsQuery->execute([':uid1' => $userId, ':uid2' => $userId]);
     $stats = $statsQuery->fetch(PDO::FETCH_ASSOC);
@@ -125,30 +126,27 @@ if (isset($_SESSION['user_id'])) {
     </header>
 
     <section class="max-w-7xl w-full mx-auto px-6 py-4 px-4 md:px-8">
-        <div class="grid grid-cols-[repeat(3,400px)] justify-center gap-5">
-            <!-- Card 1 -->
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Available Products</div>
-                <div class="text-4xl font-bold text-gray-800"><?= number_format((float) $totalProducts) ?></div>
-                <div class="text-sm text-gray-600">Total products in the catalog.</div>
-            </div>
-
-            <!-- Card 2 -->
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Total Transactions</div>
-                <div class="text-4xl font-bold text-gray-800"><?= number_format((float) $totalTransactionsCount) ?>
-                </div>
-                <div class="text-sm text-gray-600">Your completed transactions.</div>
-            </div>
-
-            <!-- Card 3 -->
-            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
-                <div class="text-sm uppercase tracking-wide text-gray-500">Active Request</div>
-                <div class="text-4xl font-bold text-red-600"><?= number_format((float) $pendingRequestsCount) ?></div>
-                <div class="text-sm text-gray-600">Your active order requests.</div>
-            </div>
-
-        </div>
+        <?php
+        render_admin_stats_cards([
+            [
+                'label'   => 'Available Products',
+                'value'   => $totalProducts,
+                'subtext' => 'Total products in the catalog.'
+            ],
+            [
+                'label'   => 'Total Transactions',
+                'value'   => $totalTransactionsCount,
+                'subtext' => 'Your completed transactions.'
+            ],
+            [
+                'label'      => 'Active Request',
+                'value'      => $pendingRequestsCount,
+                'subtext'    => 'Your active order requests.',
+                'isCritical' => true,
+                'animate'    => $pendingRequestsCount > 0
+            ]
+        ], 3);
+        ?>
     </section>
 
     <nav class="px-5 flex justify-center w-full max-w-7xl mx-auto">

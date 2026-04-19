@@ -271,6 +271,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !empty($action)) {
                 redirectWith("error=migration_failed");
             }
         }
+
+        // FACTORY DATA RESET (KEEP USERS)
+        if ($action === 'factory_reset') {
+            $result = factory_reset_except_users($pdo);
+            if ($result['success']) {
+                redirectWith("success=factory_reset");
+            } else {
+                redirectWith("error=factory_reset_failed&msg=" . urlencode($result['message']));
+            }
+        }
     } catch (PDOException $e) {
         error_log("Admin Form Action Error: " . $e->getMessage());
         $err = ($e->getCode() == 23000) ? 'exists' : 'db_error';
@@ -358,6 +368,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
             $pdo->prepare("UPDATE products SET is_deleted = 1 WHERE id = ?")->execute([$prod_id]);
             // Also soft delete associated variants
             $pdo->prepare("UPDATE product_variant SET is_deleted = 1 WHERE prod_id = ?")->execute([$prod_id]);
+
+            // HARD DELETE STOCKS as requested to keep DB clean
+            $pdo->prepare("DELETE FROM warehouse_stocks WHERE prod_id = ?")->execute([$prod_id]);
+            $pdo->prepare("DELETE FROM showroom_stocks WHERE variant_id IN (SELECT id FROM product_variant WHERE prod_id = ?)")->execute([$prod_id]);
         }
 
         $pdo->commit();
@@ -386,6 +400,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         if (isset($_FILES['default_image']) && $_FILES['default_image']['error'] === 0) {
             if (!is_valid_image($_FILES['default_image'])) {
                 throw new Exception("Invalid main image format. Only JPG and PNG are allowed.");
+            }
+            if ($main_img && $main_img !== 'default.png') {
+                $old_img_path = "../../../public/assets/img/furnitures/" . $main_img;
+                if (file_exists($old_img_path)) {
+                    unlink($old_img_path);
+                }
             }
             $main_img = time() . '_' . preg_replace("/[^a-zA-Z0-9._-]/", "", $_FILES['default_image']['name']);
             move_uploaded_file($_FILES['default_image']['tmp_name'], "../../../public/assets/img/furnitures/" . $main_img);
@@ -464,6 +484,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
                     if (!is_valid_image($file_arr)) {
                         throw new Exception("Invalid variant image format for '" . $v_name . "'. Only JPG and PNG are allowed.");
                     }
+                    if ($v_img && $v_img !== 'default_v.png') {
+                        $old_v_img_path = "../../../public/assets/img/furnitures/" . $v_img;
+                        if (file_exists($old_v_img_path)) {
+                            unlink($old_v_img_path);
+                        }
+                    }
                     $v_img = time() . '_v_' . preg_replace("/[^a-zA-Z0-9._-]/", "", $_FILES['variant_imgs']['name'][$index]);
                     move_uploaded_file($_FILES['variant_imgs']['tmp_name'][$index], "../../../public/assets/img/furnitures/" . $v_img);
                 }
@@ -487,6 +513,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
             $inQuery = implode(',', array_fill(0, count($variants_to_delete), '?'));
             // Soft delete variants (Update is_deleted instead of DELETE)
             $pdo->prepare("UPDATE product_variant SET is_deleted = 1 WHERE id IN ($inQuery)")->execute(array_values($variants_to_delete));
+            
+            // HARD DELETE STOCKS for these specific discontinued variants
+            $pdo->prepare("DELETE FROM warehouse_stocks WHERE variant_id IN ($inQuery)")->execute(array_values($variants_to_delete));
+            $pdo->prepare("DELETE FROM showroom_stocks WHERE variant_id IN ($inQuery)")->execute(array_values($variants_to_delete));
         }
 
         $pdo->commit();
