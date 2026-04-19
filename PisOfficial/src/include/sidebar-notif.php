@@ -44,7 +44,7 @@
 </div>
 
 <div id="clearNotifModal" style="z-index: 9999;" class="fixed inset-0 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
-    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 bg-slate-900/40"></div>
     <div class="relative bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden transform transition-all p-8 text-center border border-gray-100">
         <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-red-50/50">
             <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
