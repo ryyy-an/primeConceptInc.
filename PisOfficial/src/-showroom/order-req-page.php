@@ -455,6 +455,9 @@ if (isset($_SESSION['user_id'])) {
                                                         Source</th>
                                                     <th
                                                         class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase">
+                                                        Product Code</th>
+                                                    <th
+                                                        class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase">
                                                         Product Details</th>
                                                     <th
                                                         class="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase">

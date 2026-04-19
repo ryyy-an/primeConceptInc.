@@ -144,7 +144,7 @@ if ($action === 'get_items') {
         }
 
         // Fetch order items
-        $stmtItems = $pdo->prepare("SELECT p.name as prod_name, pv.variant, oi.get_from as location, oi.qty as quantity, oi.unit_price as price 
+        $stmtItems = $pdo->prepare("SELECT p.name as prod_name, p.code, pv.variant, oi.get_from as location, oi.qty as quantity, oi.unit_price as price 
                                     FROM order_items oi
                                     JOIN product_variant pv ON oi.variant_id = pv.id
                                     JOIN products p ON pv.prod_id = p.id

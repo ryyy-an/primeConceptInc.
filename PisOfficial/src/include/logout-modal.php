@@ -14,10 +14,10 @@
         </div>
 
         <div class="flex gap-3 p-4 bg-gray-50/50 border-t border-gray-100">
-            <button class="logout-close flex-1 px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-gray-100 transition-all active:scale-95">
+            <button data-close-modal="logout-modal" class="logout-close flex-1 px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-gray-100 transition-all active:scale-95">
                 Stay
             </button>
-            <button id="confirmLogoutBtn"
+            <button id="confirmLogoutBtn" data-action="confirm-logout"
                 class="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-red-700 shadow-lg shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2">
                 Logout
             </button>

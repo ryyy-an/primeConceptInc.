@@ -33,9 +33,9 @@ function get_inventory_cards(PDO $pdo, string $search = '', ?int $limit = null):
                 pv.id AS variant_id,
                 pv.variant,
                 pv.min_buildable_qty,
-                SUM(COALESCE(ss.qty_on_hand, 0)) AS variant_stocks_in_SR,
+                GREATEST(0, SUM(COALESCE(ss.qty_on_hand, 0)) - MAX(COALESCE(sr_res.reserved_qty, 0))) AS variant_stocks_in_SR,
                 MAX(COALESCE(ws_agg.buildable_qty, 0)) AS variant_stocks_in_WH,
-                (SUM(COALESCE(ss.qty_on_hand, 0)) + MAX(COALESCE(ws_agg.buildable_qty, 0))) AS overall_stocks,
+                (GREATEST(0, SUM(COALESCE(ss.qty_on_hand, 0)) - MAX(COALESCE(sr_res.reserved_qty, 0))) + MAX(COALESCE(ws_agg.buildable_qty, 0))) AS overall_stocks,
                 loc_agg.locations
             FROM 
                 products p
@@ -44,11 +44,27 @@ function get_inventory_cards(PDO $pdo, string $search = '', ?int $limit = null):
             LEFT JOIN 
                 showroom_stocks ss ON pv.id = ss.variant_id
             LEFT JOIN (
+                SELECT oi.variant_id, SUM(oi.qty) as reserved_qty
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.id
+                WHERE oi.get_from = 'SR' AND o.status IN ('For Review', 'Approved', 'Pending')
+                GROUP BY oi.variant_id
+            ) sr_res ON pv.id = sr_res.variant_id
+            LEFT JOIN (
                 SELECT 
                     ws.variant_id, 
-                    FLOOR(MIN(ws.qty_on_hand / NULLIF(pc.qty_needed, 0))) as buildable_qty
+                    FLOOR(MIN(GREATEST(0, ws.qty_on_hand - COALESCE(comp_res.res_qty, 0)) / NULLIF(pc.qty_needed, 0))) as buildable_qty
                 FROM warehouse_stocks ws
                 JOIN product_components pc ON ws.product_comp_id = pc.id
+                LEFT JOIN (
+                    SELECT pc2.comp_id, SUM(oi.qty * pc2.qty_needed) as res_qty
+                    FROM order_items oi
+                    JOIN orders o ON oi.order_id = o.id
+                    JOIN product_variant pv2 ON oi.variant_id = pv2.id
+                    JOIN product_components pc2 ON pv2.prod_id = pc2.prod_id
+                    WHERE oi.get_from = 'WH' AND o.status IN ('For Review', 'Approved', 'Pending')
+                    GROUP BY pc2.comp_id
+                ) comp_res ON pc.comp_id = comp_res.comp_id
                 GROUP BY ws.variant_id
             ) ws_agg ON pv.id = ws_agg.variant_id
             LEFT JOIN (
@@ -127,16 +143,89 @@ function get_inventory_cards(PDO $pdo, string $search = '', ?int $limit = null):
     return $products;
 }
 
+/**
+ * Calculates the truly available stock by subtracting reserved quantities in pending orders.
+ * Reserved Statuses: 'For Review', 'Approved', 'Pending'
+ */
+function get_effective_available_stock(PDO $pdo, int $variantId, string $source): int
+{
+    try {
+        $reservedStatuses = ['For Review', 'Approved', 'Pending'];
+        $statusPlaceholders = implode(',', array_fill(0, count($reservedStatuses), '?'));
+
+        if ($source === 'SR') {
+            // Physical Showroom Stock
+            $stmt = $pdo->prepare("SELECT COALESCE(qty_on_hand, 0) FROM showroom_stocks WHERE variant_id = ?");
+            $stmt->execute([$variantId]);
+            $onHand = (int)$stmt->fetchColumn();
+
+            // Reserved in SR
+            $sqlRes = "SELECT SUM(oi.qty) 
+                       FROM order_items oi 
+                       JOIN orders o ON oi.order_id = o.id 
+                       WHERE oi.variant_id = ? AND oi.get_from = 'SR' AND o.status IN ($statusPlaceholders)";
+            $stmtRes = $pdo->prepare($sqlRes);
+            $stmtRes->execute(array_merge([$variantId], $reservedStatuses));
+            $reserved = (int)$stmtRes->fetchColumn();
+
+            return max(0, $onHand - $reserved);
+        } else {
+            // Warehouse buildable stock accounting for reserved components
+            // 1. Get components for this variant
+            $sqlComp = "SELECT pc.id as comp_row_id, pc.comp_id, pc.qty_needed, ws.qty_on_hand
+                        FROM product_components pc
+                        JOIN product_variant pv ON pc.prod_id = pv.prod_id
+                        JOIN warehouse_stocks ws ON pc.id = ws.product_comp_id
+                        WHERE pv.id = ? AND pc.is_deleted = 0";
+            $stmtComp = $pdo->prepare($sqlComp);
+            $stmtComp->execute([$variantId]);
+            $components = $stmtComp->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($components)) return 0;
+
+            $minBuildable = PHP_INT_MAX;
+
+            foreach ($components as $c) {
+                // How many of this component are reserved across ALL variants that use it?
+                $sqlResComp = "SELECT SUM(oi.qty * pc2.qty_needed) 
+                               FROM order_items oi
+                               JOIN orders o ON oi.order_id = o.id
+                               JOIN product_components pc2 ON oi.variant_id = pc2.variant_id AND oi.prod_id = pc2.prod_id
+                               WHERE pc2.comp_id = ? AND oi.get_from = 'WH' AND o.status IN ($statusPlaceholders)";
+                
+                // Wait, pc2 join should be careful. Actually, variant_id to prod_id mapping is standard.
+                // Re-calculating:
+                $sqlResComp = "SELECT SUM(oi.qty * pc2.qty_needed)
+                               FROM order_items oi
+                               JOIN orders o ON oi.order_id = o.id
+                               JOIN product_variant pv ON oi.variant_id = pv.id
+                               JOIN product_components pc2 ON pv.prod_id = pc2.prod_id
+                               WHERE pc2.comp_id = ? AND oi.get_from = 'WH' AND o.status IN ($statusPlaceholders)";
+                
+                $stmtResComp = $pdo->prepare($sqlResComp);
+                $stmtResComp->execute(array_merge([$c['comp_id']], $reservedStatuses));
+                $compReserved = (int)$stmtResComp->fetchColumn();
+
+                $compEffective = max(0, (int)$c['qty_on_hand'] - $compReserved);
+                $buildableForThisComp = floor($compEffective / $c['qty_needed']);
+                
+                if ($buildableForThisComp < $minBuildable) {
+                    $minBuildable = $buildableForThisComp;
+                }
+            }
+
+            return (int)max(0, $minBuildable);
+        }
+    } catch (PDOException $e) {
+        error_log("Effective Stock Error: " . $e->getMessage());
+        return 0;
+    }
+}
+
 function add_to_cart(PDO $pdo, int $userId, int $variantId, int $qty, string $source): bool
 {
     try {
-        $stockSql = ($source === 'SR')
-            ? "SELECT qty_on_hand FROM showroom_stocks WHERE variant_id = ?"
-            : "SELECT MIN(qty_on_hand) FROM warehouse_stocks WHERE variant_id = ?";
-
-        $stockStmt = $pdo->prepare($stockSql);
-        $stockStmt->execute([$variantId]);
-        $availableStock = (int)$stockStmt->fetchColumn();
+        $availableStock = get_effective_available_stock($pdo, $variantId, $source);
 
         $stmt = $pdo->prepare("SELECT id, qty FROM cart WHERE user_id = ? AND variant_id = ? AND source = ?");
         $stmt->execute([$userId, $variantId, $source]);
@@ -176,21 +265,10 @@ function get_cart_items(PDO $pdo, int $userId): array
                     p.price,
                     pv.variant,
                     pv.variant_image,
-                    p.default_image,
-                    CASE 
-                        WHEN c.source = 'SR' THEN COALESCE(ss.qty_on_hand, 0)
-                        WHEN c.source = 'WH' THEN COALESCE(ws_agg.min_qty, 0)
-                        ELSE 0
-                    END AS available_stock
+                    p.default_image
                 FROM cart c
                 JOIN product_variant pv ON c.variant_id = pv.id AND pv.is_deleted = 0
                 JOIN products p ON pv.prod_id = p.id
-                LEFT JOIN showroom_stocks ss ON pv.id = ss.variant_id
-                LEFT JOIN (
-                    SELECT variant_id, MIN(qty_on_hand) as min_qty 
-                    FROM warehouse_stocks 
-                    GROUP BY variant_id
-                ) ws_agg ON pv.id = ws_agg.variant_id
                 WHERE c.user_id = ? AND p.is_deleted = 0
                 ORDER BY c.id DESC";
         $stmt = $pdo->prepare($sql);
@@ -203,6 +281,9 @@ function get_cart_items(PDO $pdo, int $userId): array
             $encodedFileName = rawurlencode(trim($img ?? 'default-placeholder.png'));
             $imagePath = "../../public/assets/img/furnitures/" . $encodedFileName;
 
+            // Calculate current effective stock for UI feedback
+            $effStock = get_effective_available_stock($pdo, (int)$row['variant_id'], $row['source']);
+
             $cartItems[] = [
                 'cart_id'         => $row['cart_id'],
                 'prod_id'         => $row['prod_id'],
@@ -213,7 +294,7 @@ function get_cart_items(PDO $pdo, int $userId): array
                 'price'           => (float)$row['price'],
                 'source'          => $row['source'],
                 'image'           => $imagePath,
-                'available_stock' => (int)$row['available_stock']
+                'available_stock' => $effStock
             ];
         }
         return $cartItems;
@@ -333,7 +414,7 @@ function create_notification(PDO $pdo, int $senderId, string $title, string $mes
 function get_user_notifications(PDO $pdo, int $userId, string $role, int $limit = 20): array
 {
     try {
-        $sql = "SELECT n.*, u.full_name as sender_name, 
+        $sql = "SELECT DISTINCT n.*, u.full_name as sender_name, 
                        COALESCE(nus.is_read, n.is_read) as is_read
                 FROM notifications n
                 LEFT JOIN users u ON n.sender_id = u.id

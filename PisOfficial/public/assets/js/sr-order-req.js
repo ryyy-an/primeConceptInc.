@@ -265,8 +265,9 @@ async function populateRequestSummary(req) {
     const hiddenOrderId = document.getElementById("hidden-order-id");
 
     if (!tableBody || !grandTotalEl || !itemCountEl) return;
+    const colCount = 5;
 
-    tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-gray-400 opacity-50 italic">Loading order details...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="${colCount}" class="px-6 py-10 text-center font-bold text-gray-400 opacity-50 italic">Loading order details...</td></tr>`;
 
     try {
         const response = await fetch(`../include/inc.showroom/sr.ctrl.php?action=get_items&pr_no=${req.pr_no}`);
@@ -278,7 +279,7 @@ async function populateRequestSummary(req) {
             let count = 0;
 
             if (data.items.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-gray-400 opacity-50 italic uppercase">No items found for this request.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="${colCount}" class="px-6 py-10 text-center font-bold text-gray-400 opacity-50 italic uppercase">No items found for this request.</td></tr>`;
             } else {
                 data.items.forEach((item) => {
                     const qty = parseInt(item.quantity);
@@ -293,6 +294,9 @@ async function populateRequestSummary(req) {
                 <tr class="hover:bg-gray-50/50 transition-colors">
                     <td class="px-6 py-4">
                         <span class="${srcBadge} text-white text-[9px] px-2 py-1 rounded-md font-black shadow-sm uppercase italic">${item.location}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-sm font-black text-gray-600">${item.code || 'N/A'}</span>
                     </td>
                     <td class="px-6 py-4">
                         <h1 class="text-sm font-black text-gray-900 leading-tight">${item.prod_name}</h1>
@@ -331,11 +335,11 @@ async function populateRequestSummary(req) {
             // Capture the state after all fields are populated
             captureInitialState();
         } else {
-            tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-red-500">Failed to load request items.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="${colCount}" class="px-6 py-10 text-center font-bold text-red-500">Failed to load request items.</td></tr>`;
         }
     } catch (err) {
         console.error(err);
-        tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-red-500">Error fetching data.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="${colCount}" class="px-6 py-10 text-center font-bold text-red-500">Error fetching data.</td></tr>`;
     }
 }
 

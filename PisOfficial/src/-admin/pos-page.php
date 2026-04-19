@@ -44,8 +44,8 @@ if (isset($_SESSION['user_id'])) {
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js?v=1.3.0" defer></script>
-    <script src="../../public/assets/js/order.js?v=1.3.0" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.4.5" defer></script>
+    <script src="../../public/assets/js/order.js?v=1.4.5" defer></script>
 
 
     <style>
@@ -113,9 +113,11 @@ if (isset($_SESSION['user_id'])) {
             </a>
 
             <!-- Logout -->
-            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
-                <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+            <a href="javascript:void(0)" data-open-modal="logout-modal" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+                <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
                 </svg>
                 <span class="text-sm text-red-600 font-medium">Logout</span>
             </a> <?php include '../include/logout-modal.php'; ?>
@@ -300,7 +302,7 @@ if (isset($_SESSION['user_id'])) {
                                 <div class="h-6 w-[1.5px] bg-gray-300 mx-2 opacity-60"></div>
 
                                 <div class="relative inline-block text-left">
-                                    <button type="button" data-toggle-filter-menu
+                                    <button type="button" data-filter-toggle
                                         class="flex items-center justify-center w-9 h-9  text-gray-500 hover:text-red-600 active:scale-90 transition-all cursor-pointer">
                                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none"
                                             viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
@@ -312,19 +314,19 @@ if (isset($_SESSION['user_id'])) {
                                     <div id="filterMenu"
                                         class="hidden absolute left-1/2 -translate-x-1/2 mt-3 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden ring-1 ring-black/5">
                                         <div class="py-1">
-                                            <button data-select-filter="all"
+                                            <button data-filter="all"
                                                 class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all">
                                                 <span
                                                     class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📍</span>
                                                 <span class="font-medium">General</span>
                                             </button>
-                                            <button data-select-filter="warehouse"
+                                            <button data-filter="warehouse"
                                                 class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
                                                 <span
                                                     class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📦</span>
                                                 <span class="font-medium">Warehouse</span>
                                             </button>
-                                            <button data-select-filter="showroom"
+                                            <button data-filter="showroom"
                                                 class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
                                                 <span
                                                     class="mr-3 opacity-70 group-hover:scale-110 transition-transform">🏢</span>
@@ -447,7 +449,8 @@ if (isset($_SESSION['user_id'])) {
                                                 Out of Stock
                                             </button>
                                         <?php else: ?>
-                                            <button type="button" data-open-product-modal='<?= json_encode($p) ?>'
+                                            <button type="button" class="add-to-cart-btn flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center cursor-pointer"
+                                                data-open-product-modal="<?= $encodedProduct ?>">
                                                 Add to Cart
                                             </button>
                                         <?php endif; ?>
@@ -482,7 +485,7 @@ if (isset($_SESSION['user_id'])) {
                                     <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Item
                                         Code: <span class="text-black" id="modalProductCode">EC-001</span></p>
                                 </div>
-                                <button data-close-modal="addToCartModal"
+                                <button data-modal-close="addToCartModal"
                                     class="p-2 text-gray-400 hover:text-black transition-colors rounded-xl hover:bg-gray-50">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round"
@@ -663,7 +666,7 @@ if (isset($_SESSION['user_id'])) {
                             </div>
 
                             <div class="p-5 border-t border-gray-100 flex gap-3 shrink-0">
-                                <button type="button" data-close-modal="addToCartModal"
+                                <button type="button" data-modal-close="addToCartModal"
                                     class="flex-1 py-4 border-2 border-gray-200 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
                                 <button type="button" data-handle-add-to-cart
                                     class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center cursor-pointer">Add
@@ -741,10 +744,10 @@ if (isset($_SESSION['user_id'])) {
                                                 <td class="px-6 py-4">
                                                     <div class="flex items-center justify-center">
                                                         <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100 h-8">
-                                                            <button type="button" data-update-cart-qty="<?= $cItem['cart_id'] ?>,<?= $cItem['qty'] - 1 ?>,<?= $cItem['available_stock'] ?>"
+                                                            <button data-update-cart-qty="<?= $cItem['cart_id'] . ',' . ($cItem['qty'] - 1) . ',' . $cItem['available_stock'] ?>"
                                                                 class="w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-white hover:shadow-sm rounded transition-all cursor-pointer">-</button>
                                                             <span class="px-3 text-xs font-black text-gray-800"><?= $cItem['qty'] ?></span>
-                                                            <button type="button" data-update-cart-qty="<?= $cItem['cart_id'] ?>,<?= $cItem['qty'] + 1 ?>,<?= $cItem['available_stock'] ?>"
+                                                            <button data-update-cart-qty="<?= $cItem['cart_id'] . ',' . ($cItem['qty'] + 1) . ',' . $cItem['available_stock'] ?>"
                                                                 class="w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-white hover:shadow-sm rounded transition-all cursor-pointer">+</button>
                                                         </div>
                                                     </div>
@@ -815,7 +818,7 @@ if (isset($_SESSION['user_id'])) {
                                         <span id="customerBadge"
                                             class="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-600 rounded-full">New
                                             Account</span>
-                                        <button data-close-proceed-modal="reviewCartModal"
+                                        <button data-modal-close-check="reviewCartModal" data-form-id="clientName"
                                             class="p-2 text-gray-400 hover:text-black transition-colors rounded-xl hover:bg-gray-50">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round"

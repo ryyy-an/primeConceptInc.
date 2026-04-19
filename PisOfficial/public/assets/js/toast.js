@@ -4,9 +4,6 @@
  */
 
 window.showToast = function(message, type = 'success') {
-    const overlay = document.getElementById('actionOverlay');
-    if (overlay) overlay.classList.remove('hidden');
-
     const Toast = Swal.mixin({
         toast: true,
         position: 'bottom-end',
@@ -25,8 +22,6 @@ window.showToast = function(message, type = 'success') {
     Toast.fire({
         icon: type === 'error' ? 'error' : 'success',
         title: message
-    }).then(() => {
-        if (overlay) overlay.classList.add('hidden');
     });
 };
 

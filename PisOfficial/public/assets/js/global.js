@@ -141,14 +141,41 @@ window.showTab = showTab;
 window.formHasUnsavedChanges = false;
 window.openModal = function (id) {
   const modal = document.getElementById(id);
-  if (!modal) return;
+  if (!modal) {
+    console.warn(`Modal with id "${id}" not found.`);
+    return;
+  }
+
+  // Ensure modal is prepared for transition
+  modal.classList.remove("hidden"); // Backup in case hidden class is used
+  
+  // Trigger reflow for transition
+  void modal.offsetWidth;
+
   modal.classList.remove("opacity-0", "pointer-events-none");
   modal.classList.add("opacity-100", "pointer-events-auto");
 
-  const box = modal.querySelector(".modal-box");
-  if (box) {
-    box.classList.remove("scale-95", "opacity-0");
-    box.classList.add("scale-100", "opacity-100");
+  // Show content box
+  const content = modal.querySelector(".modal-box");
+  if (content) {
+    content.classList.remove("scale-95", "opacity-0");
+    content.classList.add("scale-100", "opacity-100");
+  }
+
+  // Handle specific cases (like form reset) inside specific modals if needed
+};
+
+/**
+ * Toggles an invisible overlay that blocks all mouse interactions
+ * Useful for preventing double-clicks during async processing.
+ */
+window.toggleInteractionBlocker = function (show) {
+  const overlay = document.getElementById("actionOverlay");
+  if (!overlay) return;
+  if (show) {
+    overlay.classList.remove("hidden");
+  } else {
+    overlay.classList.add("hidden");
   }
 };
 
@@ -443,31 +470,46 @@ window.updateVariantStocks = updateVariantStocks;
 document.addEventListener('click', (e) => {
     const target = e.target;
 
-    // Logout Modal
-    if (target.closest('.logout-trigger')) {
+    // Logout Trigger (Header)
+    if (target.closest('.logout-trigger') || target.closest('[data-open-modal="logout-modal"]')) {
         e.preventDefault();
         window.toggleLogoutModal(true);
         return;
     }
+
+    // Modal Operations (Open)
+    const openBtn = target.closest('[data-open-modal]') || target.closest('[data-modal-open]');
+    if (openBtn) {
+        const modalId = openBtn.getAttribute('data-open-modal') || openBtn.getAttribute('data-modal-open');
+        window.openModal(modalId);
+        return;
+    }
+
+    // Modal Operations (Close)
+    const closeBtn = target.closest('[data-close-modal]') || 
+                     target.closest('[data-modal-close]') || 
+                     target.closest('[data-modal-close-req]') || 
+                     target.closest('[data-modal-close-check]');
+    if (closeBtn) {
+        const modalId = closeBtn.getAttribute('data-close-modal') || 
+                        closeBtn.getAttribute('data-modal-close') || 
+                        closeBtn.getAttribute('data-modal-close-req') || 
+                        closeBtn.getAttribute('data-modal-close-check');
+        window.closeModal(modalId);
+        return;
+    }
+
+    // Logout "Stay" (Close Modal) - Backup for class-based
     if (target.closest('.logout-close')) {
         e.preventDefault();
         window.toggleLogoutModal(false);
         return;
     }
-    if (target.id === 'confirmLogoutBtn') {
-        window.handleLogout();
-        return;
-    }
 
-    // Modal Operations
-    const openBtn = target.closest('[data-open-modal]');
-    if (openBtn) {
-        window.openModal(openBtn.getAttribute('data-open-modal'));
-        return;
-    }
-    const closeBtn = target.closest('[data-close-modal]');
-    if (closeBtn) {
-        window.closeModal(closeBtn.getAttribute('data-close-modal'));
+    // Logout "Confirm" (Action)
+    if (target.closest('#confirmLogoutBtn') || target.closest('[data-action="confirm-logout"]')) {
+        e.preventDefault();
+        window.handleLogout();
         return;
     }
 

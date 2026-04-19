@@ -59,10 +59,12 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
-    <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
+    <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png?v=2">
+    <link rel="shortcut icon" href="../../public/assets/img/favIcon.png?v=2" type="image/x-icon">
+    <link rel="apple-touch-icon" href="../../public/assets/img/favIcon.png?v=2">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js?v=1.4.0" defer></script>
-    <script src="../../public/assets/js/order.js?v=1.4.0" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.4.5" defer></script>
+    <script src="../../public/assets/js/order.js?v=1.4.5" defer></script>
     <?php include '../include/toast.php'; ?>
 
 
@@ -568,7 +570,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                             <input type="radio" name="variant" value="Matte Black"
                                                 data-img="../../public/assets/img/furnitures/default-placeholder.png"
                                                 data-desc="Smooth matte black finish with scratch-resistant coating."
-                                                class="hidden peer" checked data-update-variant-details>
+                                                class="hidden peer" checked data-update-variant>
 
                                             <div
                                                 class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">
@@ -601,7 +603,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                             <input type="radio" name="variant" value="Wood Finish"
                                                 data-img="../../public/assets/img/furnitures/default-placeholder.png"
                                                 data-desc="Natural oak wood texture with a polished protective seal."
-                                                class="hidden peer" data-update-variant-details>
+                                                class="hidden peer" data-update-variant>
 
                                             <div
                                                 class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">

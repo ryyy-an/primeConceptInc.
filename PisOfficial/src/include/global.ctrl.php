@@ -74,19 +74,13 @@ if ($action === 'update_cart_qty') {
         $variantId = (int)$cartItem['variant_id'];
         $source = $cartItem['source'];
 
-        // 2. Check current available stock
-        $stockSql = ($source === 'SR') 
-            ? "SELECT qty_on_hand FROM showroom_stocks WHERE variant_id = ?"
-            : "SELECT qty_on_hand FROM warehouse_stocks WHERE variant_id = ?";
-        
-        $stockStmt = $pdo->prepare($stockSql);
-        $stockStmt->execute([$variantId]);
-        $availableStock = (int)$stockStmt->fetchColumn();
+        // 2. Check current available stock incorporating reservations
+        $availableStock = get_effective_available_stock($pdo, $variantId, $source);
 
         if ($qty > $availableStock) {
             sendJsonResponse([
                 'success' => false, 
-                'message' => 'Cannot update quantity. Only ' . $availableStock . ' items left in stock.'
+                'message' => 'Cannot update quantity. Only ' . $availableStock . ' items are available (including reserved units).'
             ]);
         }
 

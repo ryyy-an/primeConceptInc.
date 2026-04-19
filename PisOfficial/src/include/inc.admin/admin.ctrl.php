@@ -66,7 +66,8 @@ if ($action === 'update_status') {
 
     // Map status from frontend to internal DB strings if needed
     // 'approve' -> 'Approved', 'reject' -> 'Rejected'
-    $dbStatus = ($status === 'approve') ? 'Approved' : (($status === 'reject') ? 'Rejected' : $status);
+    $statusLower = strtolower($status);
+    $dbStatus = ($statusLower === 'approve') ? 'Approved' : (($statusLower === 'reject') ? 'Rejected' : $status);
 
     if ($order_id <= 0 || !in_array($dbStatus, ['Approved', 'Rejected'])) {
         sendJsonResponse(['success' => false, 'message' => 'Invalid parameters']);

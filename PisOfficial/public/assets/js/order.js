@@ -342,6 +342,10 @@ async function handleAction(type) {
         if (type === 'reject') rejectBtn.innerText = 'REJECTING...';
     }
 
+    if (typeof window.toggleInteractionBlocker === "function") {
+        window.toggleInteractionBlocker(true);
+    }
+
     try {
         const discountVal = parseFloat(discountInput.value) || 0;
         const discountType = typeElement ? typeElement.value : 'currency';
@@ -372,6 +376,10 @@ async function handleAction(type) {
         console.error(err);
         if (approveBtn) { approveBtn.disabled = false; approveBtn.innerText = originalApproveText; }
         if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.innerText = originalRejectText; }
+    } finally {
+        if (typeof window.toggleInteractionBlocker === "function") {
+            window.toggleInteractionBlocker(false);
+        }
     }
 }
 
@@ -732,6 +740,9 @@ async function submitOrderRequest() {
         btn.innerHTML = `<span class="animate-pulse italic">Submitting Request...</span>`;
     }
 
+    // Block mouse interaction during processing
+    window.toggleInteractionBlocker?.(true);
+
     try {
         const formData = new FormData();
         formData.append("action", "place_request");
@@ -740,6 +751,9 @@ async function submitOrderRequest() {
 
         const res = await fetch("../include/inc.showroom/sr.ctrl.php", { method: "POST", body: formData });
         const data = await res.json();
+
+        // Release blocker before showing notifications
+        window.toggleInteractionBlocker?.(false);
 
         if (data.success) {
             closeProceedModal('reviewCartModal');
@@ -757,6 +771,7 @@ async function submitOrderRequest() {
         }
     } catch (err) {
         console.error(err);
+        window.toggleInteractionBlocker?.(false);
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = `Place Order Request`;
@@ -804,6 +819,11 @@ async function handleAddToCart() {
   if (qty > maxStock)
     return window.showCustomAlert?.("Cannot add more than available stock (" + maxStock + ").");
 
+  // Disable interaction globally during processing
+  if (typeof window.toggleInteractionBlocker === "function") {
+    window.toggleInteractionBlocker(true);
+  }
+
   if (btn) {
     btn.disabled = true;
     btn.classList.add("opacity-80", "cursor-not-allowed", "bg-gray-800");
@@ -842,6 +862,10 @@ async function handleAddToCart() {
       btn.disabled = false;
       btn.classList.remove("opacity-80", "cursor-not-allowed", "bg-gray-800");
       btn.innerText = "Add to Cart";
+    }
+    // Re-enable interaction globally
+    if (typeof window.toggleInteractionBlocker === "function") {
+        window.toggleInteractionBlocker(false);
     }
   }
 }
