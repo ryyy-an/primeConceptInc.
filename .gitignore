@@ -22,4 +22,5 @@
 Thumbs.db
 
 # Build output
-/PisOfficial/src/output.css
+# Removed from ignore to sync Online/Local UI
+#/PisOfficial/src/output.css
