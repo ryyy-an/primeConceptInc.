@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderLowStockTable();
     renderRecentOrdersTable();
     fetchReceivables();
+    initCharts();
 });
 
 // --- RECENT ORDERS PROGRESSIVE LOGIC ---
@@ -501,4 +502,160 @@ function submitCollection() {
             alert(response.error || 'Failed to record payment');
         }
     });
+}
+
+/**
+ * --- DASHBOARD CHARTS ---
+ */
+function initCharts() {
+    if (typeof Chart === 'undefined') {
+        console.error("Chart.js not loaded.");
+        return;
+    }
+
+    const container = document.getElementById('dashboard-container');
+    const rawData = container?.getAttribute('data-dashboard');
+    if (!rawData) return;
+
+    let pageData;
+    try {
+        pageData = JSON.parse(rawData);
+    } catch (e) {
+        console.error("Failed to parse dashboard data", e);
+        return;
+    }
+
+    // 1. Sales Trend Chart
+    const salesTrendData = pageData.salesTrend || [];
+    const salesCtx = document.getElementById('salesTrendChart');
+    if (salesCtx && salesTrendData.length > 0) {
+        new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: salesTrendData.map(d => d.month),
+                datasets: [{
+                    label: 'Revenue',
+                    data: salesTrendData.map(d => parseFloat(d.total_sales)),
+                    borderColor: '#ef4444', // red-500
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#ef4444',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { 
+                            drawBorder: false,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: value => '₱' + value.toLocaleString(),
+                            font: { size: 11, weight: '600' }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 11, weight: '600' }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Inventory by Location Chart
+    const inventoryData = pageData.inventoryStats || [];
+    const invCtx = document.getElementById('inventoryChart');
+    if (invCtx && inventoryData.length > 0) {
+        new Chart(invCtx, {
+            type: 'bar',
+            data: {
+                labels: inventoryData.map(d => d.category),
+                datasets: [
+                    {
+                        label: 'Warehouse',
+                        data: inventoryData.map(d => parseInt(d.wh_qty)),
+                        backgroundColor: '#111827', // gray-900 (blackish)
+                        borderRadius: 6,
+                        categoryPercentage: 0.6,
+                        barPercentage: 0.8
+                    },
+                    {
+                        label: 'Showroom',
+                        data: inventoryData.map(d => parseInt(d.sr_qty)),
+                        backgroundColor: '#9ca3af', // gray-400
+                        borderRadius: 6,
+                        categoryPercentage: 0.6,
+                        barPercentage: 0.8
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        titleFont: { family: 'Outfit', size: 13, weight: '800' },
+                        bodyFont: { family: 'Inter', size: 12 },
+                        padding: 12,
+                        cornerRadius: 10,
+                        displayColors: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100, // Fixed baseline at 100 as requested
+                        grid: { 
+                            drawBorder: false,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            stepSize: 20,
+                            font: { size: 11, weight: '600' }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 11, weight: '700' },
+                            color: '#374151'
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
