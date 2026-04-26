@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../global.model.php';
+require_once __DIR__ . '/../cache.inc.php';
 
 /**
  * Fetches order requests with support for filtering and pagination.
@@ -237,6 +238,7 @@ function process_showroom_finalize_order(PDO $pdo, array $data): array
         ]);
 
         $pdo->commit();
+        cache_clear();
         return ['success' => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();

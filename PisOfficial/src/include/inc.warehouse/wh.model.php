@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+require_once __DIR__ . '/../cache.inc.php';
 
 /**
  * Warehouse Model
@@ -74,6 +75,10 @@ function get_warehouse_stock_overview(PDO $pdo, int $limit = 5): array
  */
 function get_warehouse_health_stats(PDO $pdo): array
 {
+    $cacheKey = "warehouse_health_stats";
+    $cached = cache_get($cacheKey);
+    if ($cached !== null) return $cached;
+
     try {
         // Total products in warehouse
         $sqlTotal = "SELECT COUNT(DISTINCT ws.variant_id) FROM warehouse_stocks ws JOIN product_variant pv ON ws.variant_id = pv.id WHERE pv.is_deleted = 0";
@@ -119,13 +124,16 @@ function get_warehouse_health_stats(PDO $pdo): array
 
         $totalUnits = (int)$pdo->query("SELECT SUM(qty_on_hand) FROM warehouse_stocks")->fetchColumn();
 
-        return [
+        $stats = [
             'well_stocked' => $wellStocked,
             'restock'      => $restock,
             'total'        => count($rows),
             'health'       => count($rows) > 0 ? round(($wellStocked / count($rows)) * 100) : 0,
             'total_units'  => $totalUnits
         ];
+
+        cache_set($cacheKey, $stats, 600);
+        return $stats;
     } catch (PDOException $e) {
         error_log("Get Warehouse Health Stats Error: " . $e->getMessage());
         return [
@@ -332,7 +340,9 @@ function update_warehouse_item_status(PDO $pdo, int $itemId, string $status): bo
         if (!in_array($status, $allowedStatus)) return false;
 
         $stmt = $pdo->prepare("UPDATE order_items SET wh_item_status = ? WHERE id = ?");
-        return $stmt->execute([$status, $itemId]);
+        $res = $stmt->execute([$status, $itemId]);
+        cache_clear();
+        return $res;
     } catch (PDOException $e) {
         error_log("Update WH Item Status Error: " . $e->getMessage());
         return false;
@@ -346,7 +356,9 @@ function fulfill_warehouse_order(PDO $pdo, int $orderId): bool
 {
     try {
         $stmt = $pdo->prepare("UPDATE orders SET wh_status = 'Fulfilled', status = 'Success' WHERE id = ?");
-        return $stmt->execute([$orderId]);
+        $res = $stmt->execute([$orderId]);
+        cache_clear();
+        return $res;
     } catch (PDOException $e) {
         error_log("Fulfill WH Order Error: " . $e->getMessage());
         return false;
@@ -442,6 +454,10 @@ function count_warehouse_logs(PDO $pdo, array $filters = []): int
 
 function get_warehouse_dashboard_stats(PDO $pdo, int $userId): array
 {
+    $cacheKey = "warehouse_dashboard_stats_" . $userId;
+    $cached = cache_get($cacheKey);
+    if ($cached !== null) return $cached;
+
     try {
         $totalProducts = (int)$pdo->query("SELECT COUNT(DISTINCT p.id) 
                                     FROM products p
@@ -461,12 +477,15 @@ function get_warehouse_dashboard_stats(PDO $pdo, int $userId): array
                                  JOIN order_items oi ON o.id = oi.order_id 
                                  WHERE LOWER(o.status) = 'approved' AND (oi.get_from = 'SR' OR oi.get_from = 'Showroom')")->fetchColumn();
 
-        return [
+        $stats = [
             'total_products'    => $totalProducts,
             'user_transactions' => $userTransactions,
             'pending_wh'        => $pendingWH,
             'pending_sr'        => $pendingSR
         ];
+
+        cache_set($cacheKey, $stats, 600);
+        return $stats;
     } catch (PDOException $e) {
         error_log("Dashboard Stats Error: " . $e->getMessage());
         return ['total_products' => 0, 'user_transactions' => 0, 'pending_wh' => 0, 'pending_sr' => 0];

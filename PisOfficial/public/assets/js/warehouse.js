@@ -95,7 +95,7 @@ function initInventory() {
                                 div.className = 'flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm';
                                 div.innerHTML = `
                                     <div class="w-12 h-12 bg-white rounded-xl border border-gray-200 flex items-center justify-center shrink-0">
-                                        <img src="../../public/assets/img/furnitures/${v.variant_image || 'default.png'}" class="object-cover w-full h-full rounded-xl" onerror="this.src='../../public/assets/img/favIcon.png'">
+                                        <img src="../../public/assets/img/furnitures/${v.variant_image || 'default.png'}" loading="lazy" class="object-cover w-full h-full rounded-xl" onerror="this.src='../../public/assets/img/favIcon.png'">
                                     </div>
                                     <div class="flex-1">
                                         <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 leading-none">Variant Name</p>

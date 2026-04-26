@@ -8,10 +8,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const rawData = container.getAttribute('data-pos');
     if (rawData) {
-        const pageData = JSON.parse(rawData);
-        const activeTab = pageData.activeTab;
-        if (typeof showTab === 'function') {
-            showTab(activeTab);
+        try {
+            const pageData = JSON.parse(rawData);
+            const activeTab = pageData.activeTab;
+            if (typeof window.showTab === 'function') {
+                window.showTab(activeTab);
+            }
+        } catch (e) {
+            console.error('Error parsing POS data-pos:', e);
         }
     }
 

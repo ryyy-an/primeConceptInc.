@@ -62,6 +62,7 @@ function getInitials($name)
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.4.0" defer></script>
     <script src="../../public/assets/js/order.js?v=1.4.0" defer></script>
@@ -410,6 +411,7 @@ function getInitials($name)
                                         </div>
                                     </div>
                                     <form id="factoryResetForm" action="../include/inc.admin/admin.ctrl.php" method="POST" onsubmit="return handleFactoryResetSubmit(event)">
+                                        <?php echo insert_csrf_input(); ?>
                                         <input type="hidden" name="action" value="factory_reset">
                                         <button type="submit" class="shrink-0 px-5 py-2.5 bg-red-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-700 rounded-xl transition-all shadow-md active:scale-95">Execute Reset</button>
                                     </form>
@@ -450,6 +452,7 @@ function getInitials($name)
                         </p>
 
                         <form id="resetForm" action="../include/inc.admin/admin.ctrl.php" method="POST" class="space-y-6" onsubmit="return validateResetForm()" oninput="window.formHasUnsavedChanges = true">
+                            <?php echo insert_csrf_input(); ?>
                             <input type="hidden" name="action" value="reset_password">
                             <input type="hidden" name="user_id" id="reset_user_id_input">
 
@@ -542,6 +545,7 @@ function getInitials($name)
 
                     <form id="regForm" action="../include/inc.admin/admin.ctrl.php" method="POST" class="p-10 space-y-6"
                         oninput="window.formHasUnsavedChanges = true">
+                        <?php echo insert_csrf_input(); ?>
                         <input type="hidden" name="action" value="add_user">
 
                         <div class="space-y-6">
@@ -650,6 +654,7 @@ function getInitials($name)
                         all access
                         to the system immediately.</p>
                     <form action="../include/inc.admin/admin.ctrl.php" method="POST" class="flex flex-col gap-2 mt-6">
+                        <?php echo insert_csrf_input(); ?>
                         <input type="hidden" name="action" value="delete_user">
                         <input type="hidden" name="user_id" id="delete_user_id_input">
 

@@ -686,7 +686,7 @@ window.addEditVariantRow = function(id = '', name = '', image = 'default.png', l
             <input type="hidden" name="variant_ids[]" value="${id}">
             <input type="hidden" name="existing_variant_imgs[]" value="${image}">
             <div class="w-14 h-14 bg-white rounded-xl border border-gray-200 flex items-center justify-center shrink-0 relative">
-                <img id="v-edit-prev-${index}" src="${imgSrc}" class="${imgClass}" onerror="this.onerror=null; this.src='../../public/assets/img/furnitures/default.png';">
+                <img id="v-edit-prev-${index}" src="${imgSrc}" loading="lazy" class="${imgClass}" onerror="this.onerror=null; this.src='../../public/assets/img/furnitures/default.png';">
                 <svg id="v-edit-svg-${index}" class="${svgClass}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                 </svg>
@@ -943,7 +943,7 @@ window.populateStockModal = function(p) {
                         <div class="flex items-center mb-4">
                             <div class="relative shrink-0">
                                 <div class="w-14 h-14 bg-gray-50 rounded-2xl border border-gray-100 p-2 flex items-center justify-center">
-                                    <img src="../../public/assets/img/furnitures/${v.variant_image || 'default.png'}" class="object-contain w-full h-full" onerror="this.src='../../public/assets/img/furnitures/default.png'">
+                                    <img src="../../public/assets/img/furnitures/${v.variant_image || 'default.png'}" loading="lazy" class="object-contain w-full h-full" onerror="this.src='../../public/assets/img/furnitures/default.png'">
                                 </div>
                                 <span class="absolute -top-1 -right-1 bg-blue-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase">VAR</span>
                             </div>
@@ -1022,7 +1022,7 @@ window.populateStockModal = function(p) {
                 srHtml += `
                     <div class="p-4 bg-white border border-gray-100 rounded-3xl flex items-center gap-5 shadow-sm">
                         <div class="w-16 h-16 bg-gray-50 rounded-2xl border border-gray-100 p-2 shrink-0 flex items-center justify-center">
-                            <img src="../../public/assets/img/furnitures/${v.variant_image || 'default.png'}" class="object-contain w-full h-full" onerror="this.src='../../public/assets/img/furnitures/default.png'">
+                            <img src="../../public/assets/img/furnitures/${v.variant_image || 'default.png'}" loading="lazy" class="object-contain w-full h-full" onerror="this.src='../../public/assets/img/furnitures/default.png'">
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-1.5">

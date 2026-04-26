@@ -63,6 +63,7 @@ $logs = get_warehouse_logs($pdo, $filters, $limit, $offset);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
@@ -224,13 +225,13 @@ $logs = get_warehouse_logs($pdo, $filters, $limit, $offset);
                 <!-- Filter Bar (Real-Time Auto-Submit) -->
                 <form method="GET" class="flex flex-wrap items-end gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
                     <div class="flex flex-col gap-1">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">From</label>
-                        <input type="date" name="start_date" onchange="this.form.submit()" value="<?= htmlspecialchars($start_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
+                        <label for="start_date" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">From</label>
+                        <input type="date" id="start_date" name="start_date" onchange="this.form.submit()" value="<?= htmlspecialchars($start_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
                     </div>
 
                     <div class="flex flex-col gap-1">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">To</label>
-                        <input type="date" name="end_date" onchange="this.form.submit()" value="<?= htmlspecialchars($end_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
+                        <label for="end_date" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">To</label>
+                        <input type="date" id="end_date" name="end_date" onchange="this.form.submit()" value="<?= htmlspecialchars($end_date) ?>" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
                     </div>
 
                     <div class="flex gap-2">

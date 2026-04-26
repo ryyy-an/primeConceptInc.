@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../global.model.php';
+require_once __DIR__ . '/../cache.inc.php';
 function get_all_users(PDO $pdo): array
 {
     try {
@@ -438,6 +439,7 @@ function process_admin_pos_sale(PDO $pdo, array $data): array
             create_notification($pdo, $adminId, 'Order to Fulfill', "Status: Paid\nSummary: $msg", 'fulfillment', null, 'warehouse');
         }
 
+        cache_clear();
         return ['success' => true, 'order_id' => $orderId];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -554,6 +556,7 @@ function update_stock_adjustment(PDO $pdo, array $adjustments, int $userId): arr
         }
 
         $pdo->commit();
+        cache_clear();
         return ['success' => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -756,6 +759,7 @@ function update_order_status(PDO $pdo, int $orderId, string $status, float $disc
         $stmt->execute([$status, $discount, $comment, $orderId]);
 
         $pdo->commit();
+        cache_clear();
 
         // Notification: Admin -> Showroom (Order Update Result)
         if ($creatorId > 0) {
@@ -779,6 +783,12 @@ function update_order_status(PDO $pdo, int $orderId, string $status, float $disc
  */
 function get_admin_order_stats(PDO $pdo): array
 {
+    $cacheKey = "admin_dashboard_stats";
+    $cachedData = cache_get($cacheKey);
+    if ($cachedData !== null) {
+        return $cachedData;
+    }
+
     try {
         // 1. Total Distinct Products
         $totalProducts = $pdo->query("SELECT COUNT(*) FROM products WHERE is_deleted = 0")->fetchColumn();
@@ -808,7 +818,7 @@ function get_admin_order_stats(PDO $pdo): array
         $whPending = $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o JOIN order_items oi ON o.id = oi.order_id WHERE o.status = 'Approved' AND (oi.get_from = 'WH' OR oi.get_from = 'Warehouse') AND o.wh_status != 'Released'")->fetchColumn();
         $srPending = $pdo->query("SELECT COUNT(DISTINCT o.id) FROM orders o JOIN order_items oi ON o.id = oi.order_id WHERE o.status = 'For Review' AND (oi.get_from = 'SR' OR oi.get_from = 'Showroom')")->fetchColumn();
 
-        return [
+        $stats = [
             'total_products' => (int)$totalProducts,
             'total_transactions' => (int)$totalTransactions,
             'pending_requests' => (int)($statuses['For Review'] ?? 0),
@@ -819,6 +829,9 @@ function get_admin_order_stats(PDO $pdo): array
             'wh_pending_count' => (int)$whPending,
             'sr_pending_count' => (int)$srPending
         ];
+
+        cache_set($cacheKey, $stats, 600); // Cache for 10 minutes
+        return $stats;
     } catch (Throwable $e) {
         error_log("Get Admin Stats Error: " . $e->getMessage());
         return [];

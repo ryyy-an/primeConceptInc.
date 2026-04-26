@@ -28,6 +28,8 @@ if (isset($_SESSION['user_id'])) {
 
     $revenueStats = get_revenue_stats($pdo);
     $totalRevenue = $revenueStats['total'];
+
+    $activeTab = isset($_GET['tab']) ? (int) $_GET['tab'] : 0;
 } else {
     // Not logged in → redirect
     header("Location: ../../public/index.php");
@@ -43,6 +45,7 @@ if (isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.4.7" defer></script>
     <script src="../../public/assets/js/order.js?v=1.4.7" defer></script>
@@ -232,7 +235,6 @@ if (isset($_SESSION['user_id'])) {
     <div id="pos-container" data-pos="<?= htmlspecialchars(json_encode(['activeTab' => $activeTab]), ENT_QUOTES, 'UTF-8') ?>" class="w-full px-5 flex flex-col gap-5">
 
         <?php
-        $activeTab = isset($_GET['tab']) ? (int) $_GET['tab'] : 0;
         $cartItems = get_cart_items($pdo, (int) ($_SESSION['user_id'] ?? 0));
         $totalCartItems = count($cartItems);
         ?>
@@ -241,8 +243,8 @@ if (isset($_SESSION['user_id'])) {
             <div class="flex items-center justify-center bg-gray-100 rounded-3xl px-1 py-1 gap-5 shadow-sm w-full">
                 <!-- Product Catalog Tab -->
                 <button data-refresh-tab="0" id="tabBtn0"
-                    class="w-full flex-center h-10 gap-2 px-4 rounded-3xl bg-white border border-gray-300 text-red-600 font-semibold hover:bg-red-100 transition">
-                    <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    class="w-full flex-center h-10 gap-2 px-4 rounded-3xl <?= $activeTab === 0 ? 'bg-white border border-gray-300 text-red-600 font-semibold shadow-sm' : 'text-gray-700 font-medium hover:bg-red-100' ?> transition">
+                    <svg class="w-5 h-5 <?= $activeTab === 0 ? 'text-red-500' : 'text-gray-500' ?>" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
@@ -252,8 +254,8 @@ if (isset($_SESSION['user_id'])) {
 
                 <!-- Product Cart Tab -->
                 <button data-refresh-tab="1" id="tabBtn1"
-                    class="relative flex items-center justify-center w-full gap-2 h-10 px-4 rounded-3xl text-gray-700 font-medium hover:bg-red-100 transition">
-                    <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    class="relative flex items-center justify-center w-full gap-2 h-10 px-4 rounded-3xl <?= $activeTab === 1 ? 'bg-white border border-gray-300 text-red-600 font-semibold shadow-sm' : 'text-gray-700 font-medium hover:bg-red-100' ?> transition">
+                    <svg class="w-5 h-5 <?= $activeTab === 1 ? 'text-red-500' : 'text-gray-600' ?>" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
@@ -277,7 +279,7 @@ if (isset($_SESSION['user_id'])) {
         <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6 pb-12">
             <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full bg-white">
 
-                <div id="tabContent0">
+                <div id="tabContent0" class="<?= $activeTab === 0 ? '' : 'hidden' ?>">
                     <h2 class="text-2xl font-semibold mb-2">Product Catalog</h2>
                     <p class="text-gray-600">Browse and add products to your order.</p>
 
@@ -678,7 +680,7 @@ if (isset($_SESSION['user_id'])) {
                 </div>
                 <!-- end of tab1 -->
 
-                <div id="tabContent1" class="hidden ">
+                <div id="tabContent1" class="<?= $activeTab === 1 ? '' : 'hidden' ?>">
                     <div class="flex flex-col gap-5">
                         <div>
                             <h2 class="text-2xl font-semibold mb-2">Product Cart</h2>
@@ -873,10 +875,10 @@ if (isset($_SESSION['user_id'])) {
 
                                         <div class="grid grid-cols-3 gap-4">
                                             <div class="col-span-2 space-y-1.5">
-                                                <label class="text-xs font-semibold text-gray-700 ml-1">Full Name /
+                                                <label for="clientName" class="text-xs font-semibold text-gray-700 ml-1">Full Name /
                                                     Authorized Person</label>
                                                 <div class="relative">
-                                                    <input type="text" id="clientName" autocomplete="off"
+                                                    <input type="text" id="clientName" autocomplete="name"
                                                         placeholder="Enter name..."
                                                         class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-semibold">
 
@@ -905,17 +907,19 @@ if (isset($_SESSION['user_id'])) {
                                             </div>
                                             <div id="govDeptSection"
                                                 class="col-span-3 hidden animate-in fade-in slide-in-from-top-1">
-                                                <label class="text-xs font-semibold text-blue-600 ml-1">Government
+                                                <label for="govBranch" class="text-xs font-semibold text-blue-600 ml-1">Government
                                                     Department Name</label>
                                                 <input type="text" id="govBranch" placeholder="e.g. Department of Education"
-                                                    class="w-full mt-1 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                                    class="w-full mt-1 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                    autocomplete="organization">
                                             </div>
 
                                             <div class="col-span-2 space-y-1.5">
-                                                <label class="text-xs font-semibold text-gray-700 ml-1">Contact
+                                                <label for="clientContact" class="text-xs font-semibold text-gray-700 ml-1">Contact
                                                     Number</label>
                                                 <input type="text" id="clientContact" placeholder="09XX XXX XXXX"
-                                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                    autocomplete="tel">
                                             </div>
 
                                             <div class="col-span-1 space-y-1.5">
@@ -947,10 +951,11 @@ if (isset($_SESSION['user_id'])) {
 
                                             <div id="deliveryAddressSection"
                                                 class="hidden animate-in fade-in slide-in-from-top-2">
-                                                <label class="text-xs font-semibold text-orange-600 ml-1">Exact Delivery
+                                                <label for="deliveryAddress" class="text-xs font-semibold text-orange-600 ml-1">Exact Delivery
                                                     Address</label>
                                                 <textarea id="deliveryAddress" rows="2" placeholder="House/Bldg No., Street, Brgy, City..."
-                                                    class="w-full mt-1 bg-orange-50/30 border border-orange-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none font-medium"></textarea>
+                                                    class="w-full mt-1 bg-orange-50/30 border border-orange-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none font-medium"
+                                                    autocomplete="street-address"></textarea>
                                             </div>
                                         </div>
                                     </section>
@@ -1038,7 +1043,7 @@ if (isset($_SESSION['user_id'])) {
                                             </div>
 
                                             <div class="col-span-2 md:col-span-1 space-y-1.5">
-                                                <label class="text-xs font-semibold text-gray-700 ml-1">Reference
+                                                <label for="paymentRef" class="text-xs font-semibold text-gray-700 ml-1">Reference
                                                     No.</label>
                                                 <input type="text" id="paymentRef" placeholder="Ref ID / Trace #"
                                                     class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium">

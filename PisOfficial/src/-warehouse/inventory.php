@@ -43,6 +43,7 @@ $pendingSR = $stats['pending_sr'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
@@ -204,6 +205,7 @@ $pendingSR = $stats['pending_sr'];
 
             <!-- Search -->
             <div class="relative w-full flex flex-row items-center gap-4 mt-8 mb-8">
+                <label for="searchInput" class="sr-only">Search products</label>
                 <div class="relative flex-grow h-11 group">
                     <div
                         class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 group-focus-within:text-red-500 transition-colors">
@@ -216,7 +218,7 @@ $pendingSR = $stats['pending_sr'];
 
                     <input id="searchInput"
                         class="w-full h-full bg-gray-100 border border-gray-300 rounded-xl pl-11 pr-4 outline-none text-md text-black placeholder-gray-500 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-sm"
-                        type="text" placeholder="Search product name or code..." />
+                        type="text" placeholder="Search product name or code..." autocomplete="off" />
                 </div>
             </div>
 

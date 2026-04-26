@@ -23,6 +23,10 @@ function sendJsonResponse(array $data, int $statusCode = 200)
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 /**
+ * --- GLOBAL CSRF VERIFICATION (Moved to config.php) ---
+ */
+
+/**
  * Get Cart Count
  */
 if ($action === 'get_cart_count') {
