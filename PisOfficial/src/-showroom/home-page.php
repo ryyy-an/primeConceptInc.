@@ -60,11 +60,12 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png?v=2">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="shortcut icon" href="../../public/assets/img/favIcon.png?v=2" type="image/x-icon">
     <link rel="apple-touch-icon" href="../../public/assets/img/favIcon.png?v=2">
-    <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js?v=1.4.7" defer></script>
-    <script src="../../public/assets/js/order.js?v=1.4.5" defer></script>
+    <link rel="stylesheet" href="../output.css?v=<?= SYS_VERSION ?>">
+    <script src="../../public/assets/js/global.js?v=<?= SYS_VERSION ?>" defer></script>
+    <script src="../../public/assets/js/order.js?v=<?= SYS_VERSION ?>" defer></script>
     <?php include '../include/toast.php'; ?>
 
 
@@ -225,8 +226,8 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
             <div class="flex items-center justify-center bg-gray-100 rounded-3xl px-1 py-1 gap-5 shadow-sm w-full">
                 <!-- Product Catalog Tab -->
                 <button data-refresh-tab="0" id="tabBtn0"
-                    class="w-full flex-center h-10 gap-2 px-4 rounded-3xl bg-white border border-gray-300 text-red-600 font-semibold hover:bg-red-100 transition">
-                    <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    class="w-full flex-center h-10 gap-2 px-4 rounded-3xl <?= $activeTab === 0 ? 'bg-white border border-gray-300 text-red-600 font-semibold shadow-sm' : 'text-gray-700 font-medium hover:bg-red-100' ?> transition">
+                    <svg class="w-5 h-5 <?= $activeTab === 0 ? 'text-red-500' : 'text-gray-500' ?>" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
@@ -236,9 +237,9 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
 
                 <!-- Product Cart Tab -->
                 <button data-refresh-tab="1" id="tabBtn1"
-                    class="relative flex items-center justify-center w-full gap-2 h-10 px-4 rounded-3xl text-gray-700 font-medium hover:bg-red-100 transition">
+                    class="relative flex items-center justify-center w-full gap-2 h-10 px-4 rounded-3xl <?= $activeTab === 1 ? 'bg-white border border-gray-300 text-red-600 font-semibold shadow-sm' : 'text-gray-700 font-medium hover:bg-red-100' ?> transition">
 
-                    <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    <svg class="w-5 h-5 <?= $activeTab === 1 ? 'text-red-500' : 'text-gray-600' ?>" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
@@ -258,13 +259,13 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
         <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6 pb-12">
             <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full bg-white">
 
-                <div id="tabContent0">
+                <div id="tabContent0" class="<?= $activeTab === 0 ? '' : 'hidden' ?>">
                     <h2 class="text-2xl font-semibold mb-2">Product Catalog</h2>
                     <p class="text-gray-600">Browse and add products to your order.</p>
 
                     <!-- Searchbox -->
                     <div class="relative w-full flex flex-row items-center gap-4 mt-5 mb-5">
-
+                        <label for="searchInput" class="sr-only">Search Products</label>
                         <div class="relative flex-grow h-11 group">
                             <div
                                 class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 group-focus-within:text-red-500 transition-colors">
@@ -277,7 +278,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
 
                             <input id="searchInput"
                                 class="w-full h-full bg-gray-100 border border-gray-300 rounded-xl pl-11 pr-16 outline-none text-md text-black placeholder-gray-500 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-sm"
-                                type="text" placeholder="Search products..." />
+                                type="text" placeholder="Search products..." autocomplete="off" />
 
                             <div class="absolute inset-y-0 right-0 flex items-center pr-2">
                                 <div class="h-6 w-[1.5px] bg-gray-300 mx-2 opacity-60"></div>
@@ -699,7 +700,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                 </div>
                 <!-- end of tab1 -->
 
-                <div id="tabContent1" class="hidden ">
+                <div id="tabContent1" class="<?= $activeTab === 1 ? '' : 'hidden' ?>">
                     <div class="flex flex-col gap-5">
                         <div>
                             <h2 class="text-2xl font-semibold mb-2">Product Cart</h2>
@@ -849,9 +850,10 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                             <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
 
                                 <section class="space-y-2">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Client Name</label>
+                                    <label for="clientName" class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Client Name</label>
                                     <input type="text" id="clientName" placeholder="Search or enter name..."
-                                        class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:border-red-500 transition-all placeholder:text-gray-300 text-sm">
+                                        class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:border-red-500 transition-all placeholder:text-gray-300 text-sm"
+                                        autocomplete="name">
                                 </section>
 
                                 <section class="space-y-3">

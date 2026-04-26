@@ -65,6 +65,7 @@ function getInitials($name)
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.4.0" defer></script>
     <script src="../../public/assets/js/order.js?v=1.4.0" defer></script>

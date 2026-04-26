@@ -34,9 +34,10 @@ if (isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
-    <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js?v=1.2" defer></script>
-    <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
+    <link rel="stylesheet" href="../output.css?v=<?= SYS_VERSION ?>">
+    <script src="../../public/assets/js/global.js?v=<?= SYS_VERSION ?>" defer></script>
+    <script src="../../public/assets/js/warehouse.js?v=<?= SYS_VERSION ?>" defer></script>
 
     <style>
         /* Attention Shake Animation */

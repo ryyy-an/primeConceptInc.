@@ -57,6 +57,7 @@ if (isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync | Order Requests</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
@@ -482,10 +483,10 @@ if (isset($_SESSION['user_id'])) {
 
                                     <div class="grid grid-cols-3 gap-4">
                                         <div class="col-span-2 space-y-1.5">
-                                            <label class="text-xs font-semibold text-gray-700 ml-1">Full Name /
+                                            <label for="clientName" class="text-xs font-semibold text-gray-700 ml-1">Full Name /
                                                 Authorized Person</label>
                                             <div class="relative">
-                                                <input type="text" id="clientName" autocomplete="off"
+                                                <input type="text" id="clientName" autocomplete="name"
                                                     placeholder="Enter name..."
                                                     class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-semibold">
 
@@ -498,10 +499,11 @@ if (isset($_SESSION['user_id'])) {
                                         </div>
 
                                         <div class="col-span-2 space-y-1.5">
-                                            <label class="text-xs font-semibold text-gray-700 ml-1">Contact
+                                            <label for="clientContact" class="text-xs font-semibold text-gray-700 ml-1">Contact
                                                 Number</label>
                                             <input type="text" id="clientContact" placeholder="09XX XXX XXXX"
-                                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                autocomplete="tel">
                                         </div>
 
                                         <div class="col-span-1 space-y-1.5">
@@ -532,11 +534,12 @@ if (isset($_SESSION['user_id'])) {
 
                                         <div id="deliveryAddressSection"
                                             class="hidden animate-in fade-in slide-in-from-top-2">
-                                            <label class="text-xs font-semibold text-orange-600 ml-1">Exact Delivery
+                                            <label for="deliveryAddress" class="text-xs font-semibold text-orange-600 ml-1">Exact Delivery
                                                 Address</label>
                                             <textarea id="deliveryAddress" rows="2"
                                                 placeholder="House/Bldg No., Street, Brgy, City..."
-                                                class="w-full mt-1 bg-orange-50/30 border border-orange-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none font-medium"></textarea>
+                                                class="w-full mt-1 bg-orange-50/30 border border-orange-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none font-medium"
+                                                autocomplete="street-address"></textarea>
                                         </div>
                                     </div>
                                 </section>
@@ -572,7 +575,7 @@ if (isset($_SESSION['user_id'])) {
                                         </div>
 
                                         <div class="col-span-2 md:col-span-1 space-y-1.5">
-                                            <label class="text-xs font-semibold text-gray-700 ml-1">Reference
+                                            <label for="paymentRef" class="text-xs font-semibold text-gray-700 ml-1">Reference
                                                 No.</label>
                                             <input type="text" id="paymentRef" placeholder="Ref ID / Trace #"
                                                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium">

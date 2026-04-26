@@ -44,6 +44,7 @@ if (isset($_SESSION["user_id"])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/inventory.js?v=1.4.1" defer></script>
     <script src="../../public/assets/js/global.js?v=1.4.1" defer></script>
@@ -476,6 +477,7 @@ if (isset($_SESSION["user_id"])) {
 
                 <form id="editProductForm"
                     class="modal-box relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] min-h-[90vh] transition-all duration-300 font-sans scale-95 opacity-0">
+                    <?php echo insert_csrf_input(); ?>
                     <input type="hidden" name="prod_id" id="editProdId">
                     <input type="hidden" name="old_code" id="editOldCode">
                     <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
@@ -526,28 +528,28 @@ if (isset($_SESSION["user_id"])) {
 
                             <div class="md:col-span-2 grid grid-cols-2 gap-5">
                                 <div class="col-span-2">
-                                    <label
+                                    <label for="editName"
                                         class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Product
                                         Name</label>
                                     <input type="text" name="name" id="editName"
                                         class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:border-black transition-all"
-                                        required>
+                                        required autocomplete="off">
                                 </div>
 
                                 <div>
-                                    <label
+                                    <label for="editCode"
                                         class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Code</label>
                                     <input type="text" name="code" id="editCode"
                                         class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:border-black transition-all"
-                                        required>
+                                        required autocomplete="off">
                                 </div>
 
                                 <div class="col-span-1">
-                                    <label
+                                    <label for="editCategory"
                                         class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Category</label>
                                     <input type="text" name="category" id="editCategory" list="categorySuggestion"
                                         class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:border-black transition-all"
-                                        required>
+                                        required autocomplete="off">
                                 </div>
 
                                 <div class="relative">
@@ -577,20 +579,20 @@ if (isset($_SESSION["user_id"])) {
                                 </div>
 
                                 <div>
-                                    <label
+                                    <label for="editPrice"
                                         class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Price
                                         (₱)</label>
                                     <input type="number" step="0.01" name="price" id="editPrice"
                                         class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-blue-600 outline-none focus:border-black transition-all"
-                                        required>
+                                        required autocomplete="off">
                                 </div>
 
                                 <div class="col-span-2">
-                                    <label
+                                    <label for="editDescription"
                                         class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Description</label>
                                     <textarea name="description" id="editDescription" rows="3"
                                         class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-700 outline-none focus:border-black transition-all resize-none text-sm"
-                                        required></textarea>
+                                        required autocomplete="off"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -664,6 +666,7 @@ if (isset($_SESSION["user_id"])) {
 
         <form id="addProductForm"
             class="modal-box relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] min-h-[90vh] transition-all duration-300 font-sans scale-95 opacity-0">
+            <?php echo insert_csrf_input(); ?>
 
             <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
                 <div>
@@ -710,45 +713,45 @@ if (isset($_SESSION["user_id"])) {
 
                     <div class="md:col-span-2 grid grid-cols-2 gap-5">
                         <div class="col-span-2">
-                            <label
+                            <label for="addName"
                                 class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Product
                                 Name</label>
-                            <input type="text" name="name" placeholder="Enter product name..."
+                            <input type="text" id="addName" name="name" placeholder="Enter product name..."
                                 class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:border-black transition-all"
-                                required>
+                                required autocomplete="off">
                         </div>
 
                         <div>
-                            <label
+                            <label for="addCode"
                                 class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Code</label>
-                            <input type="text" name="code" placeholder="e.g. EC-01"
+                            <input type="text" id="addCode" name="code" placeholder="e.g. EC-01"
                                 class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:border-black transition-all"
-                                required>
+                                required autocomplete="off">
                         </div>
 
                         <div>
-                            <label
+                            <label for="addCategory"
                                 class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Category</label>
-                            <input type="text" name="category" list="categorySuggestion" placeholder="Search or type..."
+                            <input type="text" id="addCategory" name="category" list="categorySuggestion" placeholder="Search or type..."
                                 class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:border-black transition-all"
-                                required>
+                                required autocomplete="off">
                         </div>
 
                         <div>
-                            <label
+                            <label for="addPrice"
                                 class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Price
                                 (₱)</label>
-                            <input type="number" name="price" step="0.01" placeholder="0.00"
+                            <input type="number" id="addPrice" name="price" step="0.01" placeholder="0.00"
                                 class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-blue-600 outline-none focus:border-black transition-all"
-                                required>
+                                required autocomplete="off">
                         </div>
 
                         <div class="col-span-2">
-                            <label
+                            <label for="addDescription"
                                 class="block text-[11px] font-black text-gray-400 uppercase mb-2 tracking-widest">Description</label>
-                            <textarea name="description" rows="3" placeholder="Add short product description..."
+                            <textarea id="addDescription" name="description" rows="3" placeholder="Add short product description..."
                                 class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-700 outline-none focus:border-black transition-all resize-none text-sm"
-                                required></textarea>
+                                required autocomplete="off"></textarea>
                         </div>
                     </div>
                 </div>

@@ -54,11 +54,12 @@ if (isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync | Dashboard</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
-    <link rel="stylesheet" href="../output.css">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
+    <link rel="stylesheet" href="../output.css?v=<?= SYS_VERSION ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="../../public/assets/js/global.js?v=1.4.1" defer></script>
+    <script src="../../public/assets/js/global.js?v=<?= SYS_VERSION ?>" defer></script>
     <script src="../../public/assets/js/order.js?v=1.4.1" defer></script>
     <?php include '../include/toast.php'; ?>
     <style>
@@ -489,7 +490,7 @@ if (isset($_SESSION['user_id'])) {
                                         <section id="modal-collection-form" class="space-y-6">
                                             <div class="grid grid-cols-2 gap-6">
                                                 <div class="col-span-2 space-y-2.5">
-                                                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Received Amount (PHP)</label>
+                                                    <label for="collAmount" class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Received Amount (PHP)</label>
                                                     <div class="relative group">
                                                         <span class="absolute left-6 top-1/2 -translate-y-1/2 font-black text-orange-600 text-3xl transition-transform group-focus-within:scale-110 duration-300 pointer-events-none z-10">₱</span>
                                                         <input type="number" id="collAmount"
@@ -499,7 +500,7 @@ if (isset($_SESSION['user_id'])) {
                                                 </div>
 
                                                 <div class="col-span-2 md:col-span-1 space-y-2.5">
-                                                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Payment Method</label>
+                                                    <label for="collMethod" class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Payment Method</label>
                                                     <select id="collMethod" class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer transition-all shadow-sm">
                                                         <option value="Cash">💵 Cash Payment</option>
                                                         <option value="gcash">📱 GCash</option>
@@ -512,8 +513,8 @@ if (isset($_SESSION['user_id'])) {
                                                 </div>
 
                                                 <div class="col-span-2 md:col-span-1 space-y-2.5">
-                                                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Reference No.</label>
-                                                    <input type="text" id="collRef" autocomplete="off" class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 outline-none focus:ring-2 focus:ring-orange-500 uppercase tracking-widest shadow-sm" placeholder="TRACE-XXX">
+                                                    <label for="collRef" class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 leading-none">Reference No.</label>
+                                                    <input type="text" id="collRef" autocomplete="on" class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm font-bold text-gray-900 outline-none focus:ring-2 focus:ring-orange-500 uppercase tracking-widest shadow-sm" placeholder="TRACE-XXX">
                                                 </div>
 
                                                 <div class="col-span-2 space-y-2.5">
@@ -609,7 +610,7 @@ if (isset($_SESSION['user_id'])) {
 
 
         <!-- External Logic -->
-        <script src="../../public/assets/js/admin-dashboard.js?v=<?= time() ?>" defer></script>
+        <script src="../../public/assets/js/admin-dashboard.js?v=<?= SYS_VERSION ?>" defer></script>
 
     </section>
 </body>

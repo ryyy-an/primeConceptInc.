@@ -45,6 +45,7 @@ if (isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync | Order Requests</title>
     <link rel="icon" type="image/png" href="../../public/assets/img/favIcon.png">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.4.0" defer></script>
     <script src="../../public/assets/js/order.js?v=1.4.0" defer></script>
@@ -347,14 +348,14 @@ if (isset($_SESSION['user_id'])) {
                             <div class="bg-white border-2 border-gray-100 rounded-2xl p-6 relative overflow-hidden">
                                 <div class="relative z-10 flex flex-col lg:flex-row gap-6">
                                     <div class="flex-1 space-y-2.5">
-                                        <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Reviewer's Note</label>
+                                        <label for="admin-notes" class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Reviewer's Note</label>
                                         <textarea id="admin-notes" rows="2"
                                             class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm font-medium outline-none focus:bg-white focus:border-red-400 transition-all placeholder:text-gray-300 resize-none"
                                             placeholder="Add remarks..."></textarea>
                                     </div>
                                     <div class="w-full lg:w-52 space-y-2.5">
                                         <div class="flex justify-between items-center">
-                                            <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Adjustment</label>
+                                            <label for="admin-discount" class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Adjustment</label>
                                             <div class="flex bg-gray-100 rounded-lg p-0.5 border border-gray-200">
                                                 <label class="cursor-pointer">
                                                     <input type="radio" name="discount_type" value="currency" checked class="hidden peer">
@@ -406,12 +407,13 @@ if (isset($_SESSION['user_id'])) {
                             </h4>
 
                             <div class="relative group">
+                                <label for="history-search" class="sr-only">Search customer name</label>
                                 <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 group-focus-within:text-red-500 transition-colors">
                                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </span>
-                                <input type="text" id="history-search" autocomplete="off" placeholder="Search customer name..."
+                                <input type="text" id="history-search" autocomplete="name" placeholder="Search customer name..."
                                     class="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[11px] font-bold text-gray-700 outline-none focus:bg-white focus:border-red-200 focus:ring-4 focus:ring-red-50 transition-all">
                             </div>
                         </div>

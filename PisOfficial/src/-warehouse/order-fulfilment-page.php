@@ -44,6 +44,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime-In-Sync</title>
     <link rel="icon" href="../../public/assets/img/favIcon.png" type="image/png">
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.2" defer></script>
 

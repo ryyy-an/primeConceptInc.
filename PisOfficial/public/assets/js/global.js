@@ -12,6 +12,41 @@ console.log("✅ global.js loaded");
             console.error('Failed to parse session data', e);
         }
     }
+
+    // --- GLOBAL CSRF FETCH WRAPPER ---
+    const originalFetch = window.fetch;
+    window.fetch = async function () {
+        let [resource, config] = arguments;
+        let method = 'GET';
+
+        if (resource instanceof Request) {
+            method = resource.method;
+        } else if (config && config.method) {
+            method = config.method;
+        }
+
+        if (method.toUpperCase() === 'POST') {
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (token) {
+                // If resource is a URL string
+                if (!(resource instanceof Request)) {
+                    config = config || {};
+                    config.headers = config.headers || {};
+                    if (config.headers instanceof Headers) {
+                        config.headers.set('X-CSRF-TOKEN', token);
+                    } else {
+                        config.headers['X-CSRF-TOKEN'] = token;
+                    }
+                } else {
+                    // If resource is a Request object, we must clone it to modify headers
+                    const newHeaders = new Headers(resource.headers);
+                    newHeaders.set('X-CSRF-TOKEN', token);
+                    resource = new Request(resource, { headers: newHeaders });
+                }
+            }
+        }
+        return originalFetch(resource, config);
+    };
 })();
 
 window.showCustomAlert = function (message) {
@@ -425,7 +460,7 @@ function openProductModal(encodedProduct) {
             <div class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white rounded-xl border border-gray-100 p-1.5 shrink-0 shadow-sm">
-                        <img src="${product.image}" class="object-contain w-full h-full">
+                        <img src="${product.image}" loading="lazy" class="object-contain w-full h-full">
                     </div>
                     <div class="flex flex-col">
                         <span class="text-[11px] font-black text-gray-800 uppercase leading-none tracking-tight">${v.name}</span>

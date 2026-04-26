@@ -1055,10 +1055,12 @@ document.addEventListener('input', (e) => {
 
 // Initial tab setup
 document.addEventListener("DOMContentLoaded", () => {
-    if (window.location.pathname.includes("home-page.php")) {
+    if (window.location.pathname.includes("home-page.php") || window.location.pathname.includes("pos-page.php")) {
         const urlParams = new URLSearchParams(window.location.search);
         const activeTab = urlParams.get('tab') || '0';
-        window.showTab(parseInt(activeTab));
+        if (typeof window.showTab === 'function') {
+            window.showTab(parseInt(activeTab));
+        }
     }
     
     // Monitored Unsaved changes

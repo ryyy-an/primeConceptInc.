@@ -488,7 +488,7 @@ function fetchTopProducts() {
                     return `
                         <div class="group animate-in zoom-in duration-300">
                             <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gray-50 rounded-lg mb-3 flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-red-300 transition shadow-sm">
-                                <img src="${path}" alt="${tp.name}" class="object-contain h-full w-full">
+                                <img src="${path}" alt="${tp.name}" loading="lazy" class="object-contain h-full w-full">
                             </div>
                             <p class="text-[10px] font-bold text-gray-700 truncate px-1">${tp.name}</p>
                             <p class="text-xs font-black text-blue-600 mt-1">${parseInt(tp.total_sold)} <span class="text-[9px] text-gray-400 uppercase">Sold</span></p>

@@ -10,8 +10,9 @@ require_once '../src/auth/login.view.auth.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="assets/img/favIcon.png">
-    <link rel="stylesheet" href="../src/output.css">
-    <script src="assets/js/auth.js?v=<?= time() ?>" defer></script>
+    <meta name="csrf-token" content="<?= get_csrf_token() ?>">
+    <link rel="stylesheet" href="../src/output.css?v=<?= SYS_VERSION ?>">
+    <script src="assets/js/auth.js?v=<?= SYS_VERSION ?>" defer></script>
 
 </head>
 
@@ -48,7 +49,7 @@ require_once '../src/auth/login.view.auth.php';
                         <label for="username" class="block text-sm text-gray-800 font-semibold">Username</label>
                         <input type="text" name="username" id="username"
                             class="text-black w-full h-11 px-4 bg-gray-100 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                            placeholder="Enter your username" required />
+                            placeholder="Enter your username" required autocomplete="username" />
                     </div>
 
                     <div class="relative">
@@ -56,7 +57,7 @@ require_once '../src/auth/login.view.auth.php';
                         <div class="relative">
                             <input type="password" name="password" id="password"
                                 class="w-full h-11 pl-4 pr-12 bg-gray-100 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                                placeholder="Enter your password" required />
+                                placeholder="Enter your password" required autocomplete="current-password" />
 
                             <button type="button" onclick="togglePassword()"
                                 class="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors focus:outline-none">
@@ -72,6 +73,7 @@ require_once '../src/auth/login.view.auth.php';
                         class="w-full h-11 mt-2 text-white bg-black rounded-md hover:bg-gray-800 transition font-semibold flex items-center justify-center gap-2">
                         Login
                     </button>
+                    <?= insert_csrf_input() ?>
                 </form>
 
                 <style>
